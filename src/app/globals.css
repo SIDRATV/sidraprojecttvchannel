@@ -1,0 +1,165 @@
+/* stylelint-disable */
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind utilities;
+/* stylelint-enable */
+
+/* Light Mode Colors */
+:root {
+  --bg-primary: white;
+  --bg-secondary: #f9fafb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border: #e5e7eb;
+}
+
+/* Dark Mode Colors */
+.dark {
+  --bg-primary: #030712;
+  --bg-secondary: #111827;
+  --text-primary: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --border: #1f2937;
+}
+
+* {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply transition-colors duration-200;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply bg-brand-600 rounded-full hover:bg-brand-500;
+}
+
+/* Focus Visible */
+:focus-visible {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-gray-950;
+}
+
+/* Utility Classes */
+.glass-effect {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply backdrop-blur-md bg-white/5 border border-white/10 rounded-xl;
+}
+
+.gradient-text {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply bg-gradient-to-r from-brand-400 to-islamic-teal bg-clip-text text-transparent;
+}
+
+.c/* stylelint-disable-next-line at-rule-no-unknown */
+  ard-hover {
+  @apply hover:shadow-xl hover:shadow-brand-500/20 transition-all duration-300;
+}
+
+.video-shadow {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply shadow-2xl shadow-black/60;
+}
+
+/* Animations */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Video Player */
+.video-container {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply relative w-full bg-black rounded-xl overflow-hidden aspect-video;
+}
+
+.video-container video {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply w-full h-full object-cover;
+}
+
+/* Hero section */
+.hero-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(91, 99, 245, 0.1) 0%,
+    rgba(20, 184, 166, 0.05) 100%
+  );
+}
+
+/* Floating elements */
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Text gradients */
+.text-gradient {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply bg-gradient-to-r from-brand-400 via-islamic-teal to-islamic-gold bg-clip-text text-transparent;
+}
+
+/* Blur effect for modals */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+}
+
+/* Smooth transitions */
+.smooth-transition {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply transition-all duration-300 ease-out;
+}
+
+/* Loading skeleton */
+.skeleton {
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @apply bg-gradient-to-r from-gray-800 to-gray-700 animate-shimmer;
+  background-size: 1000px 100%;
+}

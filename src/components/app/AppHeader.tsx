@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Search, Bell, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
@@ -30,12 +31,21 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
       <div className="flex items-center justify-between px-4 lg:px-8 py-4">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center font-bold text-white">
-            S
-          </div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="relative w-10 h-10 flex-shrink-0"
+          >
+            <Image
+              src="/logo.png"
+              alt="Sidra Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </motion.div>
           <div>
             <h1 className="font-bold text-lg text-gray-950 dark:text-white">Sidra</h1>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Panel</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">TV Channel</p>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Facebook, Twitter, Instagram, Linkedin, Mail } from 'lucide-react';
@@ -81,8 +82,14 @@ export function Footer() {
         >
           {/* Logo and Copyright */}
           <motion.div variants={itemVariants} className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-brand-500 to-islamic-teal rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">📺</span>
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <Image
+                src="/logo.png"
+                alt="Sidra Logo"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
             <div>
               <p className="font-bold text-gray-950 dark:text-white">Sidra Project TV</p>

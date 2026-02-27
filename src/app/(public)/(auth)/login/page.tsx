@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -51,9 +52,20 @@ export default function LoginPage() {
         <Card className="p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-brand-500 to-islamic-teal rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">📺</span>
-            </div>
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="relative w-20 h-20 mx-auto mb-6"
+            >
+              <Image
+                src="/logo.png"
+                alt="Sidra Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </motion.div>
             <h1 className="text-3xl font-bold text-gray-950 dark:text-white mb-2">Welcome Back</h1>
             <p className="text-gray-600 dark:text-gray-400">Sign in to your Sidra account</p>
           </div>

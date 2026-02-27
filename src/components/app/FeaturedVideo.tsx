@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { Play, Heart, Share2, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface FeaturedVideoItem {
   title: string;
@@ -28,20 +28,32 @@ export function FeaturedVideo({
   items = [],
   title,
   description,
-  image,
-  category,
-  rating,
-  videoId,
+  image = '',
+  category = '',
+  rating = 0,
+  videoId = '',
 }: FeaturedVideoProps) {
+  // Check if we have any videos content before calling hooks
+  const hasContent = items.length > 0 || !!title;
+  
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  // Use items array if provided, otherwise create array from single item
-  const videos = items.length > 0 ? items : (title ? [{ title, description, image, category, rating, videoId }] : []);
+  // Memoize videos to avoid reference changes triggering useEffect
+  const videos = useMemo(() => {
+    if (items.length > 0) return items;
+    if (title) {
+      return [{
+        title,
+        description: description || '',
+        image: image || '',
+        category: category || '',
+        rating: rating || 0,
+        videoId: videoId || '',
+      }];
+    }
+    return [];
+  }, [items, title, description, image, category, rating, videoId]);
   
-  if (videos.length === 0) return null;
-  
-  const currentVideo = videos[currentIndex];
-
   // Auto-scroll every 7 seconds
   useEffect(() => {
     if (videos.length <= 1) return;
@@ -52,6 +64,10 @@ export function FeaturedVideo({
 
     return () => clearInterval(interval);
   }, [videos.length]);
+
+  if (!hasContent) return null;
+  
+  const currentVideo = videos[currentIndex];
 
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev - 1 + videos.length) % videos.length);

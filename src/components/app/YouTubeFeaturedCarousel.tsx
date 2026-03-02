@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { SimpleVideoPlayerModal } from './SimpleVideoPlayerModal';
+import { YouTubePlayerModal } from './YouTubePlayerModal';
 
 interface YouTubeVideo {
   id: string;
@@ -170,9 +170,10 @@ export function YouTubeFeaturedCarousel({ query, maxResults = 5 }: YouTubeFeatur
 
       {/* Video Player Modal */}
       {selectedVideoId && (
-        <SimpleVideoPlayerModal
+        <YouTubePlayerModal
           videoId={selectedVideoId}
           title={currentVideo.title}
+          description={currentVideo.description}
           isOpen={!!selectedVideoId}
           onClose={() => setSelectedVideoId(null)}
         />

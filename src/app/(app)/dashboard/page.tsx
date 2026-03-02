@@ -7,6 +7,7 @@ import { LiveSection } from '@/components/app/LiveSection';
 import { PodcastSection } from '@/components/app/PodcastSection';
 import { EventsSection } from '@/components/app/EventsSection';
 import { StartupsSection } from '@/components/app/StartupsSection';
+import { YouTubeSection } from '@/components/app/YouTubeSection';
 
 // Mock data - In production, this would come from your API/database
 const featuredVideos = [
@@ -179,18 +180,20 @@ export default function DashboardPage() {
         items={recentlyWatched}
       />
 
-      {/* Recommended */}
-      <ContentSection
+      {/* Recommended - From YouTube API */}
+      <YouTubeSection
         title="Recommended For You"
-        description="Based on your viewing history"
-        items={recommendations}
+        description="Videos selected based on your interests"
+        query="technology"
+        maxResults={12}
       />
 
-      {/* Trending */}
-      <ContentSection
+      {/* Trending - From YouTube API */}
+      <YouTubeSection
         title="Trending Now"
         description="What's popular this week"
-        items={recommendations.slice(0, 5)}
+        query="innovation"
+        maxResults={8}
       />
     </motion.div>
   );

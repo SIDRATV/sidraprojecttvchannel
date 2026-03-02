@@ -30,7 +30,7 @@ export function YouTubePlayerModal({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
-  const youtubeEmbedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0&fs=1&playsinline=1&enablejsapi=1`;
+  const youtubeEmbedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0&fs=1&playsinline=1&enablejsapi=1&iv_load_policy=3`;
 
   const handleFullscreen = () => {
     if (iframeRef.current) {

@@ -27,6 +27,15 @@ export async function GET(req: Request) {
     }, { status: 500 });
   }
 
+  // DEBUG: Log environment info
+  console.log('API KEY DEBUG:', {
+    keyExists: !!key,
+    keyLength: key?.length,
+    keyPrefix: key?.substring(0, 10),
+    environment: process.env.NODE_ENV,
+    platform: process.platform,
+  });
+
   try {
     // Check cache first
     const cacheKey = `${q}:${maxResults}`;

@@ -37,13 +37,22 @@ export function YouTubeSection({
     const fetchVideos = async () => {
       try {
         setLoading(true);
+        console.log(`Fetching videos for query: ${query}`);
         const response = await fetch(`/api/videos?q=${encodeURIComponent(query)}&max=${maxResults}`);
-        if (!response.ok) throw new Error('Failed to fetch videos');
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log(`Received ${data.length} videos`);
         setVideos(Array.isArray(data) ? data : []);
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        const message = err instanceof Error ? err.message : String(err);
+        console.error('Video fetch error:', message);
+        setError(message);
         setVideos([]);
       } finally {
         setLoading(false);
@@ -75,7 +84,11 @@ export function YouTubeSection({
           {description && <p className="text-gray-600 dark:text-gray-400 text-sm">{description}</p>}
         </div>
         <div className="p-4 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-lg">
-          Error loading videos: {error}
+          <p className="font-semibold mb-2">Error loading videos:</p>
+          <code className="block text-xs bg-black/20 p-2 rounded mb-2 overflow-auto">{error}</code>
+          <p className="text-sm">
+            Make sure <code className="bg-black/20 px-1 rounded">YOUTUBE_API_KEY</code> is set in <code className="bg-black/20 px-1 rounded">.env.local</code>
+          </p>
         </div>
       </section>
     );

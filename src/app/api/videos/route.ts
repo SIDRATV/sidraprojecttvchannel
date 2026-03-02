@@ -20,29 +20,42 @@ export async function GET(req: Request) {
   const key = process.env.YOUTUBE_API_KEY;
 
   if (!key) {
-    return NextResponse.json({ error: 'Missing YouTube API key (set YOUTUBE_API_KEY)' }, { status: 500 });
+    console.error('YOUTUBE_API_KEY is not set in environment variables');
+    return NextResponse.json({ 
+      error: 'Missing YouTube API key. Set YOUTUBE_API_KEY in .env.local' 
+    }, { status: 500 });
   }
 
   try {
     // 1) Search for videos to get IDs
-    const searchRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(
-        q,
-      )}&maxResults=${maxResults}&key=${key}`,
-    );
-    if (!searchRes.ok) return NextResponse.json({ error: 'YouTube search failed' }, { status: 502 });
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(q)}&maxResults=${maxResults}&key=${key}`;
+    console.log(`Searching YouTube for: ${q}`);
+    
+    const searchRes = await fetch(searchUrl);
+    if (!searchRes.ok) {
+      const errorData = await searchRes.json();
+      console.error('YouTube Search API error:', errorData);
+      return NextResponse.json({ error: `YouTube API error: ${errorData.error?.message || 'Unknown error'}` }, { status: 502 });
+    }
+    
     const searchData = await searchRes.json();
     const ids = (searchData.items || []).map((it: any) => it.id?.videoId).filter(Boolean);
 
-    if (ids.length === 0) return NextResponse.json([]);
+    if (ids.length === 0) {
+      console.warn(`No videos found for query: ${q}`);
+      return NextResponse.json([]);
+    }
 
     // 2) Get video details for the found IDs
-    const videosRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${ids.join(
-        ',',
-      )}&key=${key}`,
-    );
-    if (!videosRes.ok) return NextResponse.json({ error: 'YouTube videos fetch failed' }, { status: 502 });
+    const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${ids.join(',')}&key=${key}`;
+    const videosRes = await fetch(videosUrl);
+    
+    if (!videosRes.ok) {
+      const errorData = await videosRes.json();
+      console.error('YouTube Videos API error:', errorData);
+      return NextResponse.json({ error: `YouTube API error: ${errorData.error?.message || 'Unknown error'}` }, { status: 502 });
+    }
+    
     const videosData = await videosRes.json();
 
     const items = (videosData.items || []).map((v: any) => ({
@@ -57,8 +70,10 @@ export async function GET(req: Request) {
       publishedAt: v.snippet?.publishedAt,
     }));
 
+    console.log(`Successfully fetched ${items.length} videos`);
     return NextResponse.json(items);
   } catch (err: any) {
+    console.error('API route error:', err);
     return NextResponse.json({ error: err?.message || String(err) }, { status: 500 });
   }
 }

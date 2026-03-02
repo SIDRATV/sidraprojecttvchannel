@@ -4,6 +4,17 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
+interface VideoItem {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  duration: string | undefined;
+  url: string;
+  views: string;
+  publishedAt: string;
+}
+
 class SimpleCache<T> {
   private cache = new Map<string, CacheEntry<T>>();
   private ttlMs: number;
@@ -42,4 +53,4 @@ class SimpleCache<T> {
 }
 
 // Create a singleton cache for videos (expires after 24 hours)
-export const videosCache = new SimpleCache(86400);
+export const videosCache = new SimpleCache<VideoItem[]>(86400);

@@ -89,7 +89,7 @@ export function YouTubeSection({
           {description && <p className="text-gray-600 dark:text-gray-400 text-sm">{description}</p>}
         </div>
         <div className="p-4 text-gray-600 dark:text-gray-400 rounded-lg">
-          No videos found for "{query}"
+          No videos found for &quot;{query}&quot;
         </div>
       </section>
     );

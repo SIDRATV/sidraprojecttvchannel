@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { videosCache } from '@/lib/cache';
 
 function parseISODuration(iso: string | undefined) {
   if (!iso) return undefined;
@@ -27,9 +28,21 @@ export async function GET(req: Request) {
   }
 
   try {
+    // Check cache first
+    const cacheKey = `${q}:${maxResults}`;
+    const cachedVideos = videosCache.get(cacheKey);
+    
+    if (cachedVideos) {
+      console.log(`✓ Cache hit for query: ${q} (${cachedVideos.length} videos)`);
+      return NextResponse.json(cachedVideos, {
+        headers: { 'X-Cache': 'HIT' }
+      });
+    }
+
+    console.log(`🔍 Cache miss for query: ${q} - fetching from YouTube API`);
+
     // 1) Search for videos to get IDs
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(q)}&maxResults=${maxResults}&key=${key}`;
-    console.log(`Searching YouTube for: ${q}`);
     
     const searchRes = await fetch(searchUrl);
     if (!searchRes.ok) {
@@ -70,8 +83,13 @@ export async function GET(req: Request) {
       publishedAt: v.snippet?.publishedAt,
     }));
 
-    console.log(`Successfully fetched ${items.length} videos`);
-    return NextResponse.json(items);
+    // Store in cache for 24 hours
+    videosCache.set(cacheKey, items);
+    console.log(`✓ Cached ${items.length} videos for query: ${q}`);
+
+    return NextResponse.json(items, {
+      headers: { 'X-Cache': 'MISS' }
+    });
   } catch (err: any) {
     console.error('API route error:', err);
     return NextResponse.json({ error: err?.message || String(err) }, { status: 500 });

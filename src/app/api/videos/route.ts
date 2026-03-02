@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { videosCache } from '@/lib/cache';
 
+// Force dynamic execution - do NOT cache at build time
+export const dynamic = 'force-dynamic';
+
 function parseISODuration(iso: string | undefined) {
   if (!iso) return undefined;
   // Simple ISO 8601 duration parser (PT#H#M#S)

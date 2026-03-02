@@ -52,5 +52,5 @@ class SimpleCache<T> {
   }
 }
 
-// Create a singleton cache for videos (expires after 24 hours)
-export const videosCache = new SimpleCache<VideoItem[]>(86400);
+// Create a singleton cache for videos (expires after 3 hours)
+export const videosCache = new SimpleCache<VideoItem[]>(10800);

@@ -95,7 +95,7 @@ export async function GET(req: Request) {
       publishedAt: v.snippet?.publishedAt,
     }));
 
-    // Store in cache for 24 hours
+    // Store in cache for 3 hours
     videosCache.set(cacheKey, items);
     console.log(`✓ Cached ${items.length} videos for query: ${q}`);
 

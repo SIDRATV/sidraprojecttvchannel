@@ -1,11 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { YouTubeFeaturedCarousel } from '@/components/app/YouTubeFeaturedCarousel';
+import { YouTubeSection } from '@/components/app/YouTubeSection';
 import { LiveSection } from '@/components/app/LiveSection';
 import { PodcastSection } from '@/components/app/PodcastSection';
 import { EventsSection } from '@/components/app/EventsSection';
 import { StartupsSection } from '@/components/app/StartupsSection';
-import { YouTubeSection } from '@/components/app/YouTubeSection';
 
 export default function DashboardPage() {
   // Mock data for enhanced dashboard sections
@@ -40,11 +41,9 @@ export default function DashboardPage() {
       transition={{ duration: 0.5 }}
       className="space-y-8 p-4 md:p-8 bg-white dark:bg-gray-950 min-h-screen transition-colors"
     >
-      {/* Featured Videos from YouTube API */}
-      <YouTubeSection
-        title="Featured & Popular"
-        description="Discover trending videos and must-watch content"
-        query="technology innovation"
+      {/* Featured Videos from YouTube API - Auto-rotates every 7 seconds */}
+      <YouTubeFeaturedCarousel
+        query="technology innovation trending"
         maxResults={5}
       />
 

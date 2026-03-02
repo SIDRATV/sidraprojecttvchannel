@@ -5,7 +5,7 @@ import { Play, Heart, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { VideoPlayerModal } from './VideoPlayerModal';
+import { SimpleVideoPlayerModal } from './SimpleVideoPlayerModal';
 
 interface ContentCardProps {
   id: string;
@@ -141,7 +141,7 @@ export function ContentCard({
       )}
 
       {isYouTubeVideo && videoId && (
-        <VideoPlayerModal
+        <SimpleVideoPlayerModal
           videoId={videoId}
           title={title}
           isOpen={showPlayer}

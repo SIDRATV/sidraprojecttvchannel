@@ -18,6 +18,28 @@ declare global {
   }
 }
 
+let youtubeApiReady = false;
+const apiReadyPromise = new Promise<void>((resolve) => {
+  if (typeof window === 'undefined') return;
+  
+  if (window.YT) {
+    youtubeApiReady = true;
+    resolve();
+    return;
+  }
+
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  const firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+
+  window.onYouTubeIframeAPIReady = () => {
+    console.log('YouTube API ready');
+    youtubeApiReady = true;
+    resolve();
+  };
+});
+
 export function useYouTubePlayer(videoId: string, containerId: string) {
   const playerRef = useRef<any>(null);
   const [state, setState] = useState<YouTubePlayerState>({
@@ -29,46 +51,50 @@ export function useYouTubePlayer(videoId: string, containerId: string) {
     buffered: 0,
   });
 
-  // Load YouTube Iframe API script
+  // Load YouTube Iframe API and initialize player
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (window.YT) {
-      // API already loaded
-      return;
-    }
+    const initPlayer = async () => {
+      // Wait for API to be ready
+      await apiReadyPromise;
 
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+      // Wait for container to exist in DOM
+      let attempts = 0;
+      while (!document.getElementById(containerId) && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
 
-    window.onYouTubeIframeAPIReady = () => {
-      console.log('YouTube API ready');
+      const container = document.getElementById(containerId);
+      if (!container) {
+        console.error(`Container ${containerId} not found`);
+        return;
+      }
+
+      // Clear previous content
+      container.innerHTML = '';
+
+      console.log(`Initializing YouTube player for video ${videoId}`);
+      
+      playerRef.current = new window.YT.Player(containerId, {
+        height: '390',
+        width: '100%',
+        videoId,
+        playerVars: {
+          autoplay: 0,
+          controls: 1,
+          modestbranding: 1,
+        },
+        events: {
+          onReady: onPlayerReady,
+          onStateChange: onPlayerStateChange,
+        },
+      });
     };
-  }, []);
 
-  // Initialize player
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.YT) return;
-
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    // Clear previous player
-    container.innerHTML = '';
-
-    playerRef.current = new window.YT.Player(containerId, {
-      height: '390',
-      width: '100%',
-      videoId,
-      events: {
-        onReady: onPlayerReady,
-        onStateChange: onPlayerStateChange,
-      },
-    });
-
-    function onPlayerReady() {
+    function onPlayerReady(event: any) {
+      console.log('Player ready');
       setState((prev) => ({
         ...prev,
         isReady: true,
@@ -79,16 +105,19 @@ export function useYouTubePlayer(videoId: string, containerId: string) {
 
     function onPlayerStateChange(event: any) {
       const YT = window.YT;
+      const isPlaying = event.data === YT.PlayerState.PLAYING;
       setState((prev) => ({
         ...prev,
-        isPlaying: event.data === YT.PlayerState.PLAYING,
+        isPlaying,
         currentTime: playerRef.current.getCurrentTime(),
       }));
     }
 
+    initPlayer().catch(err => console.error('Failed to init player:', err));
+
     // Update time periodically
     const interval = setInterval(() => {
-      if (playerRef.current && state.isReady) {
+      if (playerRef.current && playerRef.current.getDuration) {
         setState((prev) => ({
           ...prev,
           currentTime: playerRef.current.getCurrentTime(),
@@ -98,7 +127,7 @@ export function useYouTubePlayer(videoId: string, containerId: string) {
     }, 500);
 
     return () => clearInterval(interval);
-  }, [videoId, containerId, state.isReady]);
+  }, [videoId, containerId]);
 
   const controls = {
     play: () => playerRef.current?.playVideo(),

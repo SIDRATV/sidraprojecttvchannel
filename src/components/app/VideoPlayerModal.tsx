@@ -55,8 +55,8 @@ export function VideoPlayerModal({ videoId, title, isOpen, onClose }: VideoPlaye
             </div>
 
             {/* Player */}
-            <div className="bg-black flex-1 flex items-center justify-center overflow-hidden relative">
-              <div id={containerId} className="w-full h-full" />
+            <div className="bg-black flex-1 flex items-center justify-center overflow-hidden relative min-h-[500px]">
+              <div id={containerId} className="w-full h-full min-h-[500px]" />
             </div>
 
             {/* Controls */}

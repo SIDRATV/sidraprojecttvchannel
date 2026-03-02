@@ -39,13 +39,21 @@ export function ContentCard({
         isHorizontal ? 'aspect-video' : 'aspect-[2/3]'
       }`}
     >
-      {/* Image */}
-      <Image
-        src={image}
-        alt={title}
-        fill
-        className="object-cover transition-transform duration-500 group-hover:scale-110"
-      />
+      {/* Image - use img for YouTube, Image for optimized local */}
+      {isYouTubeVideo ? (
+        <img
+          src={image}
+          alt={title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+      ) : (
+        <Image
+          src={image}
+          alt={title}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+      )}
 
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-gray-950 dark:from-gray-950 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />

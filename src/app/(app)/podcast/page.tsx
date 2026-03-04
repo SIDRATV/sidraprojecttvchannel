@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Trending2, Clock } from 'lucide-react';
+import { Search, Filter, TrendingUp, Clock } from 'lucide-react';
 import type { Podcast } from '@/services/podcasts';
 
 const CATEGORIES = ['Technology', 'Business', 'AI & ML', 'Development', 'Marketing', 'Design'];
@@ -120,7 +120,7 @@ export default function PodcastPage() {
                       : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
                   }`}
                 >
-                  {type === 'trending' && <Trending2 size={16} />}
+                  {type === 'trending' && <TrendingUp size={16} />}
                   {type === 'recent' && <Clock size={16} />}
                   {type === 'all' && <Filter size={16} />}
                   <span className="capitalize">{type}</span>

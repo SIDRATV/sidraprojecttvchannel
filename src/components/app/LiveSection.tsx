@@ -1,7 +1,9 @@
 "use client";
 
+import Link from 'next/link';
 import { ContentSection } from '@/components/app/ContentSection';
 import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
 
 interface LiveItem {
   id: string;
@@ -18,6 +20,23 @@ export function LiveSection({ items }: { items: LiveItem[] }) {
 
   return (
     <section className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Live Now</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Watch live streams and events</p>
+        </div>
+        <Link href="/live">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+          >
+            View All
+            <ArrowRight size={16} />
+          </motion.button>
+        </Link>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main live hero */}
         <motion.div

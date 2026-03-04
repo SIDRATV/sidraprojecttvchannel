@@ -6,9 +6,9 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
   Compass,
-  Bookmark,
+  Mic2,
+  Radio,
   User,
-  Settings,
   LogOut,
   Menu,
   X,
@@ -21,9 +21,9 @@ import { useRouter } from 'next/navigation';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/explore', label: 'Explore', icon: Compass },
-  { href: '/watchlist', label: 'Watchlist', icon: Bookmark },
+  { href: '/podcast', label: 'Podcast', icon: Mic2 },
+  { href: '/live', label: 'Live', icon: Radio },
   { href: '/profile', label: 'Profile', icon: User },
-  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {

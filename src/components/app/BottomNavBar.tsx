@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
   Compass,
+  Mic2,
+  Radio,
   Bookmark,
   Settings,
   User,
@@ -18,8 +20,8 @@ import { useRouter } from 'next/navigation';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/explore', label: 'Explore', icon: Compass },
-  { href: '/watchlist', label: 'Watchlist', icon: Bookmark },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/podcast', label: 'Podcast', icon: Mic2 },
+  { href: '/live', label: 'Live', icon: Radio },
 ];
 
 export function BottomNavBar() {
@@ -112,8 +114,26 @@ export function BottomNavBar() {
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{user?.full_name || user?.email || 'User'}</p>
               </div>
 
-              {/* Settings Link */}
+              {/* Profile & Watchlist Links */}
               <div className="py-2">
+                <Link href="/profile">
+                  <button
+                    onClick={() => setProfileOpen(false)}
+                    className="w-full flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-sm"
+                  >
+                    <User size={16} />
+                    <span>Profile</span>
+                  </button>
+                </Link>
+                <Link href="/watchlist">
+                  <button
+                    onClick={() => setProfileOpen(false)}
+                    className="w-full flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-sm"
+                  >
+                    <Bookmark size={16} />
+                    <span>Watchlist</span>
+                  </button>
+                </Link>
                 <Link href="/settings">
                   <button
                     onClick={() => setProfileOpen(false)}

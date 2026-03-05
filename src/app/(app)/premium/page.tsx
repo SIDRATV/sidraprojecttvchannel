@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Film,
@@ -21,13 +22,12 @@ import {
   PremiumContentPreview,
   TokenUtilityCard,
   PricingCard,
-  PremiumModal,
   PremiumFAQ,
 } from '@/components/premium';
 
 export default function PremiumPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isPremiumUser] = useState(false); // Change to true to test premium state
+  const router = useRouter();
+  const [isPremiumUser] = React.useState(false); // Change to true to test premium state
 
   const premiumFeatures = [
     {
@@ -148,7 +148,7 @@ export default function PremiumPage() {
       features: ['Up to 1080p streaming', 'Download 5 videos', 'Early access (24h)', '100 SPTC / month'],
       buttonText: 'Choose Pro',
       isPopular: false,
-      onSelect: () => setIsModalOpen(true),
+      onSelect: () => router.push('/try-premium'),
     },
     {
       name: 'Premium',
@@ -166,7 +166,7 @@ export default function PremiumPage() {
       ],
       buttonText: 'Choose Premium',
       isPopular: true,
-      onSelect: () => setIsModalOpen(true),
+      onSelect: () => router.push('/try-premium'),
     },
     {
       name: 'VIP',
@@ -185,7 +185,7 @@ export default function PremiumPage() {
       ],
       buttonText: 'Choose VIP',
       isPopular: false,
-      onSelect: () => setIsModalOpen(true),
+      onSelect: () => router.push('/try-premium'),
     },
   ];
 
@@ -226,7 +226,7 @@ export default function PremiumPage() {
     <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
       {/* Hero Section */}
       <PremiumHero
-        onUnlockClick={() => setIsModalOpen(true)}
+        onUnlockClick={() => router.push('/try-premium')}
         onLearnMore={() => {
           document.getElementById('benefits')?.scrollIntoView({ behavior: 'smooth' });
         }}
@@ -401,26 +401,13 @@ export default function PremiumPage() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => router.push('/try-premium')}
             className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all text-lg"
           >
             🚀 Activate Premium
           </motion.button>
         </div>
       </section>
-
-      {/* Premium Modal */}
-      <PremiumModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onPaymentMethod={(method) => {
-          console.log('Payment method selected:', method);
-          // TODO: Implement payment processing
-          alert(`Payment with ${method === 'sptc' ? 'SPTC' : 'Card'} coming soon!`);
-          setIsModalOpen(false);
-        }}
-        isPremiumUser={isPremiumUser}
-      />
     </div>
   );
 }

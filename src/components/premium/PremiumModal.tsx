@@ -151,6 +151,25 @@ export default function PremiumModal({
                     </div>
                   </div>
 
+                  {/* Free Trial Section */}
+                  <div className="border-t border-gray-600 pt-6">
+                    <p className="text-sm font-semibold text-gray-300 mb-3">Or try for free:</p>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        alert(`✅ Welcome to ${plans[selectedPlan].name} plan! Enjoy all features for free.`);
+                        onClose();
+                      }}
+                      className="w-full p-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 border border-green-500/50 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>🎉 Try {plans[selectedPlan].name} Free</span>
+                    </motion.button>
+                    <p className="text-xs text-gray-400 text-center mt-3">
+                      Get instant access to all {plans[selectedPlan].name} features without payment
+                    </p>
+                  </div>
+
                   {/* Terms */}
                   <p className="text-xs text-gray-400 text-center">
                     7-day free trial. Cancel anytime.

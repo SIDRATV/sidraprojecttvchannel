@@ -7,6 +7,7 @@ import { LiveSection } from '@/components/app/LiveSection';
 import { PodcastSection } from '@/components/app/PodcastSection';
 import { EventsSection } from '@/components/app/EventsSection';
 import { StartupsSection } from '@/components/app/StartupsSection';
+import { PremiumBanner } from '@/components/premium';
 
 export default function DashboardPage() {
   // Mock data for enhanced dashboard sections
@@ -41,6 +42,9 @@ export default function DashboardPage() {
       transition={{ duration: 0.5 }}
       className="space-y-8 p-4 md:p-8 bg-white dark:bg-gray-950 min-h-screen transition-colors"
     >
+      {/* Premium Banner - Shows if user has unlocked a plan */}
+      <PremiumBanner />
+
       {/* Featured Videos from YouTube API - Auto-rotates every 7 seconds */}
       <YouTubeFeaturedCarousel
         query="technology innovation trending"

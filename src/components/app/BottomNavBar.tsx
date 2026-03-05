@@ -74,7 +74,7 @@ export function BottomNavBar() {
                     whileTap={{ scale: 0.95 }}
                     className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all ${
                       isActive
-                        ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-white'
+                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-white'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white'
                     }`}
                   >
@@ -94,7 +94,7 @@ export function BottomNavBar() {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center justify-center w-16 h-16 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800/50 transition-colors"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                 <User size={20} className="text-white" />
               </div>
             </motion.button>

@@ -145,7 +145,7 @@ export default function ExplorePage() {
                 )
               }
               className={`relative h-40 rounded-xl overflow-hidden group transition-all ${
-                selectedCategory === category.name ? 'ring-2 ring-purple-500' : ''
+                selectedCategory === category.name ? 'ring-2 ring-blue-500' : ''
               }`}
             >
               {/* Background */}
@@ -186,7 +186,7 @@ export default function ExplorePage() {
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded transition-colors ${
                   viewMode === 'grid'
-                    ? 'bg-purple-500 text-white'
+                    ? 'bg-blue-500 text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white'
                 }`}
               >
@@ -196,7 +196,7 @@ export default function ExplorePage() {
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-purple-500 text-white'
+                    ? 'bg-blue-500 text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white'
                 }`}
               >

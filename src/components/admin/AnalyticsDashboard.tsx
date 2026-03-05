@@ -26,7 +26,7 @@ export function AnalyticsDashboard() {
       value: '8,432',
       change: '+5.2%',
       icon: Users,
-      color: 'from-purple-600 to-purple-400',
+      color: 'from-blue-600 to-blue-400',
     },
     {
       title: 'Engagement',

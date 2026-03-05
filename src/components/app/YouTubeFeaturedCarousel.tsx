@@ -58,7 +58,7 @@ export function YouTubeFeaturedCarousel({ query, maxResults = 5 }: YouTubeFeatur
   if (loading) {
     return (
       <div className="h-96 bg-gray-900 rounded-xl flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
   }
@@ -116,7 +116,7 @@ export function YouTubeFeaturedCarousel({ query, maxResults = 5 }: YouTubeFeatur
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedVideoId(currentVideo.id)}
-                className="flex items-center gap-2 px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-all shadow-lg"
+                className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-lg"
               >
                 <Play size={24} fill="currentColor" />
                 <span>Watch Now</span>
@@ -153,7 +153,7 @@ export function YouTubeFeaturedCarousel({ query, maxResults = 5 }: YouTubeFeatur
                   key={idx}
                   onClick={() => setCurrentIndex(idx)}
                   className={`h-2 rounded-full transition-all ${
-                    idx === currentIndex ? 'w-8 bg-purple-500' : 'w-2 bg-white/50 hover:bg-white/75'
+                    idx === currentIndex ? 'w-8 bg-blue-500' : 'w-2 bg-white/50 hover:bg-white/75'
                   }`}
                   whileHover={{ scale: 1.1 }}
                 />

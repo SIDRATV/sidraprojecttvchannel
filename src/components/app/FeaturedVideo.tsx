@@ -115,7 +115,7 @@ export function FeaturedVideo({
         >
           {/* Category & Rating */}
           <div className="flex items-center space-x-3">
-            <span className="px-3 py-1 bg-purple-500/80 text-white text-xs font-bold rounded-full">
+            <span className="px-3 py-1 bg-blue-500/80 text-white text-xs font-bold rounded-full">
               {currentVideo.category}
             </span>
             <div className="flex items-center space-x-1">
@@ -141,7 +141,7 @@ export function FeaturedVideo({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all"
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all"
             >
               <Play size={20} fill="currentColor" />
               <span>Play</span>
@@ -206,7 +206,7 @@ export function FeaturedVideo({
                 onClick={() => setCurrentIndex(idx)}
                 className={`h-2 rounded-full transition-all ${
                   idx === currentIndex
-                    ? 'w-8 bg-purple-500'
+                    ? 'w-8 bg-blue-500'
                     : 'w-2 bg-white/50 hover:bg-white/75'
                 }`}
                 whileHover={{ scale: 1.1 }}

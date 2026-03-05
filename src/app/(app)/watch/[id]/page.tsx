@@ -95,7 +95,7 @@ export default function WatchPage() {
 
         {/* Actions */}
         <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+          <button className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
             <Heart size={20} />
             Add to Watchlist
           </button>

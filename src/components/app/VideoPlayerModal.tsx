@@ -69,8 +69,8 @@ export function VideoPlayerModal({ videoId, title, isOpen, onClose }: VideoPlaye
                   const percent = (e.clientX - rect.left) / rect.width;
                   controls.seekTo(percent * state.duration);
                 }}>
-                  <div className="absolute h-1 bg-purple-500 rounded-full" style={{ width: `${progress}%` }} />
-                  <div className="absolute h-3 w-3 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 -top-1" style={{ left: `${progress}%`, transform: 'translateX(-50%)' }} />
+                  <div className="absolute h-1 bg-blue-500 rounded-full" style={{ width: `${progress}%` }} />
+                  <div className="absolute h-3 w-3 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 -top-1" style={{ left: `${progress}%`, transform: 'translateX(-50%)' }} />
                 </div>
                 <span className="text-xs text-gray-400 w-12 text-right">{formatTime(state.duration)}</span>
               </div>
@@ -81,7 +81,7 @@ export function VideoPlayerModal({ videoId, title, isOpen, onClose }: VideoPlaye
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => (state.isPlaying ? controls.pause() : controls.play())}
-                  className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
                 >
                   {state.isPlaying ? <Pause size={20} /> : <Play size={20} fill="currentColor" />}
                 </motion.button>

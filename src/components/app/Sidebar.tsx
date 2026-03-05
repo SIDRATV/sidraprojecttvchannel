@@ -51,7 +51,7 @@ export function Sidebar() {
             whileHover={{ scale: 1.05 }}
             className="flex items-center space-x-3"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center font-bold text-white">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center font-bold text-white">
               S
             </div>
             <div>
@@ -74,21 +74,21 @@ export function Sidebar() {
                 whileHover={{ x: 4 }}
                 className={`relative flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-white'
+                    ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="activeNav"
-                    className="absolute inset-0 rounded-lg bg-purple-200 dark:bg-purple-500/20 -z-10"
+                    className="absolute inset-0 rounded-lg bg-blue-200 dark:bg-blue-500/20 -z-10"
                   />
                 )}
                 <Icon size={20} />
                 <span className="font-medium">{item.label}</span>
                 {isActive && (
                   <motion.div
-                    className="ml-auto w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"
+                    className="ml-auto w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"
                     layoutId="activeIndicator"
                   />
                 )}

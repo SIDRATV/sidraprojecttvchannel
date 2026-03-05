@@ -56,14 +56,14 @@ export default function ProfilePage() {
         className="relative"
       >
         {/* Background */}
-        <div className="h-40 bg-gradient-to-r from-purple-500/20 to-pink-500/20 dark:from-purple-500/10 dark:to-pink-500/10 rounded-xl mb-8" />
+        <div className="h-40 bg-gradient-to-r from-blue-500/20 to-blue-400/20 dark:from-blue-500/10 dark:to-blue-400/10 rounded-xl mb-8" />
 
         {/* Profile Card */}
         <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-20 relative z-10">
           {/* Avatar */}
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="w-32 h-32 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg"
+            className="w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"
           >
             <User size={64} className="text-white" />
           </motion.div>
@@ -81,7 +81,7 @@ export default function ProfilePage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsEditing(!isEditing)}
-              className="mt-4 flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="mt-4 flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
             >
               <Edit2 size={16} />
               <span>Edit Profile</span>
@@ -152,7 +152,7 @@ export default function ProfilePage() {
               <input
                 type="checkbox"
                 defaultChecked
-                className="w-4 h-4 rounded accent-purple-500"
+                className="w-4 h-4 rounded accent-blue-500"
               />
               <span>Recommendations emails</span>
             </label>
@@ -160,14 +160,14 @@ export default function ProfilePage() {
               <input
                 type="checkbox"
                 defaultChecked
-                className="w-4 h-4 rounded accent-purple-500"
+                className="w-4 h-4 rounded accent-blue-500"
               />
               <span>New content notifications</span>
             </label>
             <label className="flex items-center space-x-3 cursor-pointer">
               <input
                 type="checkbox"
-                className="w-4 h-4 rounded accent-purple-500"
+                className="w-4 h-4 rounded accent-blue-500"
               />
               <span>Weekly digest emails</span>
             </label>

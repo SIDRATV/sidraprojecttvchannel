@@ -17,7 +17,7 @@ import { Card } from '@/components/ui';
 
 type Tab = 'overview' | 'users' | 'upload' | 'categories' | 'analytics';
 
-const COLORS = ['bg-purple-600', 'bg-pink-600', 'bg-cyan-600', 'bg-yellow-600', 'bg-green-600'];
+const COLORS = ['bg-blue-600', 'bg-blue-500', 'bg-blue-700', 'bg-cyan-600', 'bg-blue-400'];
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -63,7 +63,7 @@ export function AdminDashboard() {
               animate={{ opacity: 1 }}
               className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center font-bold text-white">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center font-bold text-white">
                 S
               </div>
               <div>
@@ -85,7 +85,7 @@ export function AdminDashboard() {
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   activeTab === id
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg'
                     : 'text-gray-300 hover:bg-gray-800/50'
                 }`}
               >
@@ -112,7 +112,7 @@ export function AdminDashboard() {
       {/* Mobile Menu Button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-gray-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center font-bold text-white text-sm">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center font-bold text-white text-sm">
             S
           </div>
           <span className="font-bold text-white">Admin</span>
@@ -144,7 +144,7 @@ export function AdminDashboard() {
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 activeTab === id
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white'
                   : 'text-gray-300 hover:bg-gray-800'
               }`}
             >
@@ -227,7 +227,7 @@ function OverviewTab({ viewsData, usersData }: OverviewTabProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
           >
-            <Card className="p-6 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 hover:border-purple-500/50 transition-all">
+            <Card className="p-6 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 hover:border-blue-500/50 transition-all">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-3xl">{stat.icon}</span>
                 <span className="text-sm font-semibold text-green-400">{stat.change}</span>
@@ -258,7 +258,7 @@ function OverviewTab({ viewsData, usersData }: OverviewTabProps) {
                   <div key={idx} className="flex-1 group">
                     <motion.div
                       whileHover={{ scale: 1.05 }}
-                      className="w-full bg-gradient-to-t from-purple-600 to-pink-600 rounded-t relative hover:shadow-xl transition-all"
+                      className="w-full bg-gradient-to-t from-blue-600 to-blue-500 rounded-t relative hover:shadow-xl transition-all"
                       style={{ height: `${height}%` }}
                       title={`${data.date}: ${data.views} views`}
                     >
@@ -287,14 +287,14 @@ function OverviewTab({ viewsData, usersData }: OverviewTabProps) {
                 <div key={idx} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-300">{region.name}</span>
-                    <span className="font-semibold text-purple-400">{region.percentage}%</span>
+                    <span className="font-semibold text-blue-400">{region.percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2.5">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${region.percentage}%` }}
                       transition={{ delay: idx * 0.1, duration: 0.8 }}
-                      className={`h-2.5 rounded-full ${COLORS[idx % COLORS.length].replace('text-', 'bg-') || 'bg-purple-500'}`}
+                      className={`h-2.5 rounded-full ${COLORS[idx % COLORS.length].replace('text-', 'bg-') || 'bg-blue-500'}`}
                     />
                   </div>
                 </div>
@@ -372,12 +372,12 @@ function AnalyticsTab({ viewsData, usersData }: AnalyticsTabProps) {
                     >
                       <motion.div
                         whileHover={{ scale: 1.05 }}
-                        className="w-full bg-purple-600"
+                        className="w-full bg-blue-600"
                         style={{ height: `${viewsHeight}%` }}
                         title={`Views: ${data.views}`}
                       />
                       <div
-                        className="w-full bg-pink-600"
+                        className="w-full bg-blue-600"
                         style={{ height: `${podcastsHeight}%` }}
                         title={`Podcasts: ${data.podcasts}`}
                       />
@@ -395,11 +395,11 @@ function AnalyticsTab({ viewsData, usersData }: AnalyticsTabProps) {
           </div>
           <div className="flex gap-6 mt-6 flex-wrap justify-center">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-purple-600" />
+              <div className="w-3 h-3 rounded-sm bg-blue-600" />
               <span className="text-sm text-gray-400">Views</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-pink-600" />
+              <div className="w-3 h-3 rounded-sm bg-blue-600" />
               <span className="text-sm text-gray-400">Podcasts</span>
             </div>
             <div className="flex items-center gap-2">
@@ -424,7 +424,7 @@ function AnalyticsTab({ viewsData, usersData }: AnalyticsTabProps) {
                 <div key={idx} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-300 font-medium">{region.name}</span>
-                    <span className="font-semibold text-purple-400">{region.percentage}%</span>
+                    <span className="font-semibold text-blue-400">{region.percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-3">
                     <motion.div
@@ -451,14 +451,14 @@ function AnalyticsTab({ viewsData, usersData }: AnalyticsTabProps) {
           {usersData.map((region, idx) => (
             <div
               key={idx}
-              className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-purple-500/50 transition-all"
+              className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-blue-500/50 transition-all"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <Globe size={20} className="text-purple-500" />
+                  <Globe size={20} className="text-blue-500" />
                   <span className="font-semibold text-white">{region.name}</span>
                 </div>
-                <span className="text-purple-400 font-bold">{region.percentage}%</span>
+                <span className="text-blue-400 font-bold">{region.percentage}%</span>
               </div>
               <p className="text-gray-400 text-sm">{region.value.toLocaleString()} active users</p>
             </div>

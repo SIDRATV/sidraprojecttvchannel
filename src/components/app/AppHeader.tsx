@@ -1,10 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { Search, Bell, Moon, Sun } from 'lucide-react';
-import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useAuth } from '@/hooks/useAuth';
+import { authService } from '@/services/auth';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface AppHeaderProps {
   onSearch?: (query: string) => void;
@@ -12,7 +16,46 @@ interface AppHeaderProps {
 
 export function AppHeader({ onSearch }: AppHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
+  const { user } = useAuth();
+  const router = useRouter();
+  const profileRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  // Sample notifications
+  const [notifications] = useState([
+    { id: 1, title: 'New video uploaded', message: 'Check out the latest documentary', time: '5m ago', read: false },
+    { id: 2, title: 'Someone liked your comment', message: 'Your comment got a like', time: '2h ago', read: true },
+    { id: 3, title: 'Premium subscription', message: 'Your plan expires in 7 days', time: '1d ago', read: true },
+  ]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await authService.signOut();
+      localStorage.removeItem('user');
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,16 +107,67 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
         </form>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
-          {/* Notification Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
-          >
-            <Bell size={20} />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </motion.button>
+        <div className="flex items-center gap-2 lg:gap-4">
+          {/* Notifications Dropdown */}
+          <div className="relative" ref={notificationRef}>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </motion.button>
+
+            {/* Notification Dropdown Menu */}
+            <AnimatePresence>
+              {notificationsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
+                >
+                  <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-900/50">
+                    <h3 className="font-bold text-gray-950 dark:text-white">Notifications</h3>
+                  </div>
+
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.map((notif) => (
+                      <motion.div
+                        key={notif.id}
+                        whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
+                        className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-colors ${
+                          !notif.read ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''
+                        }`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{notif.title}</h4>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{notif.message}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{notif.time}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2 bg-gray-50 dark:bg-gray-900/50">
+                    <button className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium py-1 transition-colors">
+                      View All
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Theme Toggle */}
           <motion.button
@@ -88,6 +182,90 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
               <Moon size={20} />
             )}
           </motion.button>
+
+          {/* Profile Dropdown */}
+          <div className="relative" ref={profileRef}>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center gap-2 p-1 pl-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800/50 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                <User size={18} className="text-white" />
+              </div>
+              <div className="hidden lg:block text-left">
+                <p className="text-xs text-gray-600 dark:text-gray-400">Account</p>
+                <p className="text-sm font-semibold text-gray-950 dark:text-white">{user?.full_name?.split(' ')[0] || 'User'}</p>
+              </div>
+            </motion.button>
+
+            {/* Profile Dropdown Menu */}
+            <AnimatePresence>
+              {profileOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
+                >
+                  {/* User Info */}
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Logged in as</p>
+                    <p className="text-sm font-semibold text-gray-950 dark:text-white mt-1">{user?.full_name || user?.email || 'User'}</p>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-2">
+                    <Link href="/profile">
+                      <button
+                        onClick={() => setProfileOpen(false)}
+                        className="w-full flex items-center space-x-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-sm"
+                      >
+                        <User size={16} />
+                        <span>Profile</span>
+                      </button>
+                    </Link>
+                    <Link href="/watchlist">
+                      <button
+                        onClick={() => setProfileOpen(false)}
+                        className="w-full flex items-center space-x-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-sm"
+                      >
+                        <Bookmark size={16} />
+                        <span>Watchlist</span>
+                      </button>
+                    </Link>
+                    <Link href="/settings">
+                      <button
+                        onClick={() => setProfileOpen(false)}
+                        className="w-full flex items-center space-x-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-sm"
+                      >
+                        <Settings size={16} />
+                        <span>Settings</span>
+                      </button>
+                    </Link>
+                  </div>
+
+                  {/* Logout Button */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 p-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        handleLogout();
+                        setProfileOpen(false);
+                      }}
+                      className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors text-sm font-medium rounded-lg"
+                    >
+                      <LogOut size={16} />
+                      <span>Logout</span>
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </motion.header>

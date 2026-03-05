@@ -4,9 +4,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Zap, Crown, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { usePremium } from '@/hooks/usePremium';
 
 export default function TryPremiumPage() {
   const router = useRouter();
+  const { activatePremium } = usePremium();
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'premium' | 'vip'>('premium');
 
   const plans = [
@@ -64,13 +66,14 @@ export default function TryPremiumPage() {
   ];
 
   const handleUnlock = (planId: string) => {
-    // Stocker le plan actif dans localStorage
-    localStorage.setItem('activePremiumPlan', planId);
-    localStorage.setItem('premiumUnlockedAt', new Date().toISOString());
+    // Activate premium plan using the premium service
+    activatePremium(planId as 'pro' | 'premium' | 'vip', 'free');
 
     const plan = plans.find((p) => p.id === planId);
     alert(`✅ Success! You now have access to the ${plan?.name} plan!\n\nAll features are unlocked and ready to use.`);
-    router.push('/dashboard');
+    
+    // Redirect to premium dashboard
+    router.push('/premium-dashboard');
   };
 
   return (

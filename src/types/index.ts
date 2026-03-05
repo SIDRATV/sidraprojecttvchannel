@@ -79,3 +79,5 @@ export interface Newsletter {
   email: string;
   created_at: string;
 }
+
+export * from './premium';

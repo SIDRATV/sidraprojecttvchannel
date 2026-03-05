@@ -6,3 +6,8 @@ export { default as PricingCard } from './PricingCard';
 export { default as PremiumModal } from './PremiumModal';
 export { default as PremiumFAQ } from './PremiumFAQ';
 export { PremiumBanner } from './PremiumBanner';
+export { PremiumAnalytics } from './PremiumAnalytics';
+export { PaidSurveys } from './PaidSurveys';
+export { ReferralProgram } from './ReferralProgram';
+export { PremiumStatus } from './PremiumStatus';
+export { PremiumGated } from './PremiumGated';

@@ -21,9 +21,9 @@ import { useRouter } from 'next/navigation';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/explore', label: 'Explore', icon: Compass },
+  { href: '/premium', label: 'Premium', icon: Sparkles },
   { href: '/podcast', label: 'Podcast', icon: Mic2 },
   { href: '/live', label: 'Live', icon: Radio },
-  { href: '/premium', label: 'Premium', icon: Sparkles },
 ];
 
 export function BottomNavBar() {
@@ -68,6 +68,7 @@ export function BottomNavBar() {
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               const Icon = item.icon;
+              const isPremium = item.href === '/premium';
 
               return (
                 <Link key={item.href} href={item.href} className="flex-1">
@@ -75,7 +76,11 @@ export function BottomNavBar() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all ${
-                      isActive
+                      isPremium
+                        ? isActive
+                          ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 shadow-lg'
+                          : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-lg'
+                        : isActive
                         ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-white'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white'
                     }`}

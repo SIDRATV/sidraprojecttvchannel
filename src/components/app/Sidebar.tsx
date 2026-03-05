@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +24,7 @@ const navItems = [
   { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/podcast', label: 'Podcast', icon: Mic2 },
   { href: '/live', label: 'Live', icon: Radio },
+  { href: '/premium', label: 'Premium', icon: Sparkles },
   { href: '/profile', label: 'Profile', icon: User },
 ];
 

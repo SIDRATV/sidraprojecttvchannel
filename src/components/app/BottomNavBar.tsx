@@ -11,6 +11,7 @@ import {
   Bookmark,
   Settings,
   User,
+  Sparkles,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +23,7 @@ const navItems = [
   { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/podcast', label: 'Podcast', icon: Mic2 },
   { href: '/live', label: 'Live', icon: Radio },
+  { href: '/premium', label: 'Premium', icon: Sparkles },
 ];
 
 export function BottomNavBar() {

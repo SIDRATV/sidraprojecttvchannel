@@ -69,9 +69,9 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3 }}
-      className="sticky top-0 z-40 bg-white dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 transition-colors overflow-visible"
+      className="sticky top-0 z-40 bg-white dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 transition-colors"
     >
-      <div className="flex items-center justify-between px-4 lg:px-8 py-4 overflow-visible">
+      <div className="flex items-center justify-between px-4 lg:px-8 py-4">
         {/* Logo */}
         <div className="flex items-center gap-3">
           <motion.div
@@ -93,9 +93,9 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2 lg:gap-4 overflow-visible">
+        <div className="flex items-center gap-2 lg:gap-4">
           {/* Notifications Dropdown */}
-          <div className="relative" ref={notificationRef}>
+          <div className="relative overflow-visible" ref={notificationRef}>
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
@@ -170,7 +170,7 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
           </motion.button>
 
           {/* Profile Dropdown */}
-          <div className="relative" ref={profileRef}>
+          <div className="relative overflow-visible" ref={profileRef}>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -190,11 +190,11 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
             <AnimatePresence>
               {profileOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute right-0 bottom-full mb-3 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden z-50"
+                  className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden z-50"
                 >
                   {/* User Info */}
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">

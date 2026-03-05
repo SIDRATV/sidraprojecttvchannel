@@ -37,7 +37,7 @@ export default function PremiumDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-gray-950 dark:via-blue-900/20 dark:to-gray-950 py-12 px-4 transition-colors">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:bg-gradient-to-br dark:from-gray-950 dark:via-blue-900/20 dark:to-gray-950 py-12 px-4 transition-colors">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Welcome Header */}
         <motion.div
@@ -46,10 +46,10 @@ export default function PremiumDashboardPage() {
           transition={{ duration: 0.6 }}
           className="text-center space-y-4"
         >
-          <h1 className="text-5xl md:text-6xl font-bold text-white">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 dark:from-white dark:via-blue-200 dark:to-white bg-clip-text text-transparent">
             Welcome to Premium
           </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
             Manage your subscription, earn rewards, and access exclusive content
           </p>
         </motion.div>
@@ -67,8 +67,8 @@ export default function PremiumDashboardPage() {
           >
             <AlertCircle className="text-orange-400 flex-shrink-0 mt-1" size={24} />
             <div>
-              <h3 className="font-bold text-white text-lg mb-2">You have {status.sptcBalance} SPTC available!</h3>
-              <p className="text-gray-300">
+              <h3 className="font-bold text-gray-950 dark:text-white text-lg mb-2">You have {status.sptcBalance} SPTC available!</h3>
+              <p className="text-gray-700 dark:text-gray-300">
                 Uses your tokens to upgrade your subscription, participate in surveys, or save for special events.
               </p>
             </div>
@@ -82,7 +82,7 @@ export default function PremiumDashboardPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="space-y-4"
         >
-          <h2 className="text-3xl font-bold text-white">Your Earnings & Analytics</h2>
+          <h2 className="text-3xl font-bold text-gray-950 dark:text-white">Your Earnings & Analytics</h2>
           <PremiumAnalytics
             sptcEarned={status.sptcBalance}
             totalEarned={status.totalEarned}
@@ -97,7 +97,7 @@ export default function PremiumDashboardPage() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="space-y-4"
         >
-          <h2 className="text-3xl font-bold text-white">Earn with Surveys</h2>
+          <h2 className="text-3xl font-bold text-gray-950 dark:text-white">Earn with Surveys</h2>
           <PaidSurveys />
         </motion.div>
 
@@ -108,7 +108,7 @@ export default function PremiumDashboardPage() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="space-y-4"
         >
-          <h2 className="text-3xl font-bold text-white">Referral Program</h2>
+          <h2 className="text-3xl font-bold text-gray-950 dark:text-white">Referral Program</h2>
           <ReferralProgram />
         </motion.div>
 
@@ -117,9 +117,9 @@ export default function PremiumDashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/20 rounded-xl p-8 space-y-6"
+          className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-300 dark:border-blue-500/20 rounded-xl p-8 space-y-6"
         >
-          <h3 className="text-2xl font-bold text-white">More Premium Features Coming Soon</h3>
+          <h3 className="text-2xl font-bold text-gray-950 dark:text-white">More Premium Features Coming Soon</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { title: 'Exclusive Content', desc: 'Access to premium documentaries and interviews' },
@@ -127,8 +127,8 @@ export default function PremiumDashboardPage() {
               { title: 'Early Access', desc: 'Get first access to new content before others' },
             ].map((feature, idx) => (
               <div key={idx} className="space-y-2">
-                <h4 className="font-semibold text-white">{feature.title}</h4>
-                <p className="text-sm text-gray-400">{feature.desc}</p>
+                <h4 className="font-semibold text-gray-950 dark:text-white">{feature.title}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{feature.desc}</p>
               </div>
             ))}
           </div>

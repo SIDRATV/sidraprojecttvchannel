@@ -92,20 +92,6 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-4">
-          <motion.div whileFocus={{ scale: 1.02 }} className="relative">
-            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search videos, channels, categories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-2 bg-gray-100 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
-            />
-          </motion.div>
-        </form>
-
         {/* Right Actions */}
         <div className="flex items-center gap-2 lg:gap-4">
           {/* Notifications Dropdown */}
@@ -267,6 +253,22 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
             </AnimatePresence>
           </div>
         </div>
+      </div>
+
+      {/* Search Bar - Bottom Section */}
+      <div className="border-t border-gray-200 dark:border-gray-800 px-4 lg:px-8 py-3 bg-gray-50 dark:bg-gray-800/50 transition-colors">
+        <form onSubmit={handleSearch} className="max-w-7xl mx-auto">
+          <motion.div whileFocus={{ scale: 1.01 }} className="relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search videos, channels, categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
+            />
+          </motion.div>
+        </form>
       </div>
     </motion.header>
   );

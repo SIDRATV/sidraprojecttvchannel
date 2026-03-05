@@ -51,18 +51,23 @@ export function Sidebar() {
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
+          const isPremium = item.href === '/premium';
 
           return (
             <Link key={item.href} href={item.href}>
               <motion.div
                 whileHover={{ x: 4 }}
                 className={`relative flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
+                  isPremium
+                    ? isActive
+                      ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 shadow-lg shadow-yellow-400/50'
+                      : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-lg hover:shadow-yellow-500/50'
+                    : isActive
                     ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50'
                 }`}
               >
-                {isActive && (
+                {(isActive || isPremium) && !isPremium && (
                   <motion.div
                     layoutId="activeNav"
                     className="absolute inset-0 rounded-lg bg-blue-200 dark:bg-blue-500/20 -z-10"
@@ -70,7 +75,12 @@ export function Sidebar() {
                 )}
                 <Icon size={20} />
                 <span className="font-medium">{item.label}</span>
-                {isActive && (
+                {isPremium && (
+                  <span className="ml-auto text-xs font-bold px-2 py-0.5 bg-yellow-600/30 rounded-full">
+                    Pro
+                  </span>
+                )}
+                {isActive && !isPremium && (
                   <motion.div
                     className="ml-auto w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"
                     layoutId="activeIndicator"

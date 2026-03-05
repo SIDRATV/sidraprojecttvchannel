@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Check, Zap, Crown, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, Zap, Crown, Star, X, Lock, Coins, CreditCard } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { usePremium } from '@/hooks/usePremium';
 
@@ -10,6 +10,8 @@ export default function TryPremiumPage() {
   const router = useRouter();
   const { activatePremium } = usePremium();
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'premium' | 'vip'>('premium');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<'free' | 'sptc' | 'card'>('free');
 
   const plans = [
     {
@@ -66,13 +68,27 @@ export default function TryPremiumPage() {
   ];
 
   const handleUnlock = (planId: string) => {
-    // Activate premium plan using the premium service
-    activatePremium(planId as 'pro' | 'premium' | 'vip', 'free');
+    setShowPaymentModal(true);
+  };
 
-    const plan = plans.find((p) => p.id === planId);
-    alert(`✅ Success! You now have access to the ${plan?.name} plan!\n\nAll features are unlocked and ready to use.`);
+  const handlePayment = (method: 'free' | 'sptc' | 'card') => {
+    setSelectedPayment(method);
     
-    // Redirect to premium dashboard
+    if (method === 'card') {
+      alert('💳 Credit Card Payment\n\nThis feature is coming soon! Payment processing will be integrated shortly.');
+      return;
+    }
+
+    if (method === 'sptc') {
+      alert('⏳ SPTC Token Payment\n\nThis feature is coming soon! You\'ll be able to use your SPTC tokens to unlock premium plans.');
+      return;
+    }
+
+    // Activate with free method
+    activatePremium(selectedPlan, 'free');
+    const planName = selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1);
+    alert(`✅ Success! You now have access to the ${planName} plan!\n\nAll features are unlocked and ready to use.`);
+    setShowPaymentModal(false);
     router.push('/premium-dashboard');
   };
 
@@ -206,6 +222,112 @@ export default function TryPremiumPage() {
             </li>
           </ul>
         </motion.div>
+
+        {/* Payment Method Modal */}
+        <AnimatePresence>
+          {showPaymentModal && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowPaymentModal(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              >
+                <div className="w-full max-w-2xl bg-gray-900 border border-gray-700 rounded-2xl p-8 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-2xl font-bold text-white">Choose Payment Method</h3>
+                    <button
+                      onClick={() => setShowPaymentModal(false)}
+                      className="p-1 hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      <X size={24} className="text-gray-400" />
+                    </button>
+                  </div>
+
+                  <p className="text-gray-400 text-center">
+                    Select how you would like to pay for the <span className="font-bold text-white capitalize">{selectedPlan}</span> plan
+                  </p>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* Free Trial Option */}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handlePayment('free')}
+                      className="p-6 bg-gradient-to-r from-green-600 to-emerald-600 border-2 border-green-500 hover:shadow-lg hover:shadow-green-500/50 rounded-xl text-left transition-all"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="text-lg font-bold text-white mb-1">Free Trial</h4>
+                          <p className="text-sm text-green-100">Start immediately with full access</p>
+                        </div>
+                        <Check size={24} className="text-white" />
+                      </div>
+                    </motion.button>
+
+                    {/* SPTC Token Option - Coming Soon */}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled
+                      className="p-6 bg-gradient-to-r from-orange-600/50 to-yellow-600/50 border-2 border-dashed border-orange-500/50 rounded-xl text-left transition-all opacity-75 cursor-not-allowed"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Coins size={18} className="text-orange-300" />
+                            <h4 className="text-lg font-bold text-white">SPTC Tokens</h4>
+                            <span className="ml-2 px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">Coming Soon</span>
+                          </div>
+                          <p className="text-sm text-orange-100">Pay with SPTC earned from surveys & referrals</p>
+                        </div>
+                        <Lock size={24} className="text-gray-500" />
+                      </div>
+                    </motion.button>
+
+                    {/* Credit Card Option - Coming Soon */}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled
+                      className="p-6 bg-gradient-to-r from-blue-600/50 to-indigo-600/50 border-2 border-dashed border-blue-500/50 rounded-xl text-left transition-all opacity-75 cursor-not-allowed"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <CreditCard size={18} className="text-blue-300" />
+                            <h4 className="text-lg font-bold text-white">Credit Card</h4>
+                            <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs font-bold rounded-full">Coming Soon</span>
+                          </div>
+                          <p className="text-sm text-blue-100">Visa, Mastercard, and other payment methods</p>
+                        </div>
+                        <Lock size={24} className="text-gray-500" />
+                      </div>
+                    </motion.button>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-700">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowPaymentModal(false)}
+                      className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-lg transition-all"
+                    >
+                      Cancel
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

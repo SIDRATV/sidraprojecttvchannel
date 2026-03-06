@@ -90,19 +90,19 @@ export function PWAInstallPrompt() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: 'spring', duration: 0.5 }}
-            className="fixed inset-0 flex items-center justify-center z-50 px-4 sm:px-6"
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
           >
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-blue-200 dark:border-blue-500/30 p-6 sm:p-8 w-full max-w-md relative">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-blue-200 dark:border-blue-500/30 p-6 sm:p-8 w-full max-w-md">
               {/* Close Button */}
               <button
                 onClick={handleDismiss}
-                className="absolute top-3 sm:top-4 right-3 sm:right-4 p-2 hover:bg-blue-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                className="absolute top-4 right-4 p-2 hover:bg-blue-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
               >
                 <X size={20} className="text-gray-600 dark:text-gray-400" />
               </button>
 
               {/* Content */}
-              <div className="text-center space-y-4 sm:space-y-6">
+              <div className="text-center space-y-4 sm:space-y-6 mt-4">
                 {/* Logo */}
                 <motion.div
                   animate={{ scale: [1, 1.05, 1] }}
@@ -121,7 +121,7 @@ export function PWAInstallPrompt() {
 
                 {/* Title */}
                 <div className="space-y-2">
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-950 dark:text-white">
+                  <h2 className="text-xl sm:text-3xl font-bold text-gray-950 dark:text-white">
                     Install Sidra TV
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
@@ -163,12 +163,12 @@ export function PWAInstallPrompt() {
                 </div>
 
                 {/* Buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 pt-2">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleDismiss}
-                    className="w-full sm:flex-1 py-2.5 sm:py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-sm sm:text-base rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    className="py-2.5 sm:py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-xs sm:text-sm rounded-lg sm:rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     Maybe Later
                   </motion.button>
@@ -177,10 +177,10 @@ export function PWAInstallPrompt() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleInstall}
-                    className="w-full sm:flex-1 py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-sm sm:text-base rounded-xl hover:from-blue-600 hover:to-blue-700 shadow-lg transition-all flex items-center justify-center gap-2"
+                    className="py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-xs sm:text-sm rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-blue-700 shadow-lg transition-all flex items-center justify-center gap-2"
                   >
-                    <Download size={18} />
-                    <span>Install App</span>
+                    <Download size={16} className="sm:w-5 sm:h-5" />
+                    <span>Install</span>
                   </motion.button>
                 </div>
               </div>

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Handshake, Star, Users, TrendingUp, ArrowRight, Globe } from 'lucide-react';
+import { Users, Star, TrendingUp, ArrowRight, Award } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Partner {
@@ -132,7 +132,7 @@ export default function PartenariatPage() {
       >
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center">
-            <Handshake className="text-white" size={24} />
+            <Award className="text-white" size={24} />
           </div>
           <h1 className="text-4xl font-bold text-gray-950 dark:text-white">Partners</h1>
         </div>
@@ -345,7 +345,7 @@ export default function PartenariatPage() {
           variants={itemVariants}
           className="text-center py-12"
         >
-          <Handshake size={48} className="mx-auto text-gray-400 mb-4" />
+          <Award size={48} className="mx-auto text-gray-400 mb-4" />
           <p className="text-gray-600 dark:text-gray-400">No partners in this category.</p>
         </motion.div>
       )}

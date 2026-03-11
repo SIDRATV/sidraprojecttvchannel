@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onAnimationEnd' | 'onAnimationIteration'> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
@@ -22,8 +21,8 @@ export function Button({
   const baseStyles = 'font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2';
 
   const variants = {
-    primary: 'bg-brand-600 dark:bg-brand-600 text-white hover:bg-brand-700 dark:hover:bg-brand-700 shadow-lg shadow-brand-500/50',
-    secondary: 'bg-brand-500/10 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 border border-brand-500/30 dark:border-brand-500/30 hover:bg-brand-500/20 dark:hover:bg-brand-500/20',
+    primary: 'bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 shadow-lg shadow-blue-500/50',
+    secondary: 'bg-blue-500/10 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30 dark:border-blue-500/30 hover:bg-blue-500/20 dark:hover:bg-blue-500/20',
     ghost: 'text-gray-700 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5',
   };
 
@@ -35,29 +34,22 @@ export function Button({
 
   const buttonClass = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
 
+  const buttonElement = (
+    <button
+      className={buttonClass}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+
   if (href) {
     return (
       <Link href={href}>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={buttonClass}
-          {...(props as any)}
-        >
-          {children}
-        </motion.button>
+        {buttonElement}
       </Link>
     );
   }
 
-  return (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className={buttonClass}
-      {...(props as any)}
-    >
-      {children}
-    </motion.button>
-  );
+  return buttonElement;
 }

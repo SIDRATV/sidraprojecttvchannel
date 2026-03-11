@@ -38,7 +38,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-white dark:bg-gray-950 transition-colors">
+    <section className="relative w-full h-96 md:h-[500px] overflow-hidden bg-white dark:bg-gray-950 transition-colors">
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
         <video

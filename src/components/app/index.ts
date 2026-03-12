@@ -16,4 +16,3 @@ export { YouTubePlayerModal } from './YouTubePlayerModal';
 export { VideoPlayerModal } from './VideoPlayerModal';
 export { SimpleVideoPlayerModal } from './SimpleVideoPlayerModal';
 export { PremiumNavLink } from './PremiumNavLink';
-export { ExploreNavBar } from './ExploreNavBar';

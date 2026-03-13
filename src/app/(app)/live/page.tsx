@@ -35,7 +35,7 @@ export default function LivePage() {
           url += `&category=${selectedCategory}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(url, { cache: 'no-store' });
         const data = await response.json();
         setStreams(Array.isArray(data) ? data : []);
         setCurrentPage(0);

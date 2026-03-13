@@ -56,7 +56,8 @@ export async function GET(req: Request) {
     // 1) Search for videos to get IDs
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(q)}&maxResults=${maxResults}&key=${key}`;
     
-    const searchRes = await fetch(searchUrl);
+    // Cache YouTube API response for 9 hours (32400 seconds)
+    const searchRes = await fetch(searchUrl, { next: { revalidate: 32400 } });
     if (!searchRes.ok) {
       const errorData = await searchRes.json();
       console.error('YouTube Search API error:', errorData);
@@ -73,7 +74,8 @@ export async function GET(req: Request) {
 
     // 2) Get video details for the found IDs
     const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${ids.join(',')}&key=${key}`;
-    const videosRes = await fetch(videosUrl);
+    // Cache YouTube API response for 9 hours (32400 seconds)
+    const videosRes = await fetch(videosUrl, { next: { revalidate: 32400 } });
     
     if (!videosRes.ok) {
       const errorData = await videosRes.json();

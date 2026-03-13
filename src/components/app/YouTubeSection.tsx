@@ -38,7 +38,7 @@ export function YouTubeSection({
       try {
         setLoading(true);
         console.log(`Fetching videos for query: ${query}`);
-        const response = await fetch(`/api/videos?q=${encodeURIComponent(query)}&max=${maxResults}`);
+        const response = await fetch(`/api/videos?q=${encodeURIComponent(query)}&max=${maxResults}`, { cache: 'no-store' });
         
         if (!response.ok) {
           const errorData = await response.json();

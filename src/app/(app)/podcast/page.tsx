@@ -35,7 +35,7 @@ export default function PodcastPage() {
           url += `&category=${selectedCategory}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(url, { cache: 'no-store' });
         const data = await response.json();
         setPodcasts(Array.isArray(data) ? data : []);
         setCurrentPage(0);

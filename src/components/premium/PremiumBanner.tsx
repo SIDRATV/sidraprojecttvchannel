@@ -31,19 +31,19 @@ export function PremiumBanner() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`${config.bgColor} border ${config.borderColor} rounded-lg p-4 flex items-center justify-between`}
+      className={`${config.bgColor} border ${config.borderColor} rounded-lg p-2 flex items-center justify-between`}
     >
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg bg-gradient-to-br ${config.color}`}>
-          <Icon size={20} className="text-white" />
+      <div className="flex items-center gap-2">
+        <div className={`p-1 rounded-lg bg-gradient-to-br ${config.color}`}>
+          <Icon size={16} className="text-white" />
         </div>
         <div>
-          <p className="text-sm text-gray-400">Active Plan</p>
-          <p className="font-bold text-white">{config.name} Unlocked ✨</p>
+          <p className="text-xs text-gray-400">Active Plan</p>
+          <p className="font-bold text-sm text-white">{config.name} Unlocked ✨</p>
         </div>
       </div>
       <Link href="/premium">
-        <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-bold rounded-lg hover:shadow-lg transition-all">
+        <button className="px-3 py-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold rounded-lg hover:shadow-lg transition-all">
           View Details
         </button>
       </Link>

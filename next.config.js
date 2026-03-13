@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disabled to prevent double API calls in development
+  // CACHING DISABLED FOR DEVELOPMENT
+  staticPageGenerationTimeout: 0,
+  onDemandEntries: {
+    maxInactiveAge: 1 * 1000, // 1 second - very aggressive invalidation
+    pagesBufferLength: 2,
+  },
   images: {
     remotePatterns: [
       {
@@ -34,6 +40,7 @@ const nextConfig = {
           { key: "Access-Control-Allow-Credentials", value: "true" },
           { key: "Access-Control-Allow-Origin", value: "*" },
           { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
           {
             key: "Access-Control-Allow-Headers",
             value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",

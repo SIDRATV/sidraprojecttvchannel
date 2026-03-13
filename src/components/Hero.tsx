@@ -38,7 +38,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative w-full h-96 md:h-[500px] overflow-hidden bg-white dark:bg-gray-950 transition-colors">
+    <section className="relative w-full h-96 md:h-[500px] overflow-hidden bg-white dark:bg-gray-950 transition-colors" suppressHydrationWarning>
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
         <video
@@ -65,6 +65,7 @@ export function Hero() {
         initial="hidden"
         animate="visible"
         className="relative z-10 h-full flex items-center justify-start"
+        suppressHydrationWarning
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="max-w-2xl">

@@ -97,8 +97,11 @@ export default function WalletPage() {
       </motion.div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Wallet Connection Section */}
+        {/* Wallet Connection Section - Only for On-Chain */}
         <motion.div variants={itemVariants}>
+          <h2 className="text-2xl font-bold text-gray-950 dark:text-white mb-4">
+            On-Chain Transactions
+          </h2>
           <WalletConnect
             onAccountChange={setConnectedAccount}
             onChainChange={() => {
@@ -110,10 +113,10 @@ export default function WalletPage() {
           />
         </motion.div>
 
+        {/* On-Chain Section */}
         {connectedAccount && (
-          <>
-            {/* Balance Cards */}
-            <motion.div variants={itemVariants} className="grid md:grid-cols-2 gap-6">
+          <motion.div variants={itemVariants}>
+            <div className="grid md:grid-cols-2 gap-6">
               {/* On-Chain Balance */}
               <motion.div
                 whileHover={{ y: -5 }}
@@ -140,6 +143,38 @@ export default function WalletPage() {
                 </button>
               </motion.div>
 
+              {/* On-Chain Transfer Form */}
+              <TransferForm
+                walletAddress={connectedAccount}
+                transferType="onchain"
+                onSuccess={handleTransferSuccess}
+              />
+            </div>
+
+            {/* On-Chain Transaction History */}
+            <motion.div variants={itemVariants} className="mt-8">
+              <div className="flex items-center gap-2 mb-6">
+                <History className="w-5 h-5 text-brand-500" />
+                <h3 className="text-xl font-bold text-gray-950 dark:text-white">
+                  On-Chain Transactions
+                </h3>
+              </div>
+              <TransactionHistory
+                walletAddress={connectedAccount}
+                transactionType="onchain"
+                limit={10}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Internal Transfer Section - No MetaMask needed */}
+        <motion.div variants={itemVariants}>
+          <h2 className="text-2xl font-bold text-gray-950 dark:text-white mb-4">
+            Internal Transfers
+          </h2>
+          {authToken ? (
+            <div className="grid md:grid-cols-2 gap-6">
               {/* Internal Balance */}
               <motion.div
                 whileHover={{ y: -5 }}
@@ -163,108 +198,68 @@ export default function WalletPage() {
                   Refresh
                 </button>
               </motion.div>
-            </motion.div>
 
-            {/* Transfer Type Selection */}
-            <motion.div variants={itemVariants} className="flex gap-2 bg-gray-100 dark:bg-gray-900 p-1 rounded-lg w-fit">
-              {[
-                { id: 'onchain' as const, label: 'On-Chain Transfer', icon: Send },
-                { id: 'internal' as const, label: 'Internal Transfer', icon: Send },
-              ].map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTransferType(id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                    activeTransferType === id
-                      ? 'bg-brand-500 text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </button>
-              ))}
-            </motion.div>
-
-            {/* Transfer Forms - Two Column Layout */}
-            <motion.div variants={itemVariants} className="grid md:grid-cols-2 gap-6">
-              {/* On-Chain Transfer */}
+              {/* Internal Transfer Form */}
               <TransferForm
-                walletAddress={connectedAccount}
-                transferType="onchain"
-                onSuccess={handleTransferSuccess}
-              />
-
-              {/* Internal Transfer */}
-              <TransferForm
-                walletAddress={connectedAccount}
+                walletAddress={null}
                 transferType="internal"
-                authToken={authToken || undefined}
+                authToken={authToken}
                 onSuccess={handleTransferSuccess}
               />
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6"
+            >
+              <p className="text-blue-800 dark:text-blue-300">
+                Please log in to your account to use internal transfers.
+              </p>
             </motion.div>
+          )}
 
-            {/* Transaction History */}
-            <motion.div variants={itemVariants}>
-              <div className="mb-6 flex items-center gap-2">
+          {/* Internal Transaction History */}
+          {authToken && (
+            <motion.div variants={itemVariants} className="mt-8">
+              <div className="flex items-center gap-2 mb-6">
                 <History className="w-5 h-5 text-brand-500" />
-                <h2 className="text-2xl font-bold text-gray-950 dark:text-white">
-                  Recent Activity
-                </h2>
+                <h3 className="text-xl font-bold text-gray-950 dark:text-white">
+                  Internal Transactions
+                </h3>
               </div>
-
-              {/* Tab Selection */}
-              <div className="mb-4 flex gap-2">
-                {[
-                  { id: 'all', label: 'All Transactions' },
-                  { id: 'onchain', label: 'On-Chain' },
-                  { id: 'internal', label: 'Internal' },
-                ].map(({ id, label }) => (
-                  <button
-                    key={id}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeTransferType === 'onchain' && id === 'all'
-                        ? 'bg-brand-500 text-white'
-                        : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
               <TransactionHistory
-                walletAddress={connectedAccount}
-                transactionType="all"
-                authToken={authToken || undefined}
+                walletAddress={null}
+                transactionType="internal"
+                authToken={authToken}
                 limit={10}
               />
             </motion.div>
+          )}
+        </motion.div>
 
-            {/* Info Section */}
-            <motion.div variants={itemVariants} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-              <h3 className="font-bold text-blue-950 dark:text-blue-200 mb-3">
-                💡 Quick Tips
-              </h3>
-              <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-300">
-                <li>
-                  • <strong>On-Chain Transfers:</strong> Send SIDRA directly on the blockchain. Transactions are
-                  permanent and can take a few moments to confirm.
-                </li>
-                <li>
-                  • <strong>Internal Transfers:</strong> Send SIDRA to other users on the platform.
-                  Transactions are instant.
-                </li>
-                <li>
-                  • <strong>Gas Fees:</strong> On-chain transfers require a small gas fee paid in SIDRA.
-                </li>
-                <li>
-                  • <strong>Security:</strong> Always verify recipient addresses before sending funds.
-                </li>
-              </ul>
-            </motion.div>
-          </>
-        )}
+        {/* Info Section */}
+        <motion.div variants={itemVariants} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+          <h3 className="font-bold text-blue-950 dark:text-blue-200 mb-3">
+            💡 Quick Tips
+          </h3>
+          <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-300">
+            <li>
+              • <strong>On-Chain Transfers:</strong> Send SIDRA directly on the blockchain. Requires MetaMask. Transactions are
+              permanent and can take a few moments to confirm.
+            </li>
+            <li>
+              • <strong>Internal Transfers:</strong> Send SIDRA to other users on the platform. Only requires login.
+              Transactions are instant and free.
+            </li>
+            <li>
+              • <strong>Gas Fees:</strong> On-chain transfers require a small gas fee paid in SIDRA.
+            </li>
+            <li>
+              • <strong>Security:</strong> Always verify recipient addresses before sending funds.
+            </li>
+          </ul>
+        </motion.div>
       </div>
     </motion.div>
   );

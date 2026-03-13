@@ -11,11 +11,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(true);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    // Récupérer le thème depuis localStorage
+    // Récupérer le thème depuis localStorage après montage
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const shouldBeDark = savedTheme ? savedTheme === 'dark' : prefersDark;
@@ -42,10 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Éviter le flash FOUC (Flash of Unstyled Content)
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Toujours rendre le Provider pour éviter hydration mismatch
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>
       {children}

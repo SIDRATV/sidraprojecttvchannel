@@ -29,7 +29,7 @@ export function YouTubeFeaturedCarousel({ query, maxResults = 5 }: YouTubeFeatur
     const fetchVideos = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/videos?q=${encodeURIComponent(query)}&max=${maxResults}`);
+        const response = await fetch(`/api/videos?q=${encodeURIComponent(query)}&max=${maxResults}`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Failed to fetch videos');
         const data = await response.json();
         setVideos(Array.isArray(data) ? data : []);

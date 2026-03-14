@@ -31,11 +31,16 @@ export const getProvider = () => {
 export const getSigner = async () => {
   const eth = (window as any).ethereum as EthereumProvider | undefined;
   if (!eth) {
-    throw new Error('MetaMask is not installed');
+    throw new Error('No Web3 wallet provider found. Please connect your wallet.');
   }
 
-  const provider = new ethers.BrowserProvider(eth as unknown as ethers.Eip1193Provider);
-  return await provider.getSigner();
+  try {
+    const provider = new ethers.BrowserProvider(eth as unknown as ethers.Eip1193Provider);
+    return await provider.getSigner();
+  } catch (error) {
+    console.error('Error getting signer:', error);
+    throw new Error('Failed to get signer. Make sure your wallet is connected.');
+  }
 };
 
 // Get Balance (On-Chain)
@@ -58,11 +63,15 @@ export const sendTransaction = async (
 ): Promise<string> => {
   try {
     const eth = (window as any).ethereum as EthereumProvider | undefined;
+    
+    // If ethereum not available, try to get provider through alternative means
     if (!eth) {
-      throw new Error('MetaMask is not installed');
+      console.warn('window.ethereum not available, falling back to RPC provider');
+      throw new Error('Please connect your wallet through WalletConnect or MetaMask');
     }
 
-    const signer = await getSigner();
+    const provider = new ethers.BrowserProvider(eth as unknown as ethers.Eip1193Provider);
+    const signer = await provider.getSigner();
     const signerAddress = await signer.getAddress();
 
     // Validate recipient address
@@ -73,11 +82,15 @@ export const sendTransaction = async (
     // Convert amount from SIDRA to Wei
     const amountInWei = ethers.parseEther(amount);
 
+    console.log('Sending transaction:', { from: signerAddress, to: toAddress, amount: amount });
+
     // Send transaction
     const tx = await signer.sendTransaction({
       to: toAddress,
       value: amountInWei,
     });
+
+    console.log('Transaction sent:', tx.hash);
 
     // Wait for transaction confirmation
     const receipt = await tx.wait(1); // Wait for 1 confirmation
@@ -86,10 +99,11 @@ export const sendTransaction = async (
       throw new Error('Transaction failed');
     }
 
+    console.log('Transaction confirmed:', receipt.hash);
     return receipt!.hash;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending transaction:', error);
-    throw error;
+    throw new Error(error.message || 'Failed to send transaction');
   }
 };
 

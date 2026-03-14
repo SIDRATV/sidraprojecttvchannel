@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { ethers } from 'ethers';
 import { Button } from '@/components/ui/Button';
-import { sendTransaction, getBalance } from '@/lib/web3-provider';
+import { getBalance } from '@/lib/web3-provider';
+import { useWeb3Provider } from '@/hooks/useWeb3Provider';
 import { sendInternalTransfer, verifyUsername, estimateTransferFee } from '@/lib/internalTransfer';
 
 interface TransferFormProps {
@@ -30,6 +32,9 @@ export function TransferForm({
   onError,
   authToken,
 }: TransferFormProps) {
+  // Get Web3 provider from Web3Modal
+  const { getSigner } = useWeb3Provider();
+
   const [formData, setFormData] = useState({
     recipient: '',
     amount: '',

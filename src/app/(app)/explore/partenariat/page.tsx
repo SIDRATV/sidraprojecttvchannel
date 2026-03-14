@@ -354,7 +354,7 @@ export default function PartenariatPage() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
           >
             {[
               { label: 'Active Partners', value: mockPartners.filter(p => p.status === 'active' || p.status === 'featured').length },
@@ -379,7 +379,7 @@ export default function PartenariatPage() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {filteredPartners.map((partner) => (
               <motion.div

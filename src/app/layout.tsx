@@ -53,6 +53,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Sidra TV" />
+        
+        {/* Cache Control Meta Tags - Force browser to check for updates on every page load */}
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+        
         <link rel="manifest" href="/manifest.json?v=1.0.0" />
         <link rel="icon" href="/logo.png" />
         <link rel="apple-touch-icon" href="/logo.png" />
@@ -121,6 +127,55 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     });
                 });
               }
+            `,
+          }}
+        />
+        
+        {/* Force Cache Busting on Every Page Load */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Force browsers to validate cache on every visit
+              window.addEventListener('load', () => {
+                console.log('[Cache Busting] Forcing cache validation...');
+                
+                // Add timestamp to all script and link tags for cache busting
+                const timestamp = Date.now();
+                
+                // For all future fetches, add cache-busting parameter
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                  let [resource, config] = args;
+                  if (typeof resource === 'string') {
+                    const separator = resource.includes('?') ? '&' : '?';
+                    // Add cache-busting to API calls and HTML fetches
+                    if (resource.includes('/api/') || resource.endsWith('.html')) {
+                      resource = resource + separator + '_t=' + timestamp;
+                    }
+                  }
+                  return originalFetch.apply(this, [resource, config]);
+                };
+                
+                // Force validation of cached resources
+                if ('caches' in window) {
+                  caches.keys().then(cacheNames => {
+                    cacheNames.forEach(cacheName => {
+                      caches.open(cacheName).then(cache => {
+                        cache.keys().then(requests => {
+                          requests.forEach(request => {
+                            // Don't cache API requests aggressively
+                            if (request.url.includes('/api/')) {
+                              cache.delete(request);
+                            }
+                          });
+                        });
+                      });
+                    });
+                  });
+                }
+                
+                console.log('[Cache Busting] Cache validation complete');
+              });
             `,
           }}
         />

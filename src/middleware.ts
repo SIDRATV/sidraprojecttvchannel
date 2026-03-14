@@ -13,11 +13,20 @@ export function middleware(request: NextRequest) {
   // Check if the current path is protected
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
   
-  // For protected routes, authentication is handled client-side with useAuth hook
-  // This middleware just allows the request through
+  // Create response
+  const response = NextResponse.next();
+
+  // Add cache control headers to prevent aggressive caching
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, public, max-age=0');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
   
+  // Add header to force browser validation
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+
   // Users will be redirected to /login by the ProtectedRoute component if not authenticated
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

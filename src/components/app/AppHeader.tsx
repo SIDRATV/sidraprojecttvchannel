@@ -79,7 +79,7 @@ export function AppHeader({ onSearch }: AppHeaderProps) {
             className="relative w-10 h-10 flex-shrink-0"
           >
             <Image
-              src="/logo.png"
+              src="/sidra-logo.png"
               alt="Sidra Logo"
               fill
               className="object-contain"

@@ -9,7 +9,7 @@ const watchlistItems = [
   {
     id: '1',
     title: 'The Legacy of Innovation',
-    image: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=400&h=600&fit=crop',
+    image: 'https://images.unsplash.com/photo-1542744173-8e90f7e3912d?w=400&h=600&fit=crop',
     duration: '58:32',
     category: 'Documentary',
   },

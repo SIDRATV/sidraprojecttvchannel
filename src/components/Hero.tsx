@@ -47,6 +47,7 @@ export function Hero() {
           loop
           muted
           playsInline
+          suppressHydrationWarning
         >
           <source
             src="https://videos.pexels.com/video-files/3209828/3209828-sd_640_360_30fps.mp4"

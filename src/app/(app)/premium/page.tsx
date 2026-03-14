@@ -109,7 +109,7 @@ export default function PremiumPage() {
     {
       id: '1',
       title: 'The Future of AI: How Startups are Changing the World',
-      image: 'https://images.unsplash.com/photo-1677442d019cecf8181d02c91c5c90e1a9f1eb0e?w=500&h=300&fit=crop',
+      image: 'https://images.unsplash.com/photo-1618761490192-04901461159e?w=500&h=300&fit=crop',
       category: 'Documentary',
     },
     {
@@ -121,19 +121,19 @@ export default function PremiumPage() {
     {
       id: '3',
       title: 'Blockchain Revolution: Building Web3 Applications',
-      image: 'https://images.unsplash.com/photo-1614613535308-eb5fbd8f2c91?w=500&h=300&fit=crop',
+      image: 'https://images.unsplash.com/photo-1533879413603-d7886542fea0?w=500&h=300&fit=crop',
       category: 'Masterclass',
     },
     {
       id: '4',
       title: 'Inside OpenAI: Secrets to Building Revolutionary Products',
-      image: 'https://images.unsplash.com/photo-1620712014215-c8ee9ae4aaae?w=500&h=300&fit=crop',
+      image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=500&h=300&fit=crop',
       category: 'Documentary',
     },
     {
       id: '5',
       title: 'VC Insights: How to Raise Your First Million',
-      image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&h=300&fit=crop',
+      image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=500&h=300&fit=crop',
       category: 'Masterclass',
     },
   ];

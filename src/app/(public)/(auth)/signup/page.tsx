@@ -62,7 +62,7 @@ export default function SignupPage() {
               className="relative w-20 h-20 mx-auto mb-6"
             >
               <Image
-                src="/logo.png"
+                src="/sidra-logo.png"
                 alt="Sidra Logo"
                 fill
                 className="object-contain"

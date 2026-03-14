@@ -17,7 +17,7 @@ export function CategoryBrowser() {
         const data = await categoryService.getCategories();
         setCategories(data);
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        console.error('Error fetching categories:', error instanceof Error ? error.message : error);
       } finally {
         setLoading(false);
       }

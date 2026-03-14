@@ -111,7 +111,7 @@ export function PWAInstallPrompt() {
                 >
                   <div className="relative w-20 h-20 sm:w-24 sm:h-24">
                     <Image
-                      src="/logo.png"
+                      src="/sidra-logo.png"
                       alt="Sidra TV"
                       fill
                       className="object-contain"

@@ -27,7 +27,7 @@ const mockProjects: VotingProject[] = [
     title: 'AI-Powered Islamic Education Platform',
     description: 'Revolutionary platform using AI to teach Islamic principles interactively',
     category: 'Education',
-    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=400&fit=crop',
     upvotes: 2450,
     downvotes: 125,
     totalVotes: 2575,
@@ -42,7 +42,7 @@ const mockProjects: VotingProject[] = [
     title: 'Sustainable Technology Initiative',
     description: 'Green tech solutions for developing communities',
     category: 'Technology',
-    image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1556075798-4825dfaaf498?w=600&h=400&fit=crop',
     upvotes: 1890,
     downvotes: 210,
     totalVotes: 2100,
@@ -72,7 +72,7 @@ const mockProjects: VotingProject[] = [
     title: 'Healthcare Innovation Lab',
     description: 'Next-generation medical research and development',
     category: 'Healthcare',
-    image: 'https://images.unsplash.com/photo-1576091160550-112173cba4b7?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop',
     upvotes: 1245,
     downvotes: 95,
     totalVotes: 1340,
@@ -249,40 +249,37 @@ export default function VotingProjectPage() {
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-semibold text-gray-950 dark:text-white">
-                      Voting: {votePercentage.toFixed(1)}% Upvotes
+                      Community Vote
                     </p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
                       {project.totalVotes.toLocaleString()} votes
                     </p>
                   </div>
-                  <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                  <div className="flex gap-1 h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                    {/* Upvotes Bar (Blue) */}
                     <motion.div
-                      layoutId={`voting-bar-${project.id}`}
-                      className="h-full bg-gradient-to-r from-blue-600 to-cyan-500"
+                      className="h-full bg-blue-600"
                       initial={{ width: 0 }}
                       animate={{ width: `${votePercentage}%` }}
                       transition={{ duration: 0.8, delay: idx * 0.1 }}
+                      title={`Upvotes: ${votePercentage.toFixed(1)}%`}
                     />
-                  </div>
-                </div>
-
-                {/* Funding Progress */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold text-gray-950 dark:text-white">
-                      Funding: ${project.fundingCurrent.toLocaleString()}/${project.fundingGoal.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      {fundingPercentage.toFixed(0)}%
-                    </p>
-                  </div>
-                  <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                    {/* Downvotes Bar (Red) */}
                     <motion.div
-                      className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
+                      className="h-full bg-red-600"
                       initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(fundingPercentage, 100)}%` }}
+                      animate={{ width: `${100 - votePercentage}%` }}
                       transition={{ duration: 0.8, delay: idx * 0.1 }}
+                      title={`Downvotes: ${(100 - votePercentage).toFixed(1)}%`}
                     />
+                  </div>
+                  <div className="flex items-center justify-between mt-2 text-xs">
+                    <span className="text-blue-600 font-semibold flex items-center gap-1">
+                      <ThumbsUp size={12} /> {votePercentage.toFixed(1)}%
+                    </span>
+                    <span className="text-red-600 font-semibold flex items-center gap-1">
+                      <ThumbsDown size={12} /> {(100 - votePercentage).toFixed(1)}%
+                    </span>
                   </div>
                 </div>
 

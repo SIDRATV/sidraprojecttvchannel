@@ -8,6 +8,7 @@ import { Send, Wallet, History, TrendingUp } from 'lucide-react';
 import { WalletConnect } from '@/components/wallet/WalletConnect';
 import { TransferForm } from '@/components/wallet/TransferForm';
 import { TransactionHistory } from '@/components/wallet/TransactionHistory';
+import { SDALogo } from '@/components/wallet/SDALogo';
 import { getBalance } from '@/lib/web3-provider';
 
 export default function WalletPage() {
@@ -127,8 +128,9 @@ export default function WalletPage() {
                   </div>
                   <TrendingUp className="w-5 h-5 text-blue-500" />
                 </div>
-                <div className="text-3xl md:text-4xl font-bold text-gray-950 dark:text-white mb-2">
-                  {balance ? parseFloat(balance).toFixed(4) : '-'} SIDRA
+                <div className="text-3xl md:text-4xl font-bold text-gray-950 dark:text-white mb-2 flex items-center gap-2">
+                  {balance ? parseFloat(balance).toFixed(4) : '-'}
+                  <SDALogo size="md" />
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Blockchain balance
@@ -153,8 +155,9 @@ export default function WalletPage() {
                   </div>
                   <Wallet className="w-5 h-5 text-green-500" />
                 </div>
-                <div className="text-3xl md:text-4xl font-bold text-gray-950 dark:text-white mb-2">
-                  - SIDRA
+                <div className="text-3xl md:text-4xl font-bold text-gray-950 dark:text-white mb-2 flex items-center gap-2">
+                  -
+                  <SDALogo size="md" />
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Platform balance

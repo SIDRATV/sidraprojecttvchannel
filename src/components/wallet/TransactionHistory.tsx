@@ -6,6 +6,7 @@ import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ExternalLink,
 import { getTransaction } from '@/lib/web3-provider';
 import { getInternalTransactionHistory, InternalTransaction } from '@/lib/internalTransfer';
 import { Button } from '@/components/ui/Button';
+import { SDALogo } from './SDALogo';
 
 interface BlockchainTx {
   hash: string;
@@ -211,10 +212,18 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
   const getAmount = () => {
     if (isBlockchain) {
       const bcTx = tx as BlockchainTx;
-      return `${parseFloat(bcTx.value).toFixed(4)} SIDRA`;
+      return (
+        <span className="flex items-center gap-1">
+          {parseFloat(bcTx.value).toFixed(4)} <SDALogo size="sm" />
+        </span>
+      );
     } else {
       const iTx = tx as InternalTransaction;
-      return `${iTx.amount.toFixed(4)} SIDRA`;
+      return (
+        <span className="flex items-center gap-1">
+          {iTx.amount.toFixed(4)} <SDALogo size="sm" />
+        </span>
+      );
     }
   };
 

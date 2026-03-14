@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { getBalance, sendTransaction } from '@/lib/web3-provider';
 import { useWeb3Provider } from '@/hooks/useWeb3Provider';
 import { sendInternalTransfer, verifyUsername, estimateTransferFee } from '@/lib/internalTransfer';
+import { SDALogo } from './SDALogo';
 
 interface TransferFormProps {
   walletAddress: string | null;
@@ -222,7 +223,7 @@ export function TransferForm({
       {userBalance && transferType === 'onchain' && (
         <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-sm text-blue-800 dark:text-blue-300">
-            Available Balance: <span className="font-bold">{userBalance} SIDRA</span>
+            Available Balance: <span className="font-bold flex items-center gap-1 inline-flex">{userBalance} <SDALogo size="sm" /></span>
           </p>
         </div>
       )}
@@ -252,8 +253,9 @@ export function TransferForm({
 
         {/* Amount Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Amount (SIDRA)
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <span>Amount</span>
+            <SDALogo size="sm" />
           </label>
           <input
             type="number"
@@ -274,15 +276,15 @@ export function TransferForm({
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg space-y-1">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Amount:</span>
-              <span className="font-medium text-gray-900 dark:text-white">
-                {formData.amount} SIDRA
+              <span className="font-medium text-gray-900 dark:text-white flex items-center gap-1">
+                {formData.amount} <SDALogo size="sm" />
               </span>
             </div>
             {estimatedFee > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Fee:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {estimatedFee.toFixed(4)} SIDRA
+                <span className="font-medium text-gray-900 dark:text-white flex items-center gap-1">
+                  {estimatedFee.toFixed(4)} <SDALogo size="sm" />
                 </span>
               </div>
             )}
@@ -290,8 +292,8 @@ export function TransferForm({
               <span className="font-medium text-gray-700 dark:text-gray-300">
                 Total:
               </span>
-              <span className="font-bold text-gray-900 dark:text-white">
-                {totalAmount} SIDRA
+              <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1">
+                {totalAmount} <SDALogo size="sm" />
               </span>
             </div>
           </div>

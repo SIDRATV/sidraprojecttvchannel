@@ -12,6 +12,9 @@ build/
 dist/
 out/
 
+# Generated files
+public/build-info.json
+
 # Misc
 .DS_Store
 *.pem

@@ -76,9 +76,37 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(() => {
-                    // Service worker registration failed, app will work as normal web app
-                  });
+                  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+                    .then((registration) => {
+                      console.log('[PWA] Service Worker registered:', registration);
+                      
+                      // Check for updates every 60 seconds
+                      setInterval(() => {
+                        registration.update();
+                      }, 60000);
+                      
+                      // Listen for updates
+                      registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        
+                        newWorker.addEventListener('statechange', () => {
+                          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New service worker available
+                            console.log('[PWA] New service worker available, notifying...');
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                          }
+                        });
+                      });
+                      
+                      // Listen for service worker taking control
+                      navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        console.log('[PWA] New service worker is now controlling the page, reloading...');
+                        window.location.reload();
+                      });
+                    })
+                    .catch((error) => {
+                      console.log('[PWA] Service worker registration failed:', error);
+                    });
                 });
               }
             `,

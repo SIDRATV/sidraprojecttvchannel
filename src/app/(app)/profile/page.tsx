@@ -2,8 +2,9 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { User, Mail, Calendar, Trophy, Clock, Edit2 } from 'lucide-react';
+import { User, Mail, Calendar, Trophy, Clock, Edit2, Package } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useBuildInfo } from '@/hooks/useBuildInfo';
 import { ContentSection } from '@/components/app/ContentSection';
 
 const watchHistory = [
@@ -39,6 +40,7 @@ const watchHistory = [
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { buildInfo, loading } = useBuildInfo();
   const [isEditing, setIsEditing] = useState(false);
 
   const stats = [
@@ -183,6 +185,37 @@ export default function ProfilePage() {
           items={watchHistory.slice(0, 5)}
         />
       )}
+
+      {/* App Info */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="p-6 bg-gradient-to-br from-blue-500/10 to-blue-600/10 dark:from-blue-500/5 dark:to-blue-600/5 rounded-lg border border-blue-500/20 dark:border-blue-700/20"
+      >
+        <div className="flex items-start gap-4">
+          <Package size={24} className="text-blue-600 dark:text-blue-400 mt-1" />
+          <div className="flex-1">
+            <h3 className="font-bold text-lg mb-3">App Information</h3>
+            {loading ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">Loading app info...</p>
+            ) : buildInfo ? (
+              <div className="space-y-2">
+                <p className="text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Version:</span>
+                  <span className="font-semibold ml-2 text-gray-950 dark:text-white">v{buildInfo.version}</span>
+                </p>
+                <p className="text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Last Updated:</span>
+                  <span className="font-semibold ml-2 text-gray-950 dark:text-white">{buildInfo.buildTime}</span>
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-400">Unable to load app version info</p>
+            )}
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

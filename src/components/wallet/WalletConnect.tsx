@@ -3,13 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Wallet, Copy, LogOut, AlertCircle, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { useWeb3Modal, useWeb3ModalAccount } from '@web3modal/ethers/react';
 import {
-  connectMetaMask,
-  getCurrentAccount,
-  getCurrentChainId,
-  onAccountChange,
-  onChainChange,
   SIDRA_CHAIN_CONFIG,
 } from '@/lib/web3-provider';
 
@@ -19,76 +14,31 @@ interface WalletConnectProps {
 }
 
 export function WalletConnect({ onAccountChange: onAccountChangeCallback, onChainChange: onChainChangeCallback }: WalletConnectProps) {
-  const [account, setAccount] = useState<string | null>(null);
-  const [chainId, setChainId] = useState<number | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { open } = useWeb3Modal();
+  const { address, isConnected, chainId } = useWeb3ModalAccount();
   const [copied, setCopied] = useState(false);
   const [isCorrectChain, setIsCorrectChain] = useState(false);
 
-  // Initialize wallet on mount
+  // Monitor connection changes
   useEffect(() => {
-    const initializeWallet = async () => {
-      try {
-        const currentAccount = await getCurrentAccount();
-        const currentChainId = await getCurrentChainId();
-        
-        setAccount(currentAccount);
-        setChainId(currentChainId);
-        setIsCorrectChain(currentChainId === SIDRA_CHAIN_CONFIG.chainId);
-
-        // Setup event listeners
-        onAccountChange((accounts: string[]) => {
-          const newAccount = accounts.length > 0 ? accounts[0] : null;
-          setAccount(newAccount);
-          onAccountChangeCallback?.(newAccount);
-        });
-
-        onChainChange((chainIdHex: string) => {
-          const newChainId = parseInt(chainIdHex, 16);
-          setChainId(newChainId);
-          setIsCorrectChain(newChainId === SIDRA_CHAIN_CONFIG.chainId);
-          onChainChangeCallback?.(newChainId);
-        });
-      } catch (err) {
-        console.error('Error initializing wallet:', err);
-      }
-    };
-
-    initializeWallet();
-  }, [onAccountChangeCallback, onChainChangeCallback]);
-
-  const handleConnect = async () => {
-    try {
-      setIsConnecting(true);
-      setError(null);
-      const connectedAccount = await connectMetaMask();
-      setAccount(connectedAccount);
-      onAccountChangeCallback?.(connectedAccount);
-    } catch (err: any) {
-      let errorMessage = err.message || 'Failed to connect wallet';
-      
-      // Provide helpful message if MetaMask is not installed
-      if (errorMessage.includes('MetaMask is not installed')) {
-        errorMessage = 'MetaMask is not installed. Please install it from: https://metamask.io/download/';
-      }
-      
-      setError(errorMessage);
-      console.error('Connection error:', err);
-    } finally {
-      setIsConnecting(false);
+    if (isConnected && address) {
+      onAccountChangeCallback?.(address);
+    } else {
+      onAccountChangeCallback?.(null);
     }
-  };
+  }, [isConnected, address, onAccountChangeCallback]);
 
-  const handleDisconnect = () => {
-    setAccount(null);
-    setError(null);
-    onAccountChangeCallback?.(null);
-  };
+  // Monitor chain changes
+  useEffect(() => {
+    if (chainId) {
+      setIsCorrectChain(chainId === SIDRA_CHAIN_CONFIG.chainId);
+      onChainChangeCallback?.(chainId);
+    }
+  }, [chainId, onChainChangeCallback]);
 
   const handleCopyAddress = () => {
-    if (account) {
-      navigator.clipboard.writeText(account);
+    if (address) {
+      navigator.clipboard.writeText(address);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -96,68 +46,50 @@ export function WalletConnect({ onAccountChange: onAccountChangeCallback, onChai
 
   const shortenAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
-  if (!account) {
+  // Not connected state
+  if (!isConnected) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-brand-500/10 to-brand-600/5 border border-brand-500/20 rounded-xl p-6 md:p-8"
+        className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-6 md:p-8"
       >
-        <div className="flex flex-col items-center text-center gap-4">
-          <div className="bg-brand-500/10 p-4 rounded-full">
-            <Wallet className="w-8 h-8 text-brand-500" />
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-bold text-gray-950 dark:text-white mb-2">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
+              <Wallet className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-950 dark:text-white">
               Connect Your Wallet
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Connect MetaMask to start transferring SIDRA tokens
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Connect using WalletConnect to access on-chain features
             </p>
           </div>
 
-          {error && (
-            <div className="w-full bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex gap-2 items-start">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="text-red-600 dark:text-red-400 text-sm">
-                {error.includes('metamask.io') ? (
-                  <>
-                    <p>MetaMask is not installed.</p>
-                    <a 
-                      href="https://metamask.io/download/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="underline hover:text-red-700 dark:hover:text-red-300 font-medium"
-                    >
-                      Click here to download MetaMask
-                    </a>
-                  </>
-                ) : (
-                  error
-                )}
-              </div>
-            </div>
-          )}
-
-          <Button
-            onClick={handleConnect}
-            disabled={isConnecting}
-            variant="primary"
-            size="lg"
-            className="w-full"
+          {/* Web3Modal Button with WalletConnect Logo */}
+          <button
+            onClick={() => open()}
+            className="w-full inline-flex items-center justify-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            {isConnecting ? 'Connecting...' : 'Connect MetaMask'}
-          </Button>
+            {/* WalletConnect Logo SVG */}
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="1" fill="none" />
+              <path d="M7.5 12c0-2.48 2.02-4.5 4.5-4.5s4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5-4.5-2.02-4.5-4.5z" />
+            </svg>
+            Connect with WalletConnect
+          </button>
 
-          <p className="text-xs text-gray-500 dark:text-gray-500">
-            Make sure MetaMask is installed and you have SidraChain configured
+          <p className="text-xs text-gray-500 dark:text-gray-500 text-center">
+            Supports MetaMask, Trust Wallet, Coinbase, and 200+ other wallets
           </p>
         </div>
       </motion.div>
     );
   }
 
+  // Connected state
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -173,14 +105,13 @@ export function WalletConnect({ onAccountChange: onAccountChangeCallback, onChai
               Wallet Connected
             </span>
           </div>
-          <Button
-            onClick={handleDisconnect}
-            variant="ghost"
-            size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+          <button
+            onClick={() => open()}
+            className="p-2 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors"
+            title="Disconnect wallet"
           >
-            <LogOut className="w-4 h-4" />
-          </Button>
+            <LogOut className="w-4 h-4 text-red-600" />
+          </button>
         </div>
 
         {/* Account Info */}
@@ -191,7 +122,7 @@ export function WalletConnect({ onAccountChange: onAccountChangeCallback, onChai
             </p>
             <div className="flex items-center justify-between gap-2">
               <code className="font-mono text-sm font-medium text-gray-950 dark:text-white">
-                {shortenAddress(account)}
+                {shortenAddress(address || '')}
               </code>
               <button
                 onClick={handleCopyAddress}

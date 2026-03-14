@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { Web3ModalProvider } from '@/providers/Web3ModalProvider';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -125,10 +126,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${inter.className} bg-white dark:bg-gray-950 text-gray-950 dark:text-white transition-colors duration-300`}>
-        <ThemeProvider>
-          <PWAInstallPrompt />
-          {children}
-        </ThemeProvider>
+        <Web3ModalProvider>
+          <ThemeProvider>
+            <PWAInstallPrompt />
+            {children}
+          </ThemeProvider>
+        </Web3ModalProvider>
       </body>
     </html>
   );

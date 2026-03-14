@@ -1,11 +1,16 @@
 import { ethers } from 'ethers';
 
-// Declare window.ethereum for MetaMask
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
+// EIP-1193 Provider Interface
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, listener: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, listener: (...args: unknown[]) => void) => void;
+  isMetaMask?: boolean;
+  isConnected?: boolean;
 }
+
+// Extend global window to include ethereum
+declare const window: Window & { ethereum?: EthereumProvider };
 
 // SidraChain Configuration
 export const SIDRA_CHAIN_CONFIG = {
@@ -24,11 +29,12 @@ export const getProvider = () => {
 
 // Get Signer (requires MetaMask or Web3 wallet)
 export const getSigner = async () => {
-  if (!window.ethereum) {
+  const eth = (window as any).ethereum as EthereumProvider | undefined;
+  if (!eth) {
     throw new Error('MetaMask is not installed');
   }
 
-  const provider = new ethers.BrowserProvider(window.ethereum);
+  const provider = new ethers.BrowserProvider(eth as unknown as ethers.Eip1193Provider);
   return await provider.getSigner();
 };
 
@@ -51,7 +57,8 @@ export const sendTransaction = async (
   amount: string
 ): Promise<string> => {
   try {
-    if (!window.ethereum) {
+    const eth = (window as any).ethereum as EthereumProvider | undefined;
+    if (!eth) {
       throw new Error('MetaMask is not installed');
     }
 
@@ -79,7 +86,7 @@ export const sendTransaction = async (
       throw new Error('Transaction failed');
     }
 
-    return receipt.hash;
+    return receipt!.hash;
   } catch (error) {
     console.error('Error sending transaction:', error);
     throw error;
@@ -120,19 +127,20 @@ export const getTransaction = async (txHash: string) => {
 // Connect to MetaMask and Switch Chain
 export const connectMetaMask = async () => {
   try {
-    if (!window.ethereum) {
+    const eth = (window as any).ethereum as EthereumProvider | undefined;
+    if (!eth) {
       throw new Error('MetaMask is not installed');
     }
 
     // Request account access
-    const accounts = await window.ethereum.request({
+    const accounts = (await eth.request({
       method: 'eth_requestAccounts',
-    });
+    })) as string[];
 
     // Check if we need to switch to SidraChain
-    const chainId = await window.ethereum.request({
+    const chainId = (await eth.request({
       method: 'eth_chainId',
-    });
+    })) as string;
 
     if (parseInt(chainId, 16) !== SIDRA_CHAIN_CONFIG.chainId) {
       await switchToSidraChain();
@@ -148,14 +156,18 @@ export const connectMetaMask = async () => {
 // Switch to SidraChain Network
 export const switchToSidraChain = async () => {
   try {
-    await window.ethereum.request({
+    const eth = (window as any).ethereum as EthereumProvider | undefined;
+    if (!eth) throw new Error('No Ethereum provider');
+    
+    await eth.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: `0x${SIDRA_CHAIN_CONFIG.chainId.toString(16)}` }],
     });
   } catch (switchError: any) {
     // If the chain doesn't exist, add it
     if (switchError.code === 4902) {
-      await window.ethereum.request({
+      const eth = (window as any).ethereum as EthereumProvider;
+      await eth.request({
         method: 'wallet_addEthereumChain',
         params: [
           {
@@ -179,15 +191,17 @@ export const switchToSidraChain = async () => {
 
 // Listen for Account Changes
 export const onAccountChange = (callback: (accounts: string[]) => void) => {
-  if (window.ethereum) {
-    window.ethereum.on('accountsChanged', callback);
+  const eth = (window as any).ethereum as EthereumProvider | undefined;
+  if (eth) {
+    eth.on('accountsChanged', (...args: unknown[]) => callback(args[0] as string[]));
   }
 };
 
 // Listen for Chain Changes
 export const onChainChange = (callback: (chainId: string) => void) => {
-  if (window.ethereum) {
-    window.ethereum.on('chainChanged', callback);
+  const eth = (window as any).ethereum as EthereumProvider | undefined;
+  if (eth) {
+    eth.on('chainChanged', (...args: unknown[]) => callback(args[0] as string));
   }
 };
 
@@ -198,9 +212,10 @@ export const getCurrentAccount = async (): Promise<string | null> => {
       return null;
     }
 
-    const accounts = await window.ethereum.request({
+    const eth = (window as any).ethereum as EthereumProvider;
+    const accounts = (await eth.request({
       method: 'eth_accounts',
-    });
+    })) as string[];
 
     return accounts.length > 0 ? accounts[0] : null;
   } catch (error) {
@@ -212,13 +227,14 @@ export const getCurrentAccount = async (): Promise<string | null> => {
 // Get Current Chain ID
 export const getCurrentChainId = async (): Promise<number | null> => {
   try {
-    if (!window.ethereum) {
+    const eth = (window as any).ethereum as EthereumProvider | undefined;
+    if (!eth) {
       return null;
     }
 
-    const chainId = await window.ethereum.request({
+    const chainId = (await eth.request({
       method: 'eth_chainId',
-    });
+    })) as string;
 
     return parseInt(chainId, 16);
   } catch (error) {

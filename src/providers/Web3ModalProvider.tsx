@@ -16,14 +16,21 @@ const metadata = {
 
 const ethersConfig = defaultConfig({
   metadata,
-  defaultChainId: 1,
-  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || 'https://eth.public.2xlabs.com'
+  defaultChainId: 97453,
+  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || 'https://node.sidrachain.com'
 });
 
-// 3. Create modal
+// 3. Create modal with SidraChain as primary network
 createWeb3Modal({
   ethersConfig,
   chains: [
+    {
+      chainId: 97453,
+      name: 'Sidra Chain',
+      currency: 'SIDRA',
+      explorerUrl: 'https://ledger.sidrachain.com',
+      rpcUrl: 'https://node.sidrachain.com'
+    },
     {
       chainId: 1,
       name: 'Ethereum',

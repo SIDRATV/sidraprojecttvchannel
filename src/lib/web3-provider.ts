@@ -15,11 +15,11 @@ declare const window: Window & { ethereum?: EthereumProvider };
 // SidraChain Configuration
 export const SIDRA_CHAIN_CONFIG = {
   chainId: 97453,
-  chainName: 'SidraChain',
+  chainName: 'Sidra Chain',
   rpcUrl: 'https://node.sidrachain.com',
   symbol: 'SIDRA',
   decimals: 18,
-  blockExplorerUrl: 'https://explorer.sidrachain.com',
+  blockExplorerUrl: 'https://ledger.sidrachain.com',
 };
 
 // Initialize Web3 Provider

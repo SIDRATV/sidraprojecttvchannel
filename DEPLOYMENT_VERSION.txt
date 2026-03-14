@@ -1,0 +1,5 @@
+Last deployment: 2026-03-14 with wallet SDA improvements
+- SDALogo component with local image
+- BalanceCard with SDA symbol and logo display
+- NetworkStatus with pulsing green indicator
+- Aggressive cache busting implementation

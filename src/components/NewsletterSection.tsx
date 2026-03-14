@@ -34,7 +34,7 @@ export function NewsletterSection() {
   };
 
   return (
-    <section className="relative py-16 overflow-hidden bg-white dark:bg-gray-900/50 transition-colors">
+    <section className="relative py-12 sm:py-16 overflow-hidden bg-white dark:bg-gray-900/50 transition-colors">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-r from-brand-600/10 dark:from-brand-600/20 to-islamic-teal/10 dark:to-islamic-teal/20" />
       <div className="absolute inset-0">
@@ -49,10 +49,10 @@ export function NewsletterSection() {
           className="text-center"
         >
           {/* Header */}
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-950 dark:text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-950 dark:text-white mb-3 sm:mb-4">
             Stay Updated with <span className="text-gradient">Premium Content</span>
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 text-lg mb-8">
+          <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg mb-6 sm:mb-8">
             Get exclusive access to the latest documentaries, tutorials, and inspirational content from the Sidra ecosystem
           </p>
 
@@ -99,7 +99,7 @@ export function NewsletterSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-12"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 mt-8 sm:mt-12"
           >
             {[
               { icon: '🎬', label: 'Weekly Updates' },
@@ -107,8 +107,8 @@ export function NewsletterSection() {
               { icon: '🔔', label: 'Premium Alerts' },
             ].map((feature, index) => (
               <div key={index} className="flex flex-col items-center gap-2">
-                <span className="text-3xl">{feature.icon}</span>
-                <span className="text-gray-300 font-semibold">{feature.label}</span>
+                <span className="text-2xl sm:text-3xl">{feature.icon}</span>
+                <span className="text-gray-300 font-semibold text-sm sm:text-base">{feature.label}</span>
               </div>
             ))}
           </motion.div>

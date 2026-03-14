@@ -79,7 +79,7 @@ export function Hero() {
             </motion.div>
 
             {/* Title */}
-            <motion.h1 variants={itemVariants} className="text-5xl md:text-7xl font-bold mb-6">
+            <motion.h1 variants={itemVariants} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
               <span className="block text-gray-950 dark:text-white">Discover Islamic</span>
               <span className="block text-gradient">Innovation & Excellence</span>
             </motion.h1>
@@ -107,16 +107,16 @@ export function Hero() {
             {/* Hero Stats */}
             <motion.div
               variants={itemVariants}
-              className="grid grid-cols-3 gap-4 mt-12 pt-8 border-t border-gray-300 dark:border-gray-800"
+              className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-8 mt-12 pt-8 border-t border-gray-300 dark:border-gray-800"
             >
               {[
                 { label: 'Videos', value: '1000+' },
                 { label: 'Subscribers', value: '50K+' },
                 { label: 'Watch Hours', value: '100K+' },
               ].map((stat) => (
-                <div key={stat.label}>
-                  <div className="text-2xl font-bold text-gray-950 dark:text-white">{stat.value}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
+                <div key={stat.label} className="text-center sm:text-left">
+                  <div className="text-2xl md:text-3xl font-bold text-gray-950 dark:text-white">{stat.value}</div>
+                  <div className="text-sm md:text-base text-gray-600 dark:text-gray-400">{stat.label}</div>
                 </div>
               ))}
             </motion.div>

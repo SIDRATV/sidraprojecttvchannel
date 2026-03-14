@@ -713,7 +713,6 @@ export default function ActualiterPage() {
             </div>
           </div>
         </motion.div>
-      </motion.div>
       )}
     </div>
   );

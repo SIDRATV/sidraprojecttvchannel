@@ -72,13 +72,13 @@ export function CategoryBrowser() {
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mb-12"
+          className="mb-8 sm:mb-12"
         >
-          <h2 className="text-4xl font-bold text-gray-950 dark:text-white mb-3">Browse Categories</h2>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-950 dark:text-white mb-2 sm:mb-3">Browse Categories</h2>
+          <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">
             Explore our diverse collection of Islamic content and innovations
           </p>
-          <div className="h-1 w-32 bg-gradient-to-r from-brand-500 to-islamic-teal rounded-full mt-4" />
+          <div className="h-1 w-20 sm:w-32 bg-gradient-to-r from-brand-500 to-islamic-teal rounded-full mt-3 sm:mt-4" />
         </motion.div>
 
         <motion.div
@@ -100,7 +100,7 @@ export function CategoryBrowser() {
                 >
                   {/* Card */}
                   <div
-                    className="p-6 rounded-2xl backdrop-blur-sm border transition-all duration-300"
+                    className="p-4 sm:p-6 rounded-2xl backdrop-blur-sm border transition-all duration-300"
                     style={{
                       backgroundColor: `${category.color}15`,
                       borderColor: `${category.color}40`,
@@ -108,15 +108,15 @@ export function CategoryBrowser() {
                   >
                     {/* Icon */}
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                      className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4"
                       style={{ backgroundColor: `${category.color}30` }}
                     >
-                      <IconComponent size={24} style={{ color: category.color }} />
+                      <IconComponent size={20} style={{ color: category.color }} />
                     </div>
 
                     {/* Name */}
-                    <h3 className="font-bold text-gray-950 dark:text-white mb-1">{category.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                    <h3 className="font-bold text-gray-950 dark:text-white mb-1 text-sm sm:text-base">{category.name}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                       {category.description || 'Explore content'}
                     </p>
                   </div>

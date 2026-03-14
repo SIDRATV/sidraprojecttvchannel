@@ -88,7 +88,7 @@ export default function PodcastPage() {
         </div>
 
         {/* Search & Controls */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Search Bar */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -105,61 +105,67 @@ export default function PodcastPage() {
             />
           </motion.div>
 
-          {/* Filter Tabs */}
-          <div className="flex flex-wrap gap-3">
-            <div className="flex gap-2">
-              {['all', 'recent', 'trending'].map((type) => (
+          {/* Filter Controls Container */}
+          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+            {/* Filter Tabs */}
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-2">View Type</p>
+              <div className="flex gap-2">
+                {['all', 'recent', 'trending'].map((type) => (
+                  <motion.button
+                    key={type}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setViewType(type as any)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm ${
+                      viewType === type
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {type === 'trending' && <TrendingUp size={16} />}
+                    {type === 'recent' && <Clock size={16} />}
+                    {type === 'all' && <Filter size={16} />}
+                    <span className="capitalize">{type}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Category Filter */}
+            <div>
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-2">Categories</p>
+              <div className="flex flex-wrap gap-2">
                 <motion.button
-                  key={type}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setViewType(type as any)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    viewType === type
+                  onClick={() => setSelectedCategory('')}
+                  className={`px-3 py-2 rounded-lg font-medium transition-all text-sm ${
+                    selectedCategory === ''
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                      : 'bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {type === 'trending' && <TrendingUp size={16} />}
-                  {type === 'recent' && <Clock size={16} />}
-                  {type === 'all' && <Filter size={16} />}
-                  <span className="capitalize">{type}</span>
+                  All
                 </motion.button>
-              ))}
+                {CATEGORIES.map((category) => (
+                  <motion.button
+                    key={category}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-3 py-2 rounded-lg font-medium transition-all text-sm ${
+                      selectedCategory === category
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {category}
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </div>
-
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedCategory('')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                selectedCategory === ''
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-              }`}
-            >
-              All Categories
-            </motion.button>
-            {CATEGORIES.map((category) => (
-              <motion.button
-                key={category}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  selectedCategory === category
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {category}
-              </motion.button>
-            ))}
-          </div>
-        </div>
 
         {/* Loading State */}
         {isLoading && (

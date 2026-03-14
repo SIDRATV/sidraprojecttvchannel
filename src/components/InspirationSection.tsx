@@ -57,13 +57,13 @@ export function InspirationSection() {
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-950 dark:text-white">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-gray-950 dark:text-white">
             <span className="block mb-2">Daily Islamic Inspiration</span>
             <span className="text-gradient">For the Modern Digital Age</span>
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg max-w-2xl mx-auto">
             Discover timeless wisdom that resonates with innovation and progress
           </p>
         </motion.div>
@@ -84,21 +84,21 @@ export function InspirationSection() {
               className="relative group"
             >
               {/* Card */}
-              <div className="glass-effect p-8 rounded-2xl h-full flex flex-col justify-between bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
+              <div className="glass-effect p-5 sm:p-8 rounded-2xl h-full flex flex-col justify-between bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
                 {/* Quote Icon */}
-                <div className="mb-6">
-                  <Quote className="w-10 h-10 text-brand-500/50" />
+                <div className="mb-4 sm:mb-6">
+                  <Quote className="w-8 sm:w-10 h-8 sm:h-10 text-brand-500/50" />
                 </div>
 
                 {/* Quote Text */}
-                <p className="text-xl text-gray-950 dark:text-white mb-6 leading-relaxed flex-1">
+                <p className="text-lg sm:text-xl text-gray-950 dark:text-white mb-4 sm:mb-6 leading-relaxed flex-1">
                   <span>{`"${quote.text}"`}</span>
                 </p>
 
                 {/* Author */}
-                <div className="pt-6 border-t border-gray-300 dark:border-gray-700">
-                  <p className="text-sm text-brand-700 dark:text-brand-300 font-semibold">{quote.author}</p>
-                  <p className="text-3xl mt-3">{quote.icon}</p>
+                <div className="pt-4 sm:pt-6 border-t border-gray-300 dark:border-gray-700">
+                  <p className="text-xs sm:text-sm text-brand-700 dark:text-brand-300 font-semibold">{quote.author}</p>
+                  <p className="text-2xl sm:text-3xl mt-2 sm:mt-3">{quote.icon}</p>
                 </div>
               </div>
 

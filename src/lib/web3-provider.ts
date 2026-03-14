@@ -56,23 +56,28 @@ export const getBalance = async (walletAddress: string): Promise<string> => {
   }
 };
 
-// Send Transaction (On-Chain)
+// Send Transaction (On-Chain) - Updated to accept signer directly
 export const sendTransaction = async (
   toAddress: string,
-  amount: string
+  amount: string,
+  signer?: any
 ): Promise<string> => {
   try {
-    const eth = (window as any).ethereum as EthereumProvider | undefined;
+    // If signer is not provided, try to get it from window.ethereum (fallback)
+    let signerToUse = signer;
     
-    // If ethereum not available, try to get provider through alternative means
-    if (!eth) {
-      console.warn('window.ethereum not available, falling back to RPC provider');
-      throw new Error('Please connect your wallet through WalletConnect or MetaMask');
+    if (!signerToUse) {
+      const eth = (window as any).ethereum as EthereumProvider | undefined;
+      
+      if (!eth) {
+        throw new Error('Please connect your wallet through WalletConnect or MetaMask');
+      }
+
+      const provider = new ethers.BrowserProvider(eth as unknown as ethers.Eip1193Provider);
+      signerToUse = await provider.getSigner();
     }
 
-    const provider = new ethers.BrowserProvider(eth as unknown as ethers.Eip1193Provider);
-    const signer = await provider.getSigner();
-    const signerAddress = await signer.getAddress();
+    const signerAddress = await signerToUse.getAddress();
 
     // Validate recipient address
     if (!ethers.isAddress(toAddress)) {
@@ -85,7 +90,7 @@ export const sendTransaction = async (
     console.log('Sending transaction:', { from: signerAddress, to: toAddress, amount: amount });
 
     // Send transaction
-    const tx = await signer.sendTransaction({
+    const tx = await signerToUse.sendTransaction({
       to: toAddress,
       value: amountInWei,
     });

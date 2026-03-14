@@ -152,11 +152,16 @@ export function TransferForm({
       let txHash: string;
 
       if (transferType === 'onchain') {
-        // On-chain transfer
-        txHash = await sendTransaction(formData.recipient, formData.amount);
-        setSuccess(
-          `Transaction sent! Hash: ${txHash.slice(0, 10)}...`
-        );
+        // On-chain transfer - Get signer from Web3Provider
+        try {
+          const signer = await getSigner();
+          txHash = await sendTransaction(formData.recipient, formData.amount, signer);
+          setSuccess(
+            `Transaction sent! Hash: ${txHash.slice(0, 10)}...`
+          );
+        } catch (signerError: any) {
+          throw new Error(signerError.message || 'Failed to get wallet signer');
+        }
       } else {
         // Internal transfer
         if (!authToken) {

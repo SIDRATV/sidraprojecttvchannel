@@ -52,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Sidra TV" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest.json?v=1.0.0" />
         <link rel="icon" href="/logo.png" />
         <link rel="apple-touch-icon" href="/logo.png" />
         <script
@@ -76,6 +76,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
+                  console.log('[PWA] Starting service worker registration...');
+                  
+                  // Force fresh manifest with cache-busting
+                  const manifestLink = document.querySelector('link[rel="manifest"]');
+                  if (manifestLink) {
+                    const currentHref = manifestLink.getAttribute('href');
+                    const version = '${new Date().toISOString().slice(0, 10)}';
+                    manifestLink.setAttribute('href', currentHref.split('?')[0] + '?v=' + version);
+                    console.log('[PWA] Manifest updated with version:', version);
+                  }
+                  
                   navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
                     .then((registration) => {
                       console.log('[PWA] Service Worker registered:', registration);

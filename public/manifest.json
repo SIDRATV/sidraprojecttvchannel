@@ -1,6 +1,7 @@
 {
   "name": "Sidra Project TV Channel",
   "short_name": "Sidra TV",
+  "version": "1.0.0",
   "description": "Experience premium Islamic media showcasing innovative projects within the Sidra ecosystem. Documentaries, tutorials, and inspirational content.",
   "start_url": "/",
   "display": "standalone",

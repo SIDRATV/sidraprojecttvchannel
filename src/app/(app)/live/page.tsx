@@ -167,6 +167,7 @@ export default function LivePage() {
               </div>
             </div>
           </div>
+        </div>
 
         {/* Loading State */}
         {isLoading && (

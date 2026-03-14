@@ -166,6 +166,7 @@ export default function PodcastPage() {
               </div>
             </div>
           </div>
+        </div>
 
         {/* Loading State */}
         {isLoading && (

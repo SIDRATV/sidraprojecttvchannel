@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { ThumbsUp, ThumbsDown, Users, Clock, TrendingUp, Award } from 'lucide-react';

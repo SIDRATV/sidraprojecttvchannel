@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Wallet, History, TrendingUp } from 'lucide-react';

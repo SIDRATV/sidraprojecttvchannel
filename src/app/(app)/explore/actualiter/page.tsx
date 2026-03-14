@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Newspaper, Search, Calendar, User, Share2, Heart, MessageCircle, TrendingUp, Filter, X, Send, Facebook, Twitter, Linkedin } from 'lucide-react';

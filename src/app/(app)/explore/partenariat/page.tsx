@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Users, Star, TrendingUp, ArrowRight, Award, Check, AlertCircle, Clock, X, Plus } from 'lucide-react';

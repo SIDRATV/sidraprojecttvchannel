@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disabled to prevent double API calls in development
-  // CACHING DISABLED FOR DEVELOPMENT
-  staticPageGenerationTimeout: 0,
+  // Set reasonable timeout for static page generation (120 seconds)
+  staticPageGenerationTimeout: 120,
   onDemandEntries: {
     maxInactiveAge: 1 * 1000, // 1 second - very aggressive invalidation
     pagesBufferLength: 2,

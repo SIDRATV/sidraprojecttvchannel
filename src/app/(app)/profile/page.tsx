@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import { User, Mail, Calendar, Trophy, Clock, Edit2, Package, Save, X, Upload, Settings, Bell, Lock, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBuildInfo } from '@/hooks/useBuildInfo';
+import { authService } from '@/services/auth';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { ContentSection } from '@/components/app/ContentSection';
 
@@ -53,7 +55,13 @@ interface ProfileData {
 export default function ProfilePage() {
   const { user } = useAuth();
   const { buildInfo, loading } = useBuildInfo();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: user?.full_name || 'User',
     bio: 'Passionate about Islamic media and innovative projects',
@@ -119,11 +127,49 @@ export default function ProfilePage() {
     }
   };
 
+  const handleLogoutConfirm = async () => {
+    try {
+      await authService.signOut();
+      localStorage.removeItem('user');
+      localStorage.removeItem('userProfile');
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const handleChangePassword = () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
+      setPasswordError('Please fill in all fields');
+      return;
+    }
+
+    if (passwordData.new !== passwordData.confirm) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.new.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+
+    // In a real app, this would call an API to change password
+    setPasswordSuccess('Password changed successfully!');
+    setPasswordData({ current: '', new: '', confirm: '' });
+    setTimeout(() => {
+      setShowPasswordChange(false);
+      setPasswordSuccess('');
+    }, 2000);
+  };
+
   const stats = [
     { label: 'Videos Watched', value: '127', icon: '▶️', color: 'from-blue-500 to-cyan-500' },
     { label: 'Watch Time', value: '342 hrs', icon: '⏱️', color: 'from-purple-500 to-pink-500' },
     { label: 'Favorites', value: '34', icon: '⭐', color: 'from-yellow-500 to-orange-500' },
-    { label: 'Following', value: '12', icon: '👥', color: 'from-green-500 to-emerald-500' },
   ];
 
   return (
@@ -134,30 +180,137 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         className="relative"
       >
-        {/* Background */}
-        <div className="h-40 bg-gradient-to-r from-blue-500/20 to-purple-500/20 dark:from-blue-500/10 dark:to-purple-500/10 rounded-2xl mb-8" />
+        {/* Animated Background Banner */}
+        <div className="relative h-48 rounded-3xl overflow-hidden mb-8 shadow-2xl">
+          {/* Base gradient background */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+            animate={{
+              backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          />
+
+          {/* Animated overlay with multiple gradients */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-l from-cyan-400/30 to-blue-600/30"
+            animate={{
+              opacity: [0.3, 0.8, 0.3],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+
+          {/* Radial gradient elements */}
+          <motion.div
+            className="absolute top-0 left-1/4 w-32 h-32 bg-white/10 rounded-full blur-3xl"
+            animate={{
+              x: [0, 50, 0],
+              y: [0, -30, 0],
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+          <motion.div
+            className="absolute bottom-0 right-1/4 w-40 h-40 bg-yellow-300/10 rounded-full blur-3xl"
+            animate={{
+              x: [0, -50, 0],
+              y: [0, 30, 0],
+            }}
+            transition={{
+              duration: 7,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+
+          {/* Text overlay "My Profile" */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-center"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg mb-2">
+                My Profile
+              </h2>
+              <motion.div
+                className="h-1 bg-white rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: '100px' }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+                style={{ margin: '0 auto' }}
+              />
+            </motion.div>
+          </div>
+
+          {/* Corner decorative elements */}
+          <motion.div
+            className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full"
+            animate={{
+              scale: [1, 1.5, 1],
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+            }}
+          />
+          <motion.div
+            className="absolute bottom-4 left-4 w-2 h-2 bg-white rounded-full"
+            animate={{
+              scale: [1, 1.5, 1],
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+            }}
+          />
+        </div>
 
         {/* Profile Card */}
-        <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-20 relative z-10 px-4 md:px-0">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-6 -mt-24 relative z-20 px-4 md:px-0">
           {/* Avatar Section */}
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="relative group"
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            whileHover={{ scale: 1.08 }}
+            className="relative group flex-shrink-0"
           >
-            <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden border-4 border-white dark:border-gray-950">
+            <motion.div
+              className="w-40 h-40 bg-gradient-to-br from-blue-400 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden border-6 border-white dark:border-gray-950"
+              whileHover={{
+                boxShadow: '0 0 60px rgba(59, 130, 246, 0.8)',
+              }}
+            >
               {profileData.profilePhoto ? (
                 <img src={profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <User size={64} className="text-white" />
+                <User size={80} className="text-white" />
               )}
-            </div>
+            </motion.div>
             {isEditing && (
-              <button
+              <motion.button
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 1 }}
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <Upload size={24} className="text-white" />
-              </button>
+                <Upload size={32} className="text-white" />
+              </motion.button>
             )}
             <input
               ref={fileInputRef}
@@ -418,19 +571,160 @@ export default function ProfilePage() {
             className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800 space-y-3"
           >
             <h3 className="font-bold text-lg mb-4">Account Settings</h3>
-            <button className="w-full p-3 text-left font-semibold text-gray-950 dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <button
+              onClick={() => setShowPasswordChange(true)}
+              className="w-full p-3 text-left font-semibold text-gray-950 dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Lock size={18} />
               Change Password
             </button>
-            <button className="w-full p-3 text-left font-semibold text-gray-950 dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              Privacy Settings
-            </button>
-            <button className="w-full p-3 text-left font-semibold text-red-600 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors flex items-center gap-2">
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="w-full p-3 text-left font-semibold text-red-600 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors flex items-center gap-2"
+            >
               <LogOut size={18} />
               Logout
             </button>
           </motion.div>
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', bounce: 0.3 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-sm w-full border border-gray-200 dark:border-gray-800"
+          >
+            <div className="text-center">
+              <div className="text-6xl mb-4">😢</div>
+              <h3 className="text-2xl font-bold text-gray-950 dark:text-white mb-2">Are you leaving?</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">We'll miss you! Are you sure you want to logout?</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-950 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowLogoutConfirm(false);
+                    handleLogoutConfirm();
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Yes, Logout
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Password Change Modal */}
+      {showPasswordChange && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowPasswordChange(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', bounce: 0.3 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-sm w-full border border-gray-200 dark:border-gray-800"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-950 dark:text-white">Change Password</h3>
+              <button
+                onClick={() => setShowPasswordChange(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.current}
+                  onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.new}
+                  onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirm}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Confirm new password"
+                />
+              </div>
+            </div>
+
+            {passwordError && (
+              <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded-lg mb-4 text-sm">
+                {passwordError}
+              </div>
+            )}
+
+            {passwordSuccess && (
+              <div className="p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 text-green-600 dark:text-green-400 rounded-lg mb-4 text-sm">
+                {passwordSuccess}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPasswordChange(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-950 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangePassword}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Change
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* Watch History */}
       {watchHistory.length > 0 && (

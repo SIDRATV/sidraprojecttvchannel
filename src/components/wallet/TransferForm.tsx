@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Send, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { ethers } from 'ethers';
 import { Button } from '@/components/ui/Button';
-import { getBalance } from '@/lib/web3-provider';
+import { getBalance, sendTransaction } from '@/lib/web3-provider';
 import { useWeb3Provider } from '@/hooks/useWeb3Provider';
 import { sendInternalTransfer, verifyUsername, estimateTransferFee } from '@/lib/internalTransfer';
 

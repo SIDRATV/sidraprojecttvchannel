@@ -14,102 +14,48 @@ export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
+
+  // Store this in a ref to track state across renders
+  const [eventCaptured, setEventCaptured] = useState(false);
 
   useEffect(() => {
-    // Log initial page load
-    console.log('[PWA] PWAInstallPrompt component mounted');
+    console.group('[PWA] Component Mount');
+    console.log('%c[PWA] PWAInstallPrompt component mounted', 'color: blue; font-weight: bold;');
     
     // Check if app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    console.log('[PWA] Standalone mode:', isStandalone);
+    console.log('%c[PWA] Standalone mode:', isStandalone, 'color: orange');
     
     if (isStandalone) {
-      console.log('[PWA] App is already installed (standalone mode)');
+      console.log('%c[PWA] ✅ App is already installed in standalone mode', 'color: green; font-weight: bold;');
       setIsInstalled(true);
+      console.groupEnd();
       return;
     }
     
-    // App is not installed - clear any old dismissal data
-    console.log('[PWA] App not in standalone mode, clearing all PWA data...');
+    console.log('%c[PWA] 📱 App NOT in standalone - clearing cache and setting up listeners', 'color: purple');
+    
+    // Clear any old dismissal data
     localStorage.removeItem('pwaPromptTime');
-    try {
-      sessionStorage.removeItem('pwaPromptTime');
-    } catch (e) {
-      // sessionStorage may not be available
-    }
-    
-    // Force unregister all service workers to make the browser re-evaluate PWA installability
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        console.log('[PWA] Found', registrations.length, 'service worker(s)');
-        
-        // Clean all registrations and let browser re-validate
-        for (let reg of registrations) {
-          console.log('[PWA] Unregistering SW at scope:', reg.scope);
-          reg.unregister().then(() => {
-            console.log('[PWA] SW unregistered, browser will re-evaluate PWA status');
-            // Add delay and re-register
-            setTimeout(() => {
-              navigator.serviceWorker.register('/sw.js', { 
-                scope: '/',
-                updateViaCache: 'none' 
-              }).then((reg) => {
-                console.log('[PWA] SW re-registered with fresh scope');
-              }).catch(err => {
-                console.error('[PWA] SW re-registration failed:', err);
-              });
-            }, 500);
-          });
-        }
-      }).catch(err => {
-        console.error('[PWA] Error getting SW registrations:', err);
-      });
-    }
-    
-    // Fetch manifest to verify it's valid
-    fetch('/manifest.json?cache-bust=' + Date.now())
-      .then(r => {
-        console.log('[PWA] Manifest HTTP status:', r.status);
-        return r.json();
-      })
-      .then(manifest => {
-        console.log('[PWA] Manifest is valid:', {
-          name: manifest.name,
-          display: manifest.display,
-          start_url: manifest.start_url,
-          icons: manifest.icons?.length
-        });
-      })
-      .catch(e => {
-        console.error('[PWA] Manifest fetch error:', e);
-      });
+    sessionStorage.removeItem('pwaPromptTime');
 
-    // Listen for beforeinstallprompt event
+    // Listen for beforeinstallprompt event - this is the main event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('%c[PWA] ✅✅✅ beforeinstallprompt EVENT CAPTURED!', 'color: green; font-size: 16px; font-weight: bold;');
       e.preventDefault();
-      console.log('[PWA] ✅ beforeinstallprompt event CAPTURED!');
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const event = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(event);
+      setEventCaptured(true);
       setShowPrompt(true);
     };
 
-    // Log that we're listening
-    console.log('[PWA] 👂 Listening for beforeinstallprompt event...');
+    // Register the listener immediately
+    console.log('%c[PWA] 👂 Registering beforeinstallprompt listener...', 'color: blue');
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Set debug mode after 3 seconds to show issue
-    const debugTimer = setTimeout(() => {
-      if (!deferredPrompt) {
-        console.warn('[PWA] ⚠️ WARNING: beforeinstallprompt event was NOT triggered after 3 seconds');
-        console.warn('[PWA] This may be normal on localhost or HTTP sites');
-        console.warn('[PWA] On production HTTPS, go to DevTools > Application > Manifest to check PWA requirements');
-        setDebugMode(true);
-      }
-    }, 3000);
-
-    // Check for app installed event
+    // Also set up app installed listener
     const handleAppInstalled = () => {
-      console.log('[PWA] ✅ App installed successfully');
+      console.log('%c[PWA] 🎉 App installed successfully!', 'color: green; font-size: 14px; font-weight: bold;');
       setIsInstalled(true);
       setShowPrompt(false);
       localStorage.removeItem('pwaPromptTime');
@@ -117,12 +63,13 @@ export function PWAInstallPrompt() {
 
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    console.groupEnd();
+
     return () => {
-      clearTimeout(debugTimer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [deferredPrompt]);
+  }, [eventCaptured, deferredPrompt]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
@@ -159,29 +106,8 @@ export function PWAInstallPrompt() {
     return null;
   }
 
-  // If no deferredPrompt, show diagnostic info in debug mode
+  // If no deferredPrompt, don't show anything
   if (!deferredPrompt) {
-    if (debugMode) {
-      return (
-        <div className="fixed bottom-20 right-4 z-50 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg max-w-xs">
-          <p className="text-sm text-yellow-800 dark:text-yellow-300">
-            ⚠️ <strong>PWA Issue:</strong> Install prompt not detected.
-          </p>
-          <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-2">
-            Check browser console for details. The app may need HTTPS or there could be a manifest issue.
-          </p>
-          <button
-            onClick={() => {
-              console.log('[PWA] Manifest check:', fetch('/manifest.json').then(r => r.json()));
-              console.log('[PWA] Service workers:', navigator.serviceWorker?.getRegistrations());
-            }}
-            className="text-xs mt-2 px-2 py-1 bg-yellow-200 dark:bg-yellow-700 rounded hover:bg-yellow-300 dark:hover:bg-yellow-600"
-          >
-            Check Manifest
-          </button>
-        </div>
-      );
-    }
     return null;
   }
 

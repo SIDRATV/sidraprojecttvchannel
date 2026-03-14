@@ -354,7 +354,7 @@ export default function PartenariatPage() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"
           >
             {[
               { label: 'Active Partners', value: mockPartners.filter(p => p.status === 'active' || p.status === 'featured').length },
@@ -379,7 +379,7 @@ export default function PartenariatPage() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4"
           >
             {filteredPartners.map((partner) => (
               <motion.div
@@ -400,13 +400,13 @@ export default function PartenariatPage() {
                   <div className="relative h-1 bg-gradient-to-r from-yellow-400 to-orange-400" />
                 )}
 
-                <div className="p-6">
+                <div className="p-4">
                   {/* Logo and Status */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30 rounded-xl flex items-center justify-center text-4xl">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-14 h-14 bg-gradient-to-br from-pink-100 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30 rounded-lg flex items-center justify-center text-3xl">
                       {partner.logo}
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                       partner.status === 'featured' ? 'bg-yellow-500 text-white' :
                       partner.status === 'active' ? 'bg-green-500 text-white' :
                       'bg-blue-500 text-white'
@@ -416,7 +416,7 @@ export default function PartenariatPage() {
                   </div>
 
                   {/* Name and Category */}
-                  <h3 className="text-xl font-bold text-gray-950 dark:text-white mb-2">
+                  <h3 className="text-lg font-bold text-gray-950 dark:text-white mb-1">
                     {partner.name}
                   </h3>
                   <p className="text-xs text-pink-600 dark:text-pink-400 font-semibold mb-3">
@@ -424,26 +424,26 @@ export default function PartenariatPage() {
                   </p>
 
                   {/* Description */}
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-1">
                     {partner.description}
                   </p>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-3">
                     <div className="flex items-center">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          size={16}
+                          size={14}
                           className={i < Math.floor(partner.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-700'}
                         />
                       ))}
                     </div>
-                    <span className="text-sm font-semibold text-gray-950 dark:text-white">
+                    <span className="text-xs font-semibold text-gray-950 dark:text-white">
                       {partner.rating}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-500">
-                      ({partner.reviews} reviews)
+                      ({partner.reviews})
                     </span>
                   </div>
 

@@ -103,7 +103,10 @@ export function BalanceCard({
                 <span className="text-3xl text-slate-400">-</span>
               )}
             </div>
-            <SDALogo size="md" className="mt-1" />
+            <div className="flex items-center gap-2">
+              <SDALogo size="md" className="mt-1" />
+              <span className="text-2xl font-bold text-white">{symbol}</span>
+            </div>
           </div>
         </motion.div>
 

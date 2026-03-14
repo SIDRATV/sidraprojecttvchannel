@@ -129,7 +129,7 @@ export default function WalletPage() {
             </span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Send and receive SIDRA tokens on SidraChain. Manage your on-chain and internal
+            Send and receive SDA tokens on SidraChain. Manage your on-chain and internal
             transfers with professional-grade security.
           </p>
         </div>
@@ -212,7 +212,7 @@ export default function WalletPage() {
         <motion.div variants={itemVariants}>
           <WalletSection
             title="Internal Transfers"
-            description="Send SIDRA to other platform users instantly"
+            description="Send SDA to other platform users instantly"
             icon={Send}
           >
             {authToken ? (

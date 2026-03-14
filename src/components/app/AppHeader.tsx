@@ -6,6 +6,7 @@ import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark } from 'lucid
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/providers/ProfileProvider';
 import { authService } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -21,6 +22,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const router = useRouter();
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -178,12 +180,20 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2 p-1 pl-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800/50 transition-colors"
             >
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                <User size={18} className="text-white" />
-              </div>
+              {profile?.profilePhoto ? (
+                <img
+                  src={profile.profilePhoto}
+                  alt="Profile"
+                  className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                  <User size={18} className="text-white" />
+                </div>
+              )}
               <div className="hidden lg:block text-left">
                 <p className="text-xs text-gray-600 dark:text-gray-400">Account</p>
-                <p className="text-sm font-semibold text-gray-950 dark:text-white">{user?.full_name?.split(' ')[0] || 'User'}</p>
+                <p className="text-sm font-semibold text-gray-950 dark:text-white">{profile?.fullName?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'User'}</p>
               </div>
             </motion.button>
 
@@ -198,9 +208,24 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                   className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden z-50"
                 >
                   {/* User Info */}
-                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Logged in as</p>
-                    <p className="text-sm font-semibold text-gray-950 dark:text-white mt-1">{user?.full_name || user?.email || 'User'}</p>
+                  <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                    <div className="flex items-center gap-3">
+                      {profile?.profilePhoto ? (
+                        <img
+                          src={profile.profilePhoto}
+                          alt="Profile"
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                          <User size={20} className="text-white" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Logged in as</p>
+                        <p className="text-sm font-semibold text-gray-950 dark:text-white mt-1">{profile?.fullName || user?.full_name || user?.email || 'User'}</p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Menu Items */}

@@ -9,6 +9,7 @@ import { authService } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { ContentSection } from '@/components/app/ContentSection';
+import { useProfile } from '@/providers/ProfileProvider';
 
 const watchHistory = [
   {
@@ -56,6 +57,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const { buildInfo, loading } = useBuildInfo();
   const router = useRouter();
+  const { profile, updateProfile } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -89,10 +91,10 @@ export default function ProfilePage() {
     }
   }, []);
 
-  // Save profile to localStorage
+  // Save profile to localStorage and update context
   const handleSaveProfile = () => {
     try {
-      localStorage.setItem('userProfile', JSON.stringify(editData));
+      updateProfile(editData);
       setProfileData(editData);
       setIsEditing(false);
     } catch (error) {

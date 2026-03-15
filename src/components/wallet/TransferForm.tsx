@@ -222,9 +222,13 @@ export function TransferForm({
 
       {userBalance && transferType === 'onchain' && (
         <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <p className="text-sm text-blue-800 dark:text-blue-300">
-            Available Balance: <span className="font-bold flex items-center gap-1 inline-flex">{userBalance} <SDALogo size="sm" /></span>
-          </p>
+          <div className="text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2">
+            <span>Available Balance: </span>
+            <span className="font-bold flex items-center gap-1">
+              {userBalance}
+              <SDALogo size="sm" />
+            </span>
+          </div>
         </div>
       )}
 

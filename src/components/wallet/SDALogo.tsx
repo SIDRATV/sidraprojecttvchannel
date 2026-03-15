@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface SDALogoProps {
@@ -19,18 +18,17 @@ export function SDALogo({ size = 'md', className, showLabel = false }: SDALogoPr
   const pixelSize = sizeMap[size];
 
   return (
-    <div className={cn('flex items-center gap-1.5', className)}>
-      <div className="relative" style={{ width: pixelSize, height: pixelSize }}>
-        <Image
-          src="/images/sda-logo.png"
-          alt="SDA Token Logo"
-          fill
-          className="object-contain rounded-full"
-          priority
-        />
-      </div>
+    <span className={cn('inline-flex items-center gap-1.5', className)}>
+      <img
+        src="/images/sda-logo.png"
+        alt="SDA Token Logo"
+        width={pixelSize}
+        height={pixelSize}
+        className="object-contain rounded-full inline-block"
+        style={{ width: `${pixelSize}px`, height: `${pixelSize}px` }}
+      />
       {showLabel && <span className="font-semibold text-white">SDA</span>}
-    </div>
+    </span>
   );
 }
 
@@ -39,15 +37,15 @@ export function SDALogoInline({ size = 'sm', className }: Omit<SDALogoProps, 'sh
   const pixelSize = sizeMap[size];
 
   return (
-    <div className={cn('inline-flex items-center', className)} style={{ width: pixelSize, height: pixelSize }}>
-      <Image
+    <span className={cn('inline-flex items-center', className)}>
+      <img
         src="/images/sda-logo.png"
         alt="SDA Token Logo"
         width={pixelSize}
         height={pixelSize}
-        className="object-contain rounded-full"
-        priority
+        className="object-contain rounded-full inline-block"
+        style={{ width: `${pixelSize}px`, height: `${pixelSize}px` }}
       />
-    </div>
+    </span>
   );
 }

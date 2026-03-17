@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Zap } from 'lucide-react';
 import { SIDRA_CHAIN_CONFIG } from '@/lib/web3-provider';
 import { useWeb3ModalAccount } from '@web3modal/ethers/react';
-import { SDALogo } from './SDALogo';
 
 interface NetworkStatusProps {
   isConnected: boolean;
@@ -101,12 +100,9 @@ export function NetworkStatus({ isConnected, isCorrectChain }: NetworkStatusProp
               <>
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 <div>
-                  <div className="flex items-center gap-2">
-                    <SDALogo size="sm" />
-                    <p className="text-sm font-semibold text-white">
-                      {SIDRA_CHAIN_CONFIG.chainName} Connected
-                    </p>
-                  </div>
+                  <p className="text-sm font-semibold text-white">
+                    {SIDRA_CHAIN_CONFIG.chainName} Connected
+                  </p>
                   <p className="text-xs text-slate-400 ml-6">Chain ID: {SIDRA_CHAIN_CONFIG.chainId}</p>
                 </div>
               </>

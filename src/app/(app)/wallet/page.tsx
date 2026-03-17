@@ -4,7 +4,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Wallet, History, TrendingUp, Zap } from 'lucide-react';
 import {
-  WalletConnect,
   TransferForm,
   TransactionHistory,
   NetworkStatus,
@@ -13,19 +12,13 @@ import {
   InfoCard,
 } from '@/components/wallet';
 import { SDALogo } from '@/components/wallet/SDALogo';
-import { getBalance } from '@/lib/web3-provider';
-import { useWeb3ModalAccount } from '@web3modal/ethers/react';
+import { getInternalBalance } from '@/lib/internalTransfer';
 
 export default function WalletPage() {
-  const [connectedAccount, setConnectedAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
-  const [activeTransferType, setActiveTransferType] = useState<'onchain' | 'internal'>(
-    'onchain'
-  );
+  const [activeTransferType, setActiveTransferType] = useState<'internal'>('internal');
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
-  const { chainId, isConnected } = useWeb3ModalAccount();
-  const isCorrectChain = chainId === 97453; // SidraChain ID
 
   // Get auth token from context or localStorage
   useEffect(() => {
@@ -33,26 +26,26 @@ export default function WalletPage() {
     setAuthToken(token);
   }, []);
 
-  // Fetch balance when account connects
+  // Fetch balance when auth token is available
   useEffect(() => {
-    if (connectedAccount) {
+    if (authToken) {
       refreshBalance();
     }
-  }, [connectedAccount]);
+  }, [authToken]);
 
   const refreshBalance = useCallback(async () => {
-    if (!connectedAccount) return;
+    if (!authToken) return;
 
     setIsRefreshingBalance(true);
     try {
-      const newBalance = await getBalance(connectedAccount);
-      setBalance(newBalance);
+      const internalBalance = await getInternalBalance(authToken);
+      setBalance(internalBalance.balance.toString());
     } catch (error) {
-      console.error('Error refreshing balance:', error);
+      console.error('Error fetching balance:', error);
     } finally {
       setIsRefreshingBalance(false);
     }
-  }, [connectedAccount]);
+  }, [authToken]);
 
   const handleTransferSuccess = useCallback(
     (txHash: string) => {
@@ -129,85 +122,12 @@ export default function WalletPage() {
             </span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Send and receive SDA tokens on SidraChain. Manage your on-chain and internal
-            transfers with professional-grade security.
+            Send and receive SDA tokens instantly. Manage your internal transfers with professional-grade security.
           </p>
         </div>
       </motion.div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        {/* Network Status */}
-        {isConnected && (
-          <motion.div variants={itemVariants}>
-            <NetworkStatus isConnected={isConnected} isCorrectChain={isCorrectChain} />
-          </motion.div>
-        )}
-
-        {/* Wallet Connection Section */}
-        <motion.div variants={itemVariants}>
-          <WalletSection
-            title="Connect Your Wallet"
-            description="Link your Web3 wallet to start making on-chain transfers"
-            icon={Wallet}
-          >
-            <WalletConnect
-              onAccountChange={setConnectedAccount}
-              onChainChange={() => {
-                if (connectedAccount) {
-                  refreshBalance();
-                }
-              }}
-            />
-          </WalletSection>
-        </motion.div>
-
-        {/* On-Chain Section */}
-        {connectedAccount && (
-          <motion.div variants={itemVariants}>
-            <WalletSection
-              title="On-Chain Transactions"
-              description="Send SIDRA directly on the blockchain with security and speed"
-              icon={TrendingUp}
-            >
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Balance Card */}
-                <BalanceCard
-                  title="On-Chain Balance"
-                  balance={balance}
-                  symbol="SDA"
-                  icon={<TrendingUp className="w-6 h-6" />}
-                  color="blue"
-                  onRefresh={refreshBalance}
-                  isRefreshing={isRefreshingBalance}
-                  subtitle="Blockchain balance"
-                />
-
-                {/* Transfer Form */}
-                <TransferForm
-                  walletAddress={connectedAccount}
-                  transferType="onchain"
-                  onSuccess={handleTransferSuccess}
-                />
-              </div>
-
-              {/* Transaction History */}
-              <motion.div variants={itemVariants} className="mt-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                    <History className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white">Recent Transactions</h3>
-                </div>
-                <TransactionHistory
-                  walletAddress={connectedAccount}
-                  transactionType="onchain"
-                  limit={10}
-                />
-              </motion.div>
-            </WalletSection>
-          </motion.div>
-        )}
-
         {/* Internal Transfer Section */}
         <motion.div variants={itemVariants}>
           <WalletSection
@@ -221,10 +141,12 @@ export default function WalletPage() {
                   {/* Balance Card */}
                   <BalanceCard
                     title="Platform Balance"
-                    balance="Coming Soon"
+                    balance={balance}
                     symbol="SDA"
                     icon={<Wallet className="w-6 h-6" />}
                     color="emerald"
+                    onRefresh={refreshBalance}
+                    isRefreshing={isRefreshingBalance}
                     subtitle="Internal wallet balance"
                   />
 
@@ -270,18 +192,6 @@ export default function WalletPage() {
         {/* Info Cards */}
         <motion.div variants={itemVariants}>
           <div className="space-y-4">
-            <InfoCard title="On-Chain Transfers" type="info">
-              <p>
-                • Send SIDRA directly on the blockchain using Web3 wallet
-              </p>
-              <p>
-                • Transactions are permanent and secured by SidraChain
-              </p>
-              <p>
-                • Small gas fees apply - check network status for latency
-              </p>
-            </InfoCard>
-
             <InfoCard title="Internal Transfers" type="success">
               <p>
                 • Send SIDRA to other platform users instantly
@@ -296,13 +206,13 @@ export default function WalletPage() {
 
             <InfoCard title="Security Best Practices" type="warning">
               <p>
-                ⚠️ Always verify recipient addresses before sending
+                ⚠️ Always verify recipient usernames before sending
               </p>
               <p>
-                ⚠️ Keep your wallet secure and never share private keys
+                ⚠️ Keep your account secure and never share your password
               </p>
               <p>
-                ⚠️ Test with small amounts first when using new addresses
+                ⚠️ Test with small amounts first when using new recipients
               </p>
             </InfoCard>
 
@@ -311,10 +221,10 @@ export default function WalletPage() {
                 💡 Use internal transfers for quick transfers between users
               </p>
               <p>
-                💡 On-chain transfers are blockchain-verified and permanent
+                💡 All transfers are recorded and can be viewed in your history
               </p>
               <p>
-                💡 Check network latency in the status card for optimal transactions
+                💡 Contact support if you need help with any transaction
               </p>
             </InfoCard>
           </div>

@@ -21,7 +21,6 @@
     "@radix-ui/react-slider": "^1.1.2",
     "@radix-ui/react-tabs": "^1.0.4",
     "@supabase/supabase-js": "^2.38.0",
-    "@web3modal/ethers": "^5.1.11",
     "axios": "^1.6.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",

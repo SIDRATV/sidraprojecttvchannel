@@ -5,18 +5,14 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Wallet, History, TrendingUp } from 'lucide-react';
-import { WalletConnect } from '@/components/wallet/WalletConnect';
 import { TransferForm } from '@/components/wallet/TransferForm';
 import { TransactionHistory } from '@/components/wallet/TransactionHistory';
 import { SDALogo } from '@/components/wallet/SDALogo';
-import { getBalance } from '@/lib/web3-provider';
+import { getInternalBalance } from '@/lib/internalTransfer';
 
 export default function WalletPage() {
-  const [connectedAccount, setConnectedAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
-  const [activeTransferType, setActiveTransferType] = useState<'onchain' | 'internal'>(
-    'onchain'
-  );
+  const [activeTransferType, setActiveTransferType] = useState<'internal'>('internal');
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
@@ -27,26 +23,26 @@ export default function WalletPage() {
     setAuthToken(token);
   }, []);
 
-  // Fetch balance when account connects
+  // Fetch balance when auth token is available
   useEffect(() => {
-    if (connectedAccount) {
+    if (authToken) {
       refreshBalance();
     }
-  }, [connectedAccount]);
+  }, [authToken]);
 
   const refreshBalance = useCallback(async () => {
-    if (!connectedAccount) return;
+    if (!authToken) return;
 
     setIsRefreshingBalance(true);
     try {
-      const newBalance = await getBalance(connectedAccount);
-      setBalance(newBalance);
+      const internalBalance = await getInternalBalance(authToken);
+      setBalance(internalBalance.balance.toString());
     } catch (error) {
-      console.error('Error refreshing balance:', error);
+      console.error('Error fetching balance:', error);
     } finally {
       setIsRefreshingBalance(false);
     }
-  }, [connectedAccount]);
+  }, [authToken]);
 
   const handleTransferSuccess = useCallback(
     (txHash: string) => {
@@ -93,58 +89,16 @@ export default function WalletPage() {
             <span className="text-gradient">Wallet</span>
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Send and receive SIDRA tokens on SidraChain. Manage your on-chain and internal
-            transfers in one place.
+            Send and receive SIDRA tokens instantly. Manage your internal transfers in one place.
           </p>
         </div>
       </motion.div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Wallet Connection Section */}
-        <motion.div variants={itemVariants}>
-          <WalletConnect
-            onAccountChange={setConnectedAccount}
-            onChainChange={() => {
-              // Chain changed, may need to refresh
-              if (connectedAccount) {
-                refreshBalance();
-              }
-            }}
-          />
-        </motion.div>
-
-        {connectedAccount && (
+        {authToken ? (
           <>
-            {/* Balance Cards */}
-            <motion.div variants={itemVariants} className="grid md:grid-cols-2 gap-6">
-              {/* On-Chain Balance */}
-              <motion.div
-                whileHover={{ y: -5 }}
-                className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                    On-Chain Balance
-                  </div>
-                  <TrendingUp className="w-5 h-5 text-blue-500" />
-                </div>
-                <div className="text-3xl md:text-4xl font-bold text-gray-950 dark:text-white mb-2 flex items-center gap-2">
-                  {balance ? parseFloat(balance).toFixed(4) : '-'}
-                  <SDALogo size="md" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Blockchain balance
-                </p>
-                <button
-                  onClick={refreshBalance}
-                  disabled={isRefreshingBalance}
-                  className="mt-4 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
-                >
-                  {isRefreshingBalance ? 'Refreshing...' : 'Refresh'}
-                </button>
-              </motion.div>
-
-              {/* Internal Balance */}
+            {/* Balance Card */}
+            <motion.div variants={itemVariants}>
               <motion.div
                 whileHover={{ y: -5 }}
                 className="bg-gradient-to-br from-green-500/10 to-emerald-600/5 border border-green-500/20 rounded-xl p-6"
@@ -156,55 +110,28 @@ export default function WalletPage() {
                   <Wallet className="w-5 h-5 text-green-500" />
                 </div>
                 <div className="text-3xl md:text-4xl font-bold text-gray-950 dark:text-white mb-2 flex items-center gap-2">
-                  -
+                  {balance ? parseFloat(balance).toFixed(4) : '-'}
                   <SDALogo size="md" />
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Platform balance
                 </p>
                 <button
-                  className="mt-4 text-sm text-green-600 dark:text-green-400 hover:underline"
+                  onClick={refreshBalance}
+                  disabled={isRefreshingBalance}
+                  className="mt-4 text-sm text-green-600 dark:text-green-400 hover:underline disabled:opacity-50"
                 >
-                  Refresh
+                  {isRefreshingBalance ? 'Refreshing...' : 'Refresh'}
                 </button>
               </motion.div>
             </motion.div>
 
-            {/* Transfer Type Selection */}
-            <motion.div variants={itemVariants} className="flex gap-2 bg-gray-100 dark:bg-gray-900 p-1 rounded-lg w-fit">
-              {[
-                { id: 'onchain' as const, label: 'On-Chain Transfer', icon: Send },
-                { id: 'internal' as const, label: 'Internal Transfer', icon: Send },
-              ].map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTransferType(id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                    activeTransferType === id
-                      ? 'bg-brand-500 text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </button>
-              ))}
-            </motion.div>
-
-            {/* Transfer Forms - Two Column Layout */}
-            <motion.div variants={itemVariants} className="grid md:grid-cols-2 gap-6">
-              {/* On-Chain Transfer */}
+            {/* Transfer Form */}
+            <motion.div variants={itemVariants}>
               <TransferForm
-                walletAddress={connectedAccount}
-                transferType="onchain"
-                onSuccess={handleTransferSuccess}
-              />
-
-              {/* Internal Transfer */}
-              <TransferForm
-                walletAddress={connectedAccount}
+                walletAddress={null}
                 transferType="internal"
-                authToken={authToken || undefined}
+                authToken={authToken}
                 onSuccess={handleTransferSuccess}
               />
             </motion.div>
@@ -218,30 +145,10 @@ export default function WalletPage() {
                 </h2>
               </div>
 
-              {/* Tab Selection */}
-              <div className="mb-4 flex gap-2">
-                {[
-                  { id: 'all', label: 'All Transactions' },
-                  { id: 'onchain', label: 'On-Chain' },
-                  { id: 'internal', label: 'Internal' },
-                ].map(({ id, label }) => (
-                  <button
-                    key={id}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeTransferType === 'onchain' && id === 'all'
-                        ? 'bg-brand-500 text-white'
-                        : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
               <TransactionHistory
-                walletAddress={connectedAccount}
-                transactionType="all"
-                authToken={authToken || undefined}
+                walletAddress={null}
+                transactionType="internal"
+                authToken={authToken}
                 limit={10}
               />
             </motion.div>
@@ -269,6 +176,12 @@ export default function WalletPage() {
               </ul>
             </motion.div>
           </>
+        ) : (
+          <motion.div variants={itemVariants} className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">
+              Please log in to access your wallet.
+            </p>
+          </motion.div>
         )}
       </div>
     </motion.div>

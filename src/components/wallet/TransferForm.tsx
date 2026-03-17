@@ -3,16 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import { ethers } from 'ethers';
 import { Button } from '@/components/ui/Button';
-import { getBalance, sendTransaction } from '@/lib/web3-provider';
-import { useWeb3Provider } from '@/hooks/useWeb3Provider';
 import { sendInternalTransfer, verifyUsername, estimateTransferFee } from '@/lib/internalTransfer';
 import { SDALogo } from './SDALogo';
-
 interface TransferFormProps {
   walletAddress: string | null;
-  transferType: 'onchain' | 'internal';
+  transferType: 'internal';
   onSuccess?: (txHash: string) => void;
   onError?: (error: string) => void;
   authToken?: string;
@@ -33,8 +29,6 @@ export function TransferForm({
   onError,
   authToken,
 }: TransferFormProps) {
-  // Get Web3 provider from Web3Modal
-  const { getSigner } = useWeb3Provider();
 
   const [formData, setFormData] = useState({
     recipient: '',
@@ -43,33 +37,15 @@ export function TransferForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [userBalance, setUserBalance] = useState<string | null>(null);
   const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
   const [isValidating, setIsValidating] = useState(false);
 
-  // Fetch balance on mount or wallet change
-  useEffect(() => {
-    if (walletAddress && transferType === 'onchain') {
-      fetchBalance();
-    }
-  }, [walletAddress, transferType]);
-
   // Estimate fee when amount changes
   useEffect(() => {
-    if (transferType === 'internal' && formData.amount) {
+    if (formData.amount) {
       estimateFeeDebounced();
     }
-  }, [formData.amount, transferType]);
-
-  const fetchBalance = async () => {
-    try {
-      if (!walletAddress) return;
-      const balance = await getBalance(walletAddress);
-      setUserBalance(balance);
-    } catch (err: any) {
-      console.error('Error fetching balance:', err);
-    }
-  };
+  }, [formData.amount]);
 
   const estimateFeeDebounced = async () => {
     try {
@@ -84,28 +60,20 @@ export function TransferForm({
   };
 
   const validateRecipient = async () => {
-    if (transferType === 'onchain') {
-      const validation = require('ethers');
-      if (!validation.isAddress(formData.recipient)) {
-        setError('Invalid Ethereum address');
-        return false;
-      }
-    } else {
-      setIsValidating(true);
-      try {
-        const exists = await verifyUsername(formData.recipient);
-        if (!exists) {
-          setError('Username not found');
-          setIsValidating(false);
-          return false;
-        }
-      } catch (err) {
-        setError('Error validating username');
+    setIsValidating(true);
+    try {
+      const exists = await verifyUsername(formData.recipient);
+      if (!exists) {
+        setError('Username not found');
         setIsValidating(false);
         return false;
       }
+    } catch (err) {
+      setError('Error validating username');
       setIsValidating(false);
+      return false;
     }
+    setIsValidating(false);
     return true;
   };
 
@@ -114,23 +82,13 @@ export function TransferForm({
 
     // Check recipient
     if (!formData.recipient.trim()) {
-      setError(
-        transferType === 'onchain'
-          ? 'Recipient address is required'
-          : 'Username is required'
-      );
+      setError('Username is required');
       return false;
     }
 
     // Check amount
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       setError('Amount must be greater than 0');
-      return false;
-    }
-
-    // Check balance
-    if (userBalance && parseFloat(formData.amount) > parseFloat(userBalance)) {
-      setError('Insufficient balance');
       return false;
     }
 
@@ -152,35 +110,22 @@ export function TransferForm({
     try {
       let txHash: string;
 
-      if (transferType === 'onchain') {
-        // On-chain transfer - Get signer from Web3Provider
-        try {
-          const signer = await getSigner();
-          txHash = await sendTransaction(formData.recipient, formData.amount, signer);
-          setSuccess(
-            `Transaction sent! Hash: ${txHash.slice(0, 10)}...`
-          );
-        } catch (signerError: any) {
-          throw new Error(signerError.message || 'Failed to get wallet signer');
-        }
-      } else {
-        // Internal transfer
-        if (!authToken) {
-          throw new Error('Authentication required');
-        }
-        const response = await sendInternalTransfer(
-          {
-            recipientUsername: formData.recipient,
-            amount: parseFloat(formData.amount),
-            description: '',
-          },
-          authToken
-        );
-        txHash = response.transactionId;
-        setSuccess(
-          `Transfer sent! Transaction ID: ${txHash.slice(0, 10)}...`
-        );
+      // Internal transfer
+      if (!authToken) {
+        throw new Error('Authentication required');
       }
+      const response = await sendInternalTransfer(
+        {
+          recipientUsername: formData.recipient,
+          amount: parseFloat(formData.amount),
+          description: '',
+        },
+        authToken
+      );
+      txHash = response.transactionId;
+      setSuccess(
+        `Transfer sent! Transaction ID: ${txHash.slice(0, 10)}...`
+      );
 
       // Reset form
       setFormData({ recipient: '', amount: '' });
@@ -197,18 +142,15 @@ export function TransferForm({
     }
   };
 
-  const placeholderText =
-    transferType === 'onchain'
-      ? '0x742d35Cc6634C0532925a3b844Bc868e4D64e6Ef'
-      : 'username';
+  const placeholderText = 'username';
 
   const totalAmount =
     estimatedFee && formData.amount
       ? (parseFloat(formData.amount) + estimatedFee).toFixed(4)
       : formData.amount;
 
-  // Check if form should be disabled based on transfer type
-  const isFormDisabled = transferType === 'onchain' ? !walletAddress : !authToken;
+  // Check if form should be disabled
+  const isFormDisabled = !authToken;
 
   return (
     <motion.div
@@ -217,26 +159,14 @@ export function TransferForm({
       className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/30 border border-gray-200 dark:border-gray-700 rounded-xl p-6"
     >
       <h3 className="text-lg font-bold text-gray-950 dark:text-white mb-6">
-        {transferType === 'onchain' ? 'On-Chain Transfer' : 'Internal Transfer'}
+        Internal Transfer
       </h3>
-
-      {userBalance && transferType === 'onchain' && (
-        <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2">
-            <span>Available Balance: </span>
-            <span className="font-bold flex items-center gap-1">
-              {userBalance}
-              <SDALogo size="sm" />
-            </span>
-          </div>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Recipient Input */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {transferType === 'onchain' ? 'Recipient Address' : 'Recipient Username'}
+            Recipient Username
           </label>
           <div className="relative">
             <input
@@ -249,7 +179,7 @@ export function TransferForm({
               disabled={isLoading}
               className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition disabled:opacity-50"
             />
-            {isValidating && transferType === 'internal' && (
+            {isValidating && (
               <Loader className="absolute right-3 top-3 w-5 h-5 text-brand-500 animate-spin" />
             )}
           </div>
@@ -276,7 +206,7 @@ export function TransferForm({
         </div>
 
         {/* Fee Info (Internal Transfer) */}
-        {transferType === 'internal' && estimatedFee !== null && (
+        {estimatedFee !== null && (
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg space-y-1">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Amount:</span>
@@ -297,7 +227,7 @@ export function TransferForm({
                 Total:
               </span>
               <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1">
-                {totalAmount} <SDALogo size="sm" />
+                {totalAmount} 
               </span>
             </div>
           </div>

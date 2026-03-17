@@ -58,17 +58,17 @@ export const videosCache = new SimpleCache<VideoItem[]>(36000);
 // ============ HTTP CACHE CONTROL UTILITIES ============
 
 export const CACHE_CONFIG = {
-  // Never cache HTML pages
-  html: 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0',
+  // Pages: Cache for 5 seconds with revalidation
+  html: 'public, max-age=5, must-revalidate, s-maxage=10',
 
-  // Never cache API responses
-  api: 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, proxy-revalidate',
+  // API responses: Cache for 5 seconds with revalidation
+  api: 'public, max-age=5, must-revalidate, s-maxage=10',
 
-  // Static assets can be cached but with revalidation
-  assets: 'public, max-age=3600, must-revalidate, s-maxage=3600',
+  // Static assets: Cache for 1 hour
+  assets: 'public, max-age=3600, must-revalidate',
 
-  // Never cache dynamic content
-  dynamic: 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0',
+  // Dynamic content: Cache for 5 seconds with revalidation
+  dynamic: 'public, max-age=5, must-revalidate, s-maxage=10',
 } as const;
 
 /**
@@ -79,11 +79,7 @@ export function getCacheHeaders(type: 'html' | 'api' | 'assets' | 'dynamic' = 'd
 
   return {
     'Cache-Control': cacheControl,
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'ETag': `W/"${Date.now()}"`,
-    'Last-Modified': new Date().toUTCString(),
-    'Surrogate-Control': 'no-store',
+    'Pragma': 'cache',
   };
 }
 

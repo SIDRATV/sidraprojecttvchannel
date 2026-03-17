@@ -15,25 +15,20 @@ export function middleware(request: NextRequest) {
   // Create response
   const response = NextResponse.next();
 
-  // ============ STRICT NO-CACHE POLICY ============
-  // Disable ALL caching for HTML pages and API routes
-  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, proxy-revalidate');
-  response.headers.set('Pragma', 'no-cache');
-  response.headers.set('Expires', '0');
-  response.headers.set('ETag', 'W/"' + Date.now() + '"');
+  // Skip aggressive caching for static files (let them be cached normally)
+  if (pathname.startsWith('/_next/') || pathname.startsWith('/public/') || pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js)$/)) {
+    return response;
+  }
 
-  // ============ SECURITY & FORCE REVALIDATION ============
+  // ============ REASONABLE NO-CACHE POLICY FOR PAGES ============
+  // Cache pages for 5 seconds, then revalidate in background
+  response.headers.set('Cache-Control', 'public, max-age=5, must-revalidate, s-maxage=10');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', new Date(Date.now() + 5000).toUTCString());
+
+  // ============ SECURITY HEADERS ============
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
-  response.headers.set('Surrogate-Control', 'no-store');
-
-  // ============ CDN BYPASS (important for cache networks) ============
-  // Tell CDN to never cache this response
-  response.headers.set('CDN-Cache-Control', 'no-cache, no-store');
-
-  // ============ FORCE BROWSER VALIDATION ============
-  // Tell browser to always check with server before showing cached version
-  response.headers.set('Last-Modified', new Date().toUTCString());
 
   // Users will be redirected to /login by the ProtectedRoute component if not authenticated
   return response;

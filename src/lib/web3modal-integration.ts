@@ -1,5 +1,4 @@
 // Web3Modal integration for transactions
-import { useWeb3ModalProvider } from '@web3modal/ethers/react';
 import { ethers } from 'ethers';
 import { SIDRA_CHAIN_CONFIG } from './web3-provider';
 

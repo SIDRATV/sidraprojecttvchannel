@@ -4,15 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Zap } from 'lucide-react';
 import { SIDRA_CHAIN_CONFIG } from '@/lib/web3-provider';
-import { useWeb3ModalAccount } from '@web3modal/ethers/react';
 
 interface NetworkStatusProps {
   isConnected: boolean;
   isCorrectChain: boolean;
+  chainId?: number;
 }
 
-export function NetworkStatus({ isConnected, isCorrectChain }: NetworkStatusProps) {
-  const { chainId } = useWeb3ModalAccount();
+export function NetworkStatus({ isConnected, isCorrectChain, chainId }: NetworkStatusProps) {
   const [networkLatency, setNetworkLatency] = useState<number | null>(null);
 
   useEffect(() => {

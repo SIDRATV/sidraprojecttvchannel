@@ -6,7 +6,6 @@ import { Send, Wallet, History, TrendingUp, Zap } from 'lucide-react';
 import {
   TransferForm,
   TransactionHistory,
-  NetworkStatus,
   BalanceCard,
   WalletSection,
   InfoCard,

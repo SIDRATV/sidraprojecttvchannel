@@ -246,6 +246,55 @@ CREATE TABLE internal_transactions (
 - [ ] Monitor for fraud patterns
 - [ ] Implement 2FA for large transfers
 
+## Production Environment Variables
+
+Set these on your server (never expose private keys to the client):
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Wallet chain + signer
+WALLET_RPC_URL=
+WALLET_CHAIN_NAME=sidra
+WALLET_CURRENCY=SIDRA
+WALLET_SIGNER_PRIVATE_KEY=
+
+# Deposit address derivation (unique per user)
+WALLET_DEPOSIT_MNEMONIC=
+WALLET_DEPOSIT_DERIVATION_PREFIX=m/44'/60'/0'/0/
+
+# Security + encryption
+WALLET_ENCRYPTION_KEY=
+WALLET_REQUIRE_2FA=false
+WALLET_2FA_MASTER_CODE=
+
+# Limits + fee + retries
+WALLET_INTERNAL_TRANSFER_FEE_BPS=100
+WALLET_WITHDRAWAL_MIN=0.01
+WALLET_WITHDRAWAL_SINGLE_LIMIT=500
+WALLET_WITHDRAWAL_DAILY_LIMIT=1000
+WALLET_WITHDRAWAL_MAX_RETRIES=3
+WALLET_WITHDRAWAL_RETRY_DELAY_MINUTES=10
+WALLET_MIN_CONFIRMATIONS=3
+WALLET_DEPOSIT_SYNC_BLOCKS=250
+
+# Admin/ops endpoints (sync + retry + monitoring)
+WALLET_ADMIN_API_KEY=
+```
+
+## Operational Endpoints
+
+- `POST /api/wallet/internal-transfer` (off-chain internal transfers)
+- `GET /api/wallet/internal-balance` (internal balance)
+- `GET /api/wallet/internal-transactions` (history + status)
+- `POST /api/wallet/withdraw` (queue on-chain withdrawal)
+- `GET /api/wallet/deposit-address` (unique deposit address per user)
+- `POST /api/wallet/deposits/sync` (detect and credit deposits; admin)
+- `POST /api/wallet/retry-failed` (retry failed/pending withdrawals; admin)
+- `GET /api/wallet/admin/monitoring` (admin monitoring)
+
 ## Gas Fees (On-Chain Transfers)
 
 On-chain transfers require gas fees. Users should be aware that:

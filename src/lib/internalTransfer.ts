@@ -15,18 +15,53 @@ export interface InternalTransferResponse {
 
 export interface InternalTransaction {
   id: string;
-  sender: string;
-  recipient: string;
+  type: 'internal_transfer' | 'withdrawal' | 'deposit' | 'fee' | 'adjustment';
+  direction: 'credit' | 'debit';
+  counterparty_user_id?: string | null;
   amount: number;
-  status: 'pending' | 'completed' | 'failed';
-  timestamp: string;
+  fee?: number;
+  status: 'pending' | 'success' | 'failed';
+  tx_hash?: string | null;
+  to_address?: string | null;
+  from_address?: string | null;
+  created_at: string;
   description?: string;
+  reference_id?: string | null;
+  retry_count?: number;
+  error_message?: string | null;
 }
 
 export interface InternalBalance {
   balance: number;
+  lockedBalance: number;
   currency: string;
   lastUpdated: string;
+}
+
+export interface WithdrawalRequest {
+  toAddress: string;
+  amount: number;
+  description?: string;
+}
+
+export interface WithdrawalResponse {
+  success: boolean;
+  withdrawalId: string;
+  transactionId: string;
+  amount: number;
+  fee: number;
+  status: 'pending' | 'success' | 'failed';
+  referenceId: string;
+  createdAt: string;
+  message: string;
+}
+
+export interface DepositAddressResponse {
+  success: boolean;
+  address: string;
+  network: string;
+  memo?: string | null;
+  createdAt: string;
 }
 
 /**
@@ -143,10 +178,11 @@ export const getInternalTransactionDetails = async (
 /**
  * Verify Username Exists
  */
-export const verifyUsername = async (username: string): Promise<boolean> => {
+export const verifyUsername = async (username: string, authToken?: string): Promise<boolean> => {
   try {
-    const response = await fetch(`/api/wallet/verify-username/${username}`, {
+    const response = await fetch(`/api/wallet/verify-username/${encodeURIComponent(username)}`, {
       method: 'GET',
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
     });
 
     if (!response.ok) {
@@ -183,5 +219,60 @@ export const estimateTransferFee = async (amount: number): Promise<number> => {
   } catch (error) {
     console.error('Error estimating fee:', error);
     return 0;
+  }
+};
+
+/**
+ * Request External Withdrawal
+ */
+export const requestWithdrawal = async (
+  request: WithdrawalRequest,
+  authToken: string,
+  twoFactorCode?: string
+): Promise<WithdrawalResponse> => {
+  try {
+    const response = await fetch('/api/wallet/withdraw', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+        ...(twoFactorCode ? { 'x-wallet-2fa': twoFactorCode } : {}),
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || error.error || 'Failed to request withdrawal');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error requesting withdrawal:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get User Deposit Address
+ */
+export const getDepositAddress = async (authToken: string): Promise<DepositAddressResponse> => {
+  try {
+    const response = await fetch('/api/wallet/deposit-address', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || error.error || 'Failed to get deposit address');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting deposit address:', error);
+    throw error;
   }
 };

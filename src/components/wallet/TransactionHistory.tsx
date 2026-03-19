@@ -193,7 +193,7 @@ interface TransactionRowProps {
 
 function TransactionRow({ tx, type }: TransactionRowProps) {
   const isBlockchain = type === 'onchain';
-  const isSent = !isBlockchain; // Assume internal txs are sent for now
+  const isSent = isBlockchain ? true : (tx as InternalTransaction).direction === 'debit';
 
   const getStatusIcon = () => {
     if (isBlockchain) {
@@ -203,7 +203,7 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
       return <Clock className="w-5 h-5 text-yellow-500" />;
     } else {
       const iTx = tx as InternalTransaction;
-      if (iTx.status === 'completed') return <CheckCircle className="w-5 h-5 text-green-500" />;
+      if (iTx.status === 'success') return <CheckCircle className="w-5 h-5 text-green-500" />;
       if (iTx.status === 'failed') return <XCircle className="w-5 h-5 text-red-500" />;
       return <Clock className="w-5 h-5 text-yellow-500" />;
     }
@@ -233,7 +233,15 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
       return shortenAddress(bcTx.to);
     } else {
       const iTx = tx as InternalTransaction;
-      return iTx.recipient;
+      if (iTx.to_address) {
+        return shortenAddress(iTx.to_address);
+      }
+
+      if (iTx.counterparty_user_id) {
+        return `User ${iTx.counterparty_user_id.slice(0, 8)}`;
+      }
+
+      return 'Internal wallet';
     }
 
     function shortenAddress(addr: string) {
@@ -257,7 +265,7 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     } else {
       const iTx = tx as InternalTransaction;
-      return formatDate(iTx.timestamp);
+      return formatDate(iTx.created_at);
     }
 
     function formatDate(timestamp: string) {

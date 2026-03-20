@@ -1,34 +1,60 @@
 import { supabase } from "@/lib/supabase";
 
 export const authService = {
-  async signUp(email: string, password: string, fullName: string) {
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
+  /**
+   * Register a new user via server-side API (uses service role for profile insert).
+   * Returns the session so the caller can set it on the Supabase client.
+   */
+  async signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    username: string
+  ) {
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, fullName, username }),
     });
 
-    if (signUpError) throw signUpError;
+    const data = await response.json();
 
-    if (authData.user?.id) {
-      const { error: profileError } = await (supabase
-        .from("users")
-        .insert(
-          [
-            {
-              id: authData.user.id,
-              email,
-              full_name: fullName,
-            },
-          ] as any
-        ) as any);
-
-      if (profileError) throw profileError;
+    if (!response.ok) {
+      throw new Error(data.error || 'Registration failed');
     }
 
-    return authData;
+    // Restore session on the client so subsequent Supabase calls are authenticated
+    if (data.session) {
+      await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+    }
+
+    return data;
   },
 
-  async signIn(email: string, password: string) {
+  /**
+   * Sign in with email OR username + password.
+   * If identifier looks like a username (no @), resolve it to an email first.
+   */
+  async signIn(identifier: string, password: string) {
+    let email = identifier.trim();
+
+    if (!email.includes('@')) {
+      // Resolve username → email via server-side API
+      const resp = await fetch(
+        `/api/auth/resolve-username?username=${encodeURIComponent(email)}`
+      );
+      const resolveData = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error('Invalid username or password');
+      }
+
+      email = resolveData.email;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -37,6 +63,7 @@ export const authService = {
     if (error) throw error;
     return data;
   },
+
 
   async signOut() {
     const { error } = await supabase.auth.signOut();

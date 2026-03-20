@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, AtSign, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { authService } from '@/services/auth';
@@ -13,6 +13,7 @@ import { authService } from '@/services/auth';
 export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,17 +29,23 @@ export default function SignupPage() {
       return;
     }
 
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+      setError('Username must be 3–30 characters (letters, numbers, underscores only)');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await authService.signUp(email, password, fullName);
-      // Store in localStorage for demo mode
-      localStorage.setItem('user', JSON.stringify({ email, full_name: fullName }));
+      await authService.signUp(email, password, fullName, username);
       router.push('/dashboard');
     } catch (err) {
-      // Demo mode - allow signup anyway
-      localStorage.setItem('user', JSON.stringify({ email, full_name: fullName }));
-      router.push('/dashboard');
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -80,7 +87,7 @@ export default function SignupPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mb-6 p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg flex items-center gap-2 transition-colors"
             >
-              <AlertCircle size={20} className="text-red-700 dark:text-red-400" />
+              <AlertCircle size={20} className="text-red-700 dark:text-red-400 shrink-0" />
               <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
             </motion.div>
           )}
@@ -89,7 +96,9 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">Full Name</label>
+              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+                Full Name
+              </label>
               <div className="relative">
                 <User className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
                 <input
@@ -97,15 +106,42 @@ export default function SignupPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="John Doe"
+                  autoComplete="name"
                   className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
                   required
                 />
               </div>
             </div>
 
+            {/* Username */}
+            <div>
+              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+                Username
+              </label>
+              <div className="relative">
+                <AtSign className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                  placeholder="john_doe"
+                  autoComplete="username"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
+                  required
+                  minLength={3}
+                  maxLength={30}
+                />
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                3–30 characters · letters, numbers and underscores only
+              </p>
+            </div>
+
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">Email Address</label>
+              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+                Email Address
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
                 <input
@@ -113,6 +149,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  autoComplete="email"
                   className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
                   required
                 />
@@ -121,7 +158,9 @@ export default function SignupPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">Password</label>
+              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+                Password
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
                 <input
@@ -129,15 +168,19 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
                   required
+                  minLength={6}
                 />
               </div>
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">Confirm Password</label>
+              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+                Confirm Password
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
                 <input
@@ -145,6 +188,7 @@ export default function SignupPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
                   required
                 />
@@ -152,7 +196,7 @@ export default function SignupPage() {
             </div>
 
             {/* Terms */}
-            <label className="flex items-start gap-2 mt-6">
+            <label className="flex items-start gap-2 mt-2">
               <input
                 type="checkbox"
                 className="w-4 h-4 mt-0.5 rounded bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700"
@@ -175,13 +219,13 @@ export default function SignupPage() {
               type="submit"
               size="lg"
               variant="primary"
-              className="w-full mt-6"
+              className="w-full mt-4"
               disabled={loading}
             >
               {loading ? (
                 <>
                   <Loader2 size={20} className="animate-spin" />
-                  Creating account...
+                  Creating account…
                 </>
               ) : (
                 'Create Account'
@@ -189,20 +233,13 @@ export default function SignupPage() {
             </Button>
           </form>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-700" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 transition-colors">or</span>
-            </div>
-          </div>
-
           {/* Login Link */}
-          <p className="text-center text-gray-600 dark:text-gray-400">
+          <p className="text-center text-gray-600 dark:text-gray-400 mt-6">
             Already have an account?{' '}
-            <Link href="/login" className="text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 font-semibold">
+            <Link
+              href="/login"
+              className="text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 font-semibold"
+            >
               Sign in
             </Link>
           </p>

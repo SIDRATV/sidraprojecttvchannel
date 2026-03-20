@@ -1,88 +1,57 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@/types";
+
+const fetchUserProfile = async (userId: string): Promise<User | null> => {
+  try {
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .single();
+    return data || null;
+  } catch {
+    return null;
+  }
+};
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        // Check localStorage first (demo mode)
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            setUser(JSON.parse(storedUser));
-          } catch (e) {
-            console.debug("Invalid stored user data");
-          }
-          setLoading(false);
-          return;
-        }
+    if (initialized.current) return;
+    initialized.current = true;
 
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-
-        if (authUser) {
-          const { data: userData } = await supabase
-            .from("users")
-            .select("*")
-            .eq("id", authUser.id)
-            .single();
-
-          setUser(userData || null);
-        }
-      } catch (error) {
-        // Supabase not configured, skip auth - demo mode
-        console.debug("Auth not available - demo mode");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getUser();
-
-    // Listen for storage changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user' && e.newValue) {
-        try {
-          setUser(JSON.parse(e.newValue));
-        } catch (e) {
-          console.debug("Invalid stored user data");
-        }
-      } else if (e.key === 'user' && !e.newValue) {
-        setUser(null);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-
-    try {
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Resolve the current session on mount
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
         if (session?.user) {
-          const { data: userData } = await supabase
-            .from("users")
-            .select("*")
-            .eq("id", session.user.id)
-            .single();
-
-          setUser(userData || null);
+          const profile = await fetchUserProfile(session.user.id);
+          setUser(profile);
         } else {
           setUser(null);
         }
-      });
+      })
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
 
-      return () => {
-        subscription?.unsubscribe();
-      };
-    } catch (error) {
-      console.debug("Auth listener setup skipped - demo mode");
-    }
+    // Keep in sync with auth state changes (login, logout, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return { user, loading };

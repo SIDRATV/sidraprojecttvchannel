@@ -185,17 +185,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   let [resource, config = {}] = args;
 
                   if (typeof resource === 'string') {
-                    // Add cache-busting timestamp to all requests EXCEPT _next/static
-                    if (!resource.includes('_next/static') && !resource.includes('_next/image')) {
+                    // Only add cache-busting to local API calls, NOT Supabase or external APIs
+                    const isLocalApi = resource.startsWith('/') || resource.includes(window.location.hostname);
+                    const isSupabase = resource.includes('supabase.co');
+                    const isNextStatic = resource.includes('_next/static') || resource.includes('_next/image');
+
+                    if (isLocalApi && !isSupabase && !isNextStatic) {
                       const separator = resource.includes('?') ? '&' : '?';
                       const timestamp = Date.now();
                       resource = resource + separator + 'v=' + timestamp;
                     }
 
-                    // Force no-cache headers for all requests
-                    config.headers = config.headers || {};
-                    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
-                    config.headers['Pragma'] = 'no-cache';
+                    // Force no-cache headers for local requests only
+                    if (isLocalApi && !isSupabase) {
+                      config.headers = config.headers || {};
+                      config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+                      config.headers['Pragma'] = 'no-cache';
+                    }
                   }
 
                   return originalFetch.apply(this, [resource, config]);

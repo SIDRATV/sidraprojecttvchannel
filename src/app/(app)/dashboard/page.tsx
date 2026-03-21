@@ -86,7 +86,7 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2">
                           <span className="flex items-center gap-1">
                             <Heart size={14} />
-                            {video.likes_count ?? 0}
+                            {video.likes ?? 0}
                           </span>
                           <span className="flex items-center gap-1">
                             <MessageCircle size={14} />

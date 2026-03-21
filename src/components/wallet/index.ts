@@ -6,3 +6,5 @@ export { BalanceCard } from './BalanceCard';
 export { WalletSection } from './WalletSection';
 export { InfoCard } from './InfoCard';
 export { SDALogo, SDALogoInline } from './SDALogo';
+export { WithdrawForm } from './WithdrawForm';
+export { DepositAddress } from './DepositAddress';

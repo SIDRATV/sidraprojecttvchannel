@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requestWithdrawal, requireAuthenticatedUser, requireOptional2FA } from '@/lib/wallet';
+import { internalTransfer, requireAuthenticatedUser, requireOptional2FA } from '@/lib/wallet';
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,22 +7,25 @@ export async function POST(request: NextRequest) {
     requireOptional2FA(request);
 
     const body = await request.json();
-    const network = body?.network === 'bsc' ? 'bsc' : body?.network === 'sidra' ? 'sidra' : undefined;
-    const result = await requestWithdrawal({
-      userId: user.id,
-      toAddress: String(body.toAddress || ''),
+    const result = await internalTransfer({
+      senderUserId: user.id,
+      recipientUsername: String(body.recipientUsername || ''),
       amount: Number(body.amount),
-      network,
       description: body.description ? String(body.description) : undefined,
     });
 
     return NextResponse.json({
       success: true,
-      ...result,
-      message: 'Withdrawal queued successfully',
+      transactionId: result.transactionId,
+      message: 'Transfer sent successfully',
+      amount: result.amount,
+      fee: result.fee,
+      status: result.status,
+      referenceId: result.referenceId,
+      timestamp: result.timestamp,
     });
   } catch (error: any) {
-    const message = error?.message || 'Failed to request withdrawal';
+    const message = error?.message || 'Failed to process transfer';
     const status = message.includes('Unauthorized') ? 401 : 400;
 
     return NextResponse.json({ error: message }, { status });

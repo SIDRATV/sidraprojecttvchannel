@@ -1,8 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Send, Wallet, History, TrendingUp, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Send,
+  Wallet,
+  History,
+  Zap,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Shield,
+  Globe,
+  Sparkles,
+  RefreshCw,
+} from 'lucide-react';
 import {
   TransferForm,
   TransactionHistory,
@@ -10,41 +21,38 @@ import {
   WalletSection,
   InfoCard,
 } from '@/components/wallet';
+import { WithdrawForm } from '@/components/wallet/WithdrawForm';
+import { DepositAddress } from '@/components/wallet/DepositAddress';
 import { SDALogo } from '@/components/wallet/SDALogo';
 import { getInternalBalance } from '@/lib/internalTransfer';
 import { supabase } from '@/lib/supabase';
 
+type WalletMode = 'internal' | 'external';
+
 export default function WalletPage() {
   const [balance, setBalance] = useState<string | null>(null);
-  const [activeTransferType, setActiveTransferType] = useState<'internal'>('internal');
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [walletMode, setWalletMode] = useState<WalletMode>('internal');
 
-  // Get auth token from Supabase session
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) {
-        setAuthToken(session.access_token);
-      }
+      if (session?.access_token) setAuthToken(session.access_token);
     });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_, session) => {
       setAuthToken(session?.access_token ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch balance when auth token is available
   useEffect(() => {
-    if (authToken) {
-      refreshBalance();
-    }
+    if (authToken) refreshBalance();
   }, [authToken]);
 
   const refreshBalance = useCallback(async () => {
     if (!authToken) return;
-
     setIsRefreshingBalance(true);
     try {
       const internalBalance = await getInternalBalance(authToken);
@@ -56,125 +64,239 @@ export default function WalletPage() {
     }
   }, [authToken]);
 
-  const handleTransferSuccess = useCallback(
-    (txHash: string) => {
-      setTimeout(() => {
-        refreshBalance();
-      }, 2000);
-    },
-    [refreshBalance]
-  );
+  const handleTransferSuccess = useCallback(() => {
+    setTimeout(() => refreshBalance(), 2000);
+  }, [refreshBalance]);
 
-  const containerVariants = {
+  /* ─── animation variants ─── */
+  const container = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
   };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5, ease: 'easeOut' },
-    },
+  const item = {
+    hidden: { opacity: 0, y: 24 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
   };
 
   return (
     <motion.div
-      variants={containerVariants}
+      variants={container}
       initial="hidden"
       animate="visible"
-      className="min-h-screen py-12 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
+      className="relative min-h-screen bg-[#060918] pb-20"
     >
-      {/* Animated background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            x: [0, 100, 0],
-            y: [0, -100, 0],
+      {/* ═══════════ Animated Background ═══════════ */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/4 h-[500px] w-[500px] rounded-full bg-blue-600/[0.07] blur-[120px]" />
+        <div className="absolute top-1/3 -right-40 h-[500px] w-[500px] rounded-full bg-purple-600/[0.07] blur-[120px]" />
+        <div className="absolute bottom-0 left-0 h-[400px] w-[400px] rounded-full bg-emerald-600/[0.05] blur-[120px]" />
+        {/* Grid overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
           }}
-          transition={{ duration: 20, repeat: Infinity }}
-          className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl opacity-20"
-        />
-        <motion.div
-          animate={{
-            x: [0, -100, 0],
-            y: [0, 100, 0],
-          }}
-          transition={{ duration: 25, repeat: Infinity }}
-          className="absolute bottom-20 right-10 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl opacity-20"
         />
       </div>
 
-      {/* Header */}
-      <motion.div variants={itemVariants} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-        <div className="text-center">
+      {/* ═══════════ Hero Header ═══════════ */}
+      <motion.div variants={item} className="relative z-10 pt-14 pb-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="inline-flexitems-center gap-2 px-4 py-2 mb-6 bg-blue-500/10 border border-blue-500/30 rounded-full backdrop-blur-sm"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 backdrop-blur-sm"
           >
-            <Zap className="w-4 h-4 text-blue-400" />
-            <span className="text-sm text-blue-300 font-medium">Secure & Fast Transfers</span>
+            <Zap className="h-3.5 w-3.5 text-blue-400" />
+            <span className="text-xs font-semibold tracking-wide text-blue-300">
+              Secure &amp; Instant
+            </span>
           </motion.div>
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tight">
+
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight">
             <span className="text-white">Digital </span>
-            <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent">
               Wallet
             </span>
           </h1>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Send and receive SDA tokens instantly. Manage your internal transfers with professional-grade security.
+
+          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-slate-400">
+            Manage your SDA tokens — transfer instantly between users or interact directly with
+            Sidra Chain &amp; BSC blockchains.
           </p>
         </div>
       </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        {/* Internal Transfer Section */}
-        <motion.div variants={itemVariants}>
-          <WalletSection
-            title="Internal Transfers"
-            description="Send SDA to other platform users instantly"
-            icon={Send}
+      {/* ═══════════ Mode Toggle ═══════════ */}
+      <motion.div variants={item} className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-10">
+        <div className="flex justify-center">
+          <div className="relative inline-flex rounded-2xl border border-white/10 bg-white/[0.04] p-1.5 backdrop-blur-xl shadow-xl shadow-black/20">
+            {/* Sliding pill */}
+            <motion.div
+              layout
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className={`absolute top-1.5 bottom-1.5 rounded-xl ${
+                walletMode === 'internal' ? 'left-1.5' : 'left-[calc(50%+2px)]'
+              }`}
+              style={{ width: 'calc(50% - 6px)' }}
+            >
+              <div className="h-full w-full rounded-xl bg-gradient-to-r from-blue-600/80 to-violet-600/80 shadow-lg shadow-blue-500/20" />
+            </motion.div>
+
+            <button
+              onClick={() => setWalletMode('internal')}
+              className={`relative z-10 flex items-center gap-2.5 rounded-xl px-6 py-3 text-sm font-semibold transition-colors ${
+                walletMode === 'internal' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Send className="h-4 w-4" />
+              <span>Internal Wallet</span>
+              <span className="ml-1 rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                Off-chain
+              </span>
+            </button>
+
+            <button
+              onClick={() => setWalletMode('external')}
+              className={`relative z-10 flex items-center gap-2.5 rounded-xl px-6 py-3 text-sm font-semibold transition-colors ${
+                walletMode === 'external' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Globe className="h-4 w-4" />
+              <span>External Wallet</span>
+              <span className="ml-1 rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                On-chain
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mode description */}
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={walletMode}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="mt-4 text-center text-sm text-slate-500"
           >
-            {authToken ? (
-              <>
-                <div className="grid md:grid-cols-2 gap-6">
+            {walletMode === 'internal'
+              ? 'Transfer SDA to platform users instantly — no gas fees, no blockchain delay.'
+              : 'Withdraw to external wallets on Sidra Chain or BSC, or deposit from any supported chain.'}
+          </motion.p>
+        </AnimatePresence>
+      </motion.div>
+
+      {/* ═══════════ Main Content ═══════════ */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {!authToken ? (
+          /* ── Not logged in ── */
+          <motion.div
+            variants={item}
+            className="flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-gradient-to-br from-blue-900/30 via-slate-900/50 to-purple-900/30 backdrop-blur-xl p-16 text-center shadow-2xl"
+          >
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30"
+            >
+              <Wallet className="h-10 w-10 text-blue-400" />
+            </motion.div>
+            <h2 className="mb-2 text-2xl font-bold text-white">Welcome to Your Wallet</h2>
+            <p className="mb-6 max-w-md text-slate-400">
+              Log in to access your wallet, transfer tokens, and interact with the blockchain.
+            </p>
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-5 py-2 text-sm font-medium text-blue-300">
+              <Shield className="h-4 w-4" /> Please log in to continue
+            </span>
+          </motion.div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {/* ════════════════ INTERNAL WALLET ════════════════ */}
+            {walletMode === 'internal' && (
+              <motion.div
+                key="internal"
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 40 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className="space-y-8"
+              >
+                {/* Balance + Transfer grid */}
+                <div className="grid gap-6 lg:grid-cols-2">
                   {/* Balance Card */}
-                  <BalanceCard
-                    title="Platform Balance"
-                    balance={balance}
-                    symbol="SDA"
-                    icon={<Wallet className="w-6 h-6" />}
-                    color="emerald"
-                    onRefresh={refreshBalance}
-                    isRefreshing={isRefreshingBalance}
-                    subtitle="Internal wallet balance"
-                  />
+                  <motion.div variants={item}>
+                    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-500/10 via-slate-900/60 to-cyan-500/10 backdrop-blur-xl p-6 shadow-2xl">
+                      <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl" />
+                      <div className="relative z-10">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-slate-400">Platform Balance</p>
+                            <p className="text-xs text-slate-500">Internal wallet</p>
+                          </div>
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30">
+                            <Wallet className="h-5 w-5 text-emerald-400" />
+                          </div>
+                        </div>
+
+                        <div className="mb-6 flex items-baseline gap-3">
+                          <span className="text-4xl font-extrabold tracking-tight text-white">
+                            {balance
+                              ? parseFloat(balance).toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 4,
+                                })
+                              : '—'}
+                          </span>
+                          <span className="text-lg font-bold text-emerald-400">SDA</span>
+                          <SDALogo size="md" />
+                        </div>
+
+                        <motion.button
+                          whileHover={{ scale: 1.04 }}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={refreshBalance}
+                          disabled={isRefreshingBalance}
+                          className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-medium text-emerald-300 transition hover:bg-white/10 disabled:opacity-50"
+                        >
+                          <motion.div
+                            animate={isRefreshingBalance ? { rotate: 360 } : {}}
+                            transition={
+                              isRefreshingBalance
+                                ? { duration: 1, repeat: Infinity, ease: 'linear' }
+                                : {}
+                            }
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </motion.div>
+                          {isRefreshingBalance ? 'Refreshing…' : 'Refresh'}
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
 
                   {/* Transfer Form */}
-                  <TransferForm
-                    walletAddress={null}
-                    transferType="internal"
-                    authToken={authToken}
-                    onSuccess={handleTransferSuccess}
-                  />
+                  <motion.div variants={item}>
+                    <TransferForm
+                      walletAddress={null}
+                      transferType="internal"
+                      authToken={authToken}
+                      onSuccess={handleTransferSuccess}
+                    />
+                  </motion.div>
                 </div>
 
                 {/* Transaction History */}
-                <motion.div variants={itemVariants} className="mt-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                      <History className="w-5 h-5 text-emerald-400" />
+                <motion.div variants={item}>
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10 border border-violet-500/30">
+                      <History className="h-4.5 w-4.5 text-violet-400" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white">Transfer History</h3>
+                    <h3 className="text-xl font-bold text-white">Transfer History</h3>
                   </div>
                   <TransactionHistory
                     walletAddress={null}
@@ -183,62 +305,118 @@ export default function WalletPage() {
                     limit={10}
                   />
                 </motion.div>
-              </>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-blue-900/40 to-blue-800/30 backdrop-blur-xl border border-blue-600/40 rounded-2xl p-8 text-center"
-              >
-                <p className="text-blue-300 text-lg font-medium">
-                  📝 Please log in to access your wallet.
-                </p>
+
+                {/* Info Cards */}
+                <motion.div variants={item} className="space-y-4">
+                  <InfoCard title="Internal Transfers" type="success">
+                    <p>• Send SIDRA to other platform users instantly</p>
+                    <p>• No gas fees — completely free transfers</p>
+                    <p>• Transactions processed immediately on our servers</p>
+                  </InfoCard>
+                  <InfoCard title="Security" type="warning">
+                    <p>⚠️ Always verify recipient usernames before sending</p>
+                    <p>⚠️ Test with small amounts first when using new recipients</p>
+                  </InfoCard>
+                </motion.div>
               </motion.div>
             )}
-          </WalletSection>
-        </motion.div>
 
-        {/* Info Cards */}
-        <motion.div variants={itemVariants}>
-          <div className="space-y-4">
-            <InfoCard title="Internal Transfers" type="success">
-              <p>
-                • Send SIDRA to other platform users instantly
-              </p>
-              <p>
-                • No gas fees - completely free transfers
-              </p>
-              <p>
-                • Transactions processed immediately on our servers
-              </p>
-            </InfoCard>
+            {/* ════════════════ EXTERNAL WALLET ════════════════ */}
+            {walletMode === 'external' && (
+              <motion.div
+                key="external"
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -40 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className="space-y-8"
+              >
+                {/* Balance row on external too */}
+                <motion.div variants={item}>
+                  <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-orange-500/10 via-slate-900/60 to-amber-500/10 backdrop-blur-xl p-6 shadow-2xl">
+                    <div className="pointer-events-none absolute -top-16 -left-16 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-slate-400">Available for Withdrawal</p>
+                        <div className="mt-1 flex items-baseline gap-3">
+                          <span className="text-3xl font-extrabold tracking-tight text-white">
+                            {balance
+                              ? parseFloat(balance).toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 4,
+                                })
+                              : '—'}
+                          </span>
+                          <span className="text-lg font-bold text-orange-400">SDA</span>
+                          <SDALogo size="md" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-300">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Sidra
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-medium text-amber-300">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          BSC
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
 
-            <InfoCard title="Security Best Practices" type="warning">
-              <p>
-                ⚠️ Always verify recipient usernames before sending
-              </p>
-              <p>
-                ⚠️ Keep your account secure and never share your password
-              </p>
-              <p>
-                ⚠️ Test with small amounts first when using new recipients
-              </p>
-            </InfoCard>
+                {/* Withdraw + Deposit grid */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <motion.div variants={item}>
+                    <WithdrawForm authToken={authToken} onSuccess={refreshBalance} />
+                  </motion.div>
+                  <motion.div variants={item}>
+                    <DepositAddress authToken={authToken} />
+                  </motion.div>
+                </div>
 
-            <InfoCard title="Pro Tips" type="tip">
-              <p>
-                💡 Use internal transfers for quick transfers between users
-              </p>
-              <p>
-                💡 All transfers are recorded and can be viewed in your history
-              </p>
-              <p>
-                💡 Contact support if you need help with any transaction
-              </p>
-            </InfoCard>
-          </div>
-        </motion.div>
+                {/* External Transaction History */}
+                <motion.div variants={item}>
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 border border-orange-500/30">
+                      <History className="h-4.5 w-4.5 text-orange-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white">On-Chain Activity</h3>
+                  </div>
+                  <TransactionHistory
+                    walletAddress={null}
+                    transactionType="all"
+                    authToken={authToken}
+                    limit={10}
+                  />
+                </motion.div>
+
+                {/* Info Cards */}
+                <motion.div variants={item} className="space-y-4">
+                  <InfoCard title="Withdrawals" type="info">
+                    <p>• Choose Sidra Chain or BSC as destination network</p>
+                    <p>• Transactions are signed securely on our backend</p>
+                    <p>• Transaction hash is stored for tracking on-chain</p>
+                  </InfoCard>
+                  <InfoCard title="Deposits" type="success">
+                    <p>• Send tokens to your unique deposit address</p>
+                    <p>• Deposits are credited after confirmation on-chain</p>
+                    <p>• Include the memo if provided for faster crediting</p>
+                  </InfoCard>
+                  <InfoCard title="Important" type="warning">
+                    <p>⚠️ Only send supported tokens — sending wrong tokens may result in loss</p>
+                    <p>⚠️ Blockchain transactions are irreversible — double-check all addresses</p>
+                    <p>⚠️ Withdrawal limits apply — contact support for higher limits</p>
+                  </InfoCard>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
+
+      {/* ═══════════ Bottom floating accent ═══════════ */}
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#060918] to-transparent z-20" />
     </motion.div>
   );
 }

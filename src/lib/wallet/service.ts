@@ -1,27 +1,83 @@
 import { ethers } from 'ethers';
 import { createServerClient } from '@/lib/supabase';
-import { calcFee, walletConfig } from './config';
-import { encryptText } from './crypto';
-import type { InternalTransferInput, WalletBalanceResult, WithdrawalInput } from './types';
+import { calcFee, supportedWalletNetworks, walletConfig } from './config';
+import { decryptText, encryptText } from './crypto';
+import type { InternalTransferInput, WalletBalanceResult, WalletNetwork, WithdrawalInput } from './types';
 
 const roundAmount = (amount: number): number => Number(amount.toFixed(8));
 
 const nowIso = (): string => new Date().toISOString();
 
-const getProvider = (): ethers.JsonRpcProvider => {
-  if (!walletConfig.rpcUrl) {
-    throw new Error('WALLET_RPC_URL is not configured');
+const normalizeNetwork = (value?: string | null): WalletNetwork => {
+  const normalized = String(value || walletConfig.chainName || 'sidra').trim().toLowerCase();
+  if (supportedWalletNetworks.includes(normalized as WalletNetwork)) {
+    return normalized as WalletNetwork;
   }
 
-  return new ethers.JsonRpcProvider(walletConfig.rpcUrl);
+  throw new Error(`Unsupported network: ${value || 'unknown'}. Allowed: ${supportedWalletNetworks.join(', ')}`);
 };
 
-const getSigner = (): ethers.Wallet => {
-  if (!walletConfig.signerPrivateKey) {
+const maybeDecryptAddress = (value: string | null | undefined): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  const parts = String(value).split(':');
+  if (parts.length !== 3) {
+    return String(value);
+  }
+
+  try {
+    return decryptText(String(value));
+  } catch {
+    return String(value);
+  }
+};
+
+const writeAuditLog = async (input: {
+  actorUserId?: string | null;
+  action: string;
+  targetId?: string | null;
+  details?: Record<string, unknown>;
+}): Promise<void> => {
+  try {
+    const supabase = createServerClient();
+    await supabase.from('wallet_audit_logs').insert({
+      actor_user_id: input.actorUserId || null,
+      action: input.action,
+      target_id: input.targetId || null,
+      details: input.details || {},
+    });
+  } catch {
+    // best-effort audit logging
+  }
+};
+
+const getProvider = (network: WalletNetwork): ethers.JsonRpcProvider => {
+  const rpcUrl = walletConfig.rpcUrls[network] || (network === 'sidra' ? walletConfig.rpcUrl : '');
+  if (!rpcUrl) {
+    throw new Error(`RPC URL is not configured for network: ${network}`);
+  }
+
+  return new ethers.JsonRpcProvider(rpcUrl);
+};
+
+const getSigner = (network: WalletNetwork): ethers.Wallet => {
+  let signerPrivateKey = walletConfig.signerPrivateKey;
+
+  if (walletConfig.signerPrivateKeyEncrypted) {
+    try {
+      signerPrivateKey = decryptText(walletConfig.signerPrivateKeyEncrypted);
+    } catch {
+      throw new Error('WALLET_SIGNER_PRIVATE_KEY_ENCRYPTED could not be decrypted');
+    }
+  }
+
+  if (!signerPrivateKey) {
     throw new Error('WALLET_SIGNER_PRIVATE_KEY is not configured');
   }
 
-  return new ethers.Wallet(walletConfig.signerPrivateKey, getProvider());
+  return new ethers.Wallet(signerPrivateKey, getProvider(network));
 };
 
 const getUserByUsername = async (username: string) => {
@@ -103,7 +159,15 @@ export const getInternalTransactions = async (userId: string, limit = 20, offset
     throw new Error(`Failed to fetch wallet transactions: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []).map((row) => {
+    const toAddress = maybeDecryptAddress(row.to_address);
+    const fromAddress = maybeDecryptAddress(row.from_address);
+    return {
+      ...row,
+      to_address: toAddress,
+      from_address: fromAddress,
+    };
+  });
 };
 
 export const internalTransfer = async (input: InternalTransferInput) => {
@@ -139,6 +203,19 @@ export const internalTransfer = async (input: InternalTransferInput) => {
   if (error || !data) {
     throw new Error(error?.message || 'Internal transfer failed');
   }
+
+  await writeAuditLog({
+    actorUserId: senderUserId,
+    action: 'wallet.internal_transfer.success',
+    targetId: String(data),
+    details: {
+      recipientId: recipient.id,
+      recipientUsername: recipient.username,
+      amount: roundAmount(amount),
+      fee,
+      referenceId,
+    },
+  });
 
   return {
     transactionId: data,
@@ -192,8 +269,11 @@ const getTodayWithdrawnAmount = async (userId: string): Promise<number> => {
 
 export const requestWithdrawal = async (input: WithdrawalInput) => {
   const { userId, amount, toAddress, description } = input;
+  const network = normalizeNetwork(input.network);
 
-  if (!ethers.isAddress(toAddress)) {
+  const normalizedToAddress = String(toAddress || '').trim().toLowerCase();
+
+  if (!ethers.isAddress(normalizedToAddress)) {
     throw new Error('Invalid destination wallet address');
   }
 
@@ -214,7 +294,7 @@ export const requestWithdrawal = async (input: WithdrawalInput) => {
   }
 
   const fee = calcFee(amount);
-  const encryptedAddress = encryptText(toAddress.toLowerCase());
+  const encryptedAddress = encryptText(normalizedToAddress);
   const supabase = createServerClient();
   const referenceId = `wdr_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
 
@@ -222,8 +302,8 @@ export const requestWithdrawal = async (input: WithdrawalInput) => {
     p_user_id: userId,
     p_amount: roundAmount(amount),
     p_fee: fee,
-    p_to_address: toAddress,
-    p_network: walletConfig.chainName,
+    p_to_address: encryptedAddress,
+    p_network: network,
     p_description: description || null,
     p_reference_id: referenceId,
   });
@@ -248,11 +328,25 @@ export const requestWithdrawal = async (input: WithdrawalInput) => {
     throw new Error(`Withdrawal queued but metadata update failed: ${metadataError.message}`);
   }
 
+  await writeAuditLog({
+    actorUserId: userId,
+    action: 'wallet.withdrawal.queued',
+    targetId: payload.withdrawal_id,
+    details: {
+      transactionId: payload.transaction_id,
+      amount: roundAmount(amount),
+      fee,
+      network,
+      referenceId,
+    },
+  });
+
   return {
     withdrawalId: payload.withdrawal_id,
     transactionId: payload.transaction_id,
     amount: roundAmount(amount),
     fee,
+    network,
     status: 'pending' as const,
     referenceId,
     createdAt: nowIso(),
@@ -364,11 +458,31 @@ const markWithdrawalFailed = async (withdrawal: any, errorMessage: string) => {
 };
 
 const processSingleWithdrawal = async (withdrawal: any) => {
-  const signer = getSigner();
+  const withdrawalNetwork = normalizeNetwork(withdrawal.network);
+  const signer = getSigner(withdrawalNetwork);
+  const destinationAddress = maybeDecryptAddress(withdrawal.to_address);
+
+  if (!destinationAddress || !ethers.isAddress(destinationAddress)) {
+    await markWithdrawalFailed(withdrawal, 'Invalid encrypted destination address');
+    await writeAuditLog({
+      actorUserId: withdrawal.user_id,
+      action: 'wallet.withdrawal.failed',
+      targetId: withdrawal.id,
+      details: {
+        reason: 'Invalid encrypted destination address',
+      },
+    });
+
+    return {
+      withdrawalId: withdrawal.id,
+      status: 'failed',
+      error: 'Invalid encrypted destination address',
+    };
+  }
 
   try {
     const tx = await signer.sendTransaction({
-      to: withdrawal.to_address,
+      to: destinationAddress,
       value: ethers.parseEther(String(withdrawal.amount)),
     });
 
@@ -379,6 +493,16 @@ const processSingleWithdrawal = async (withdrawal: any) => {
     }
 
     await markWithdrawalSuccess(withdrawal, tx.hash);
+    await writeAuditLog({
+      actorUserId: withdrawal.user_id,
+      action: 'wallet.withdrawal.success',
+      targetId: withdrawal.id,
+      details: {
+        txHash: tx.hash,
+        amount: Number(withdrawal.amount || 0),
+        network: withdrawalNetwork,
+      },
+    });
 
     return {
       withdrawalId: withdrawal.id,
@@ -387,6 +511,16 @@ const processSingleWithdrawal = async (withdrawal: any) => {
     };
   } catch (error: any) {
     await markWithdrawalFailed(withdrawal, error?.message || 'Withdrawal broadcast failed');
+    await writeAuditLog({
+      actorUserId: withdrawal.user_id,
+      action: 'wallet.withdrawal.failed',
+      targetId: withdrawal.id,
+      details: {
+        reason: error?.message || 'Withdrawal broadcast failed',
+        attempts: Number(withdrawal.attempts || 0) + 1,
+        network: withdrawalNetwork,
+      },
+    });
 
     return {
       withdrawalId: withdrawal.id,
@@ -405,7 +539,7 @@ export const processPendingWithdrawals = async (options?: { onlyFailed?: boolean
 
   const { data: withdrawals, error } = await supabase
     .from('wallet_withdrawals')
-    .select('id, user_id, amount, fee, to_address, status, attempts, next_retry_at, wallet_transaction_id')
+    .select('id, user_id, amount, fee, to_address, network, status, attempts, next_retry_at, wallet_transaction_id')
     .in('status', statuses)
     .or(`next_retry_at.is.null,next_retry_at.lte.${now}`)
     .order('created_at', { ascending: true })
@@ -484,6 +618,16 @@ export const getOrCreateDepositAddress = async (userId: string) => {
     throw new Error(`Failed to create deposit address: ${createError?.message || 'Unknown error'}`);
   }
 
+  await writeAuditLog({
+    actorUserId: userId,
+    action: 'wallet.deposit_address.created',
+    targetId: created.id,
+    details: {
+      network: created.network,
+      derivationIndex: created.derivation_index,
+    },
+  });
+
   return created;
 };
 
@@ -495,14 +639,16 @@ const safeGetBlock = async (provider: ethers.JsonRpcProvider, blockNumber: numbe
   }
 };
 
-export const syncDeposits = async (options?: { maxBlocks?: number }) => {
+export const syncDeposits = async (options?: { maxBlocks?: number; network?: WalletNetwork }) => {
   const supabase = createServerClient();
-  const provider = getProvider();
+  const network = normalizeNetwork(options?.network);
+  const provider = getProvider(network);
 
   const { data: addresses, error: addressError } = await supabase
     .from('wallet_deposit_addresses')
     .select('id, user_id, address, network, last_checked_block')
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .eq('network', network);
 
   if (addressError) {
     throw new Error(`Failed to load deposit addresses: ${addressError.message}`);
@@ -572,7 +718,7 @@ export const syncDeposits = async (options?: { maxBlocks?: number }) => {
           p_user_id: depositOwner.user_id,
           p_amount: roundAmount(amount),
           p_tx_hash: tx.hash,
-          p_network: walletConfig.chainName,
+          p_network: network,
           p_deposit_address: to,
           p_confirmations: confirmations,
           p_metadata: {
@@ -583,6 +729,17 @@ export const syncDeposits = async (options?: { maxBlocks?: number }) => {
 
         if (!creditError) {
           credited += 1;
+          await writeAuditLog({
+            actorUserId: depositOwner.user_id,
+            action: 'wallet.deposit.credited',
+            targetId: tx.hash,
+            details: {
+              amount: roundAmount(amount),
+              address: to,
+              confirmations,
+              blockNumber: Number(receipt.blockNumber),
+            },
+          });
         }
       } catch {
         // intentionally ignore duplicate-credit race conditions
@@ -600,6 +757,7 @@ export const syncDeposits = async (options?: { maxBlocks?: number }) => {
   }
 
   return {
+    network,
     scannedBlocks,
     credited,
     matches,

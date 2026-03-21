@@ -1,4 +1,5 @@
 export type WalletTransactionStatus = 'pending' | 'success' | 'failed';
+export type WalletNetwork = 'sidra' | 'bsc';
 
 export interface AuthenticatedWalletUser {
   id: string;
@@ -19,6 +20,7 @@ export interface WithdrawalInput {
   userId: string;
   toAddress: string;
   amount: number;
+  network?: WalletNetwork;
   description?: string;
 }
 

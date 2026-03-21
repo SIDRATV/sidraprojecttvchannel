@@ -4,11 +4,23 @@ const toNumber = (value: string | undefined, fallback: number): number => {
   return Number.isFinite(num) ? num : fallback;
 };
 
+export const supportedWalletNetworks = ['sidra', 'bsc'] as const;
+export type WalletNetwork = (typeof supportedWalletNetworks)[number];
+
+const defaultNetwork = String(process.env.WALLET_CHAIN_NAME || 'sidra').toLowerCase();
+
+const fallbackSidraRpc = process.env.WALLET_RPC_URL || process.env.NEXT_PUBLIC_SIDRA_RPC_URL || '';
+
 export const walletConfig = {
   currency: process.env.WALLET_CURRENCY || 'SIDRA',
-  chainName: process.env.WALLET_CHAIN_NAME || 'sidra',
-  rpcUrl: process.env.WALLET_RPC_URL || process.env.NEXT_PUBLIC_SIDRA_RPC_URL || '',
+  chainName: supportedWalletNetworks.includes(defaultNetwork as WalletNetwork) ? defaultNetwork : 'sidra',
+  rpcUrls: {
+    sidra: process.env.WALLET_RPC_URL_SIDRA || fallbackSidraRpc,
+    bsc: process.env.WALLET_RPC_URL_BSC || '',
+  } as Record<WalletNetwork, string>,
+  rpcUrl: fallbackSidraRpc,
   signerPrivateKey: process.env.WALLET_SIGNER_PRIVATE_KEY || '',
+  signerPrivateKeyEncrypted: process.env.WALLET_SIGNER_PRIVATE_KEY_ENCRYPTED || '',
   depositMnemonic: process.env.WALLET_DEPOSIT_MNEMONIC || '',
   depositDerivationPathPrefix: process.env.WALLET_DEPOSIT_DERIVATION_PREFIX || "m/44'/60'/0'/0/",
   encryptionKey: process.env.WALLET_ENCRYPTION_KEY || '',

@@ -4,6 +4,7 @@ export type Database = {
       users: {
         Row: {
           id: string;
+          username: string | null;
           email: string;
           full_name: string;
           avatar_url: string | null;
@@ -14,6 +15,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          username?: string | null;
           email: string;
           full_name: string;
           avatar_url?: string | null;
@@ -24,6 +26,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          username?: string | null;
           email?: string;
           full_name?: string;
           avatar_url?: string | null;
@@ -32,6 +35,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       videos: {
         Row: {
@@ -96,6 +100,7 @@ export type Database = {
           is_featured?: boolean;
           video_type?: "documentary" | "tutorial" | "news" | "interview";
         };
+        Relationships: [];
       };
       categories: {
         Row: {
@@ -122,6 +127,7 @@ export type Database = {
           color?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       comments: {
         Row: {
@@ -151,6 +157,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       likes: {
         Row: {
@@ -171,6 +178,7 @@ export type Database = {
           video_id?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       newsletter: {
         Row: {
@@ -188,29 +196,283 @@ export type Database = {
           email?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       analytics: {
         Row: {
           id: string;
           video_id: string;
           views: number;
-          watch_time: number;
+          completion_rate: number;
+          avg_watch_time: number;
+          date: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           video_id: string;
           views?: number;
-          watch_time?: number;
+          completion_rate?: number;
+          avg_watch_time?: number;
+          date?: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           video_id?: string;
           views?: number;
-          watch_time?: number;
+          completion_rate?: number;
+          avg_watch_time?: number;
+          date?: string;
           created_at?: string;
         };
+        Relationships: [];
+      };
+      wallet_accounts: {
+        Row: {
+          id: string;
+          user_id: string;
+          balance: number;
+          locked_balance: number;
+          currency: string;
+          updated_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          balance?: number;
+          locked_balance?: number;
+          currency?: string;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          balance?: number;
+          locked_balance?: number;
+          currency?: string;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      wallet_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          counterparty_user_id: string | null;
+          type: "internal_transfer" | "withdrawal" | "deposit" | "fee" | "adjustment";
+          direction: "credit" | "debit";
+          amount: number;
+          fee: number;
+          status: "pending" | "success" | "failed";
+          network: string | null;
+          tx_hash: string | null;
+          to_address: string | null;
+          from_address: string | null;
+          deposit_address: string | null;
+          reference_id: string | null;
+          retry_count: number;
+          error_message: string | null;
+          description: string | null;
+          metadata: Record<string, any> | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          counterparty_user_id?: string | null;
+          type: "internal_transfer" | "withdrawal" | "deposit" | "fee" | "adjustment";
+          direction: "credit" | "debit";
+          amount: number;
+          fee?: number;
+          status?: "pending" | "success" | "failed";
+          network?: string | null;
+          tx_hash?: string | null;
+          to_address?: string | null;
+          from_address?: string | null;
+          deposit_address?: string | null;
+          reference_id?: string | null;
+          retry_count?: number;
+          error_message?: string | null;
+          description?: string | null;
+          metadata?: Record<string, any> | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          counterparty_user_id?: string | null;
+          type?: "internal_transfer" | "withdrawal" | "deposit" | "fee" | "adjustment";
+          direction?: "credit" | "debit";
+          amount?: number;
+          fee?: number;
+          status?: "pending" | "success" | "failed";
+          network?: string | null;
+          tx_hash?: string | null;
+          to_address?: string | null;
+          from_address?: string | null;
+          deposit_address?: string | null;
+          reference_id?: string | null;
+          retry_count?: number;
+          error_message?: string | null;
+          description?: string | null;
+          metadata?: Record<string, any> | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      wallet_withdrawals: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          fee: number;
+          to_address: string;
+          network: string;
+          status: "pending" | "processing" | "success" | "failed";
+          tx_hash: string | null;
+          wallet_transaction_id: string | null;
+          attempts: number;
+          next_retry_at: string | null;
+          last_error: string | null;
+          approved_by: string | null;
+          approved_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          fee?: number;
+          to_address: string;
+          network?: string;
+          status?: "pending" | "processing" | "success" | "failed";
+          tx_hash?: string | null;
+          wallet_transaction_id?: string | null;
+          attempts?: number;
+          next_retry_at?: string | null;
+          last_error?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          amount?: number;
+          fee?: number;
+          to_address?: string;
+          network?: string;
+          status?: "pending" | "processing" | "success" | "failed";
+          tx_hash?: string | null;
+          wallet_transaction_id?: string | null;
+          attempts?: number;
+          next_retry_at?: string | null;
+          last_error?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      wallet_limits: {
+        Row: {
+          user_id: string;
+          daily_withdrawal_limit: number;
+          single_withdrawal_limit: number;
+          updated_at: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          daily_withdrawal_limit?: number;
+          single_withdrawal_limit?: number;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          daily_withdrawal_limit?: number;
+          single_withdrawal_limit?: number;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      wallet_deposit_addresses: {
+        Row: {
+          id: string;
+          user_id: string;
+          network: string;
+          address: string;
+          derivation_index: number | null;
+          memo: string | null;
+          is_active: boolean;
+          last_checked_block: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          network?: string;
+          address: string;
+          derivation_index?: number | null;
+          memo?: string | null;
+          is_active?: boolean;
+          last_checked_block?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          network?: string;
+          address?: string;
+          derivation_index?: number | null;
+          memo?: string | null;
+          is_active?: boolean;
+          last_checked_block?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      wallet_audit_logs: {
+        Row: {
+          id: string;
+          actor_user_id: string | null;
+          action: string;
+          target_id: string | null;
+          details: Record<string, any> | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_user_id?: string | null;
+          action: string;
+          target_id?: string | null;
+          details?: Record<string, any> | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          actor_user_id?: string | null;
+          action?: string;
+          target_id?: string | null;
+          details?: Record<string, any> | null;
+          created_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: {};
@@ -220,6 +482,44 @@ export type Database = {
           video_id: string;
         };
         Returns: void;
+      };
+      wallet_internal_transfer: {
+        Args: {
+          p_sender_id: string;
+          p_recipient_id: string;
+          p_amount: number;
+          p_fee: number;
+          p_description?: string | null;
+          p_reference_id?: string | null;
+        };
+        Returns: string;
+      };
+      wallet_credit_deposit: {
+        Args: {
+          p_user_id: string;
+          p_amount: number;
+          p_tx_hash: string;
+          p_network: string;
+          p_deposit_address: string;
+          p_confirmations: number;
+          p_metadata?: Record<string, any> | null;
+        };
+        Returns: string;
+      };
+      wallet_create_withdrawal: {
+        Args: {
+          p_user_id: string;
+          p_amount: number;
+          p_fee: number;
+          p_to_address: string;
+          p_network: string;
+          p_description?: string | null;
+          p_reference_id?: string | null;
+        };
+        Returns: {
+          withdrawal_id: string;
+          transaction_id: string;
+        };
       };
     };
     Enums: {};

@@ -401,7 +401,7 @@ export const processPendingWithdrawals = async (options?: { onlyFailed?: boolean
   const limit = Math.max(1, Math.min(50, options?.limit || 10));
   const now = nowIso();
 
-  const statuses = options?.onlyFailed ? ['failed'] : ['pending', 'failed'];
+  const statuses = options?.onlyFailed ? ['failed' as const] : ['pending' as const, 'failed' as const];
 
   const { data: withdrawals, error } = await supabase
     .from('wallet_withdrawals')

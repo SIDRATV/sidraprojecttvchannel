@@ -68,6 +68,12 @@ export const authService = {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
       });
+      
+      // Verify session is actually set before returning
+      const { data: verifyData } = await supabase.auth.getSession();
+      if (!verifyData.session?.access_token) {
+        throw new Error('Failed to establish session');
+      }
     }
     
     return data;

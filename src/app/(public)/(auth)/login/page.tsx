@@ -25,8 +25,9 @@ export default function LoginPage() {
     try {
       await authService.signIn(identifier, password);
       
-      // Give Supabase a moment to establish the session
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait longer to ensure session is persisted to localStorage
+      // and client is ready to make authenticated API calls
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       router.push('/dashboard');
     } catch (err) {

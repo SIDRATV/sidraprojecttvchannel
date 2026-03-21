@@ -4,13 +4,27 @@ import type { User } from "@/types";
 
 const fetchUserProfile = async (userId: string): Promise<User | null> => {
   try {
-    const { data } = await supabase
+    console.log('[useAuth] Fetching profile for user:', userId);
+    
+    // Get current session to ensure we have a valid token
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('[useAuth] Current session:', !!session, session?.access_token ? 'has token' : 'no token');
+    
+    const { data, error } = await supabase
       .from("users")
       .select("*")
       .eq("id", userId)
       .single();
+    
+    if (error) {
+      console.error('[useAuth] Profile fetch error:', error);
+      return null;
+    }
+    
+    console.log('[useAuth] Profile fetched successfully:', data?.id);
     return data || null;
-  } catch {
+  } catch (err) {
+    console.error('[useAuth] Profile fetch exception:', err);
     return null;
   }
 };
@@ -24,24 +38,36 @@ export const useAuth = () => {
     if (initialized.current) return;
     initialized.current = true;
 
+    console.log('[useAuth] Initializing auth hook');
+
     // Resolve the current session on mount
     supabase.auth
       .getSession()
       .then(async ({ data: { session } }) => {
+        console.log('[useAuth] getSession returned:', !!session);
         if (session?.user) {
+          console.log('[useAuth] Session user found:', session.user.id);
           const profile = await fetchUserProfile(session.user.id);
           setUser(profile);
         } else {
+          console.log('[useAuth] No session user found');
           setUser(null);
         }
       })
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        console.error('[useAuth] getSession error:', err);
+        setUser(null);
+      })
+      .finally(() => {
+        console.log('[useAuth] Initial load complete');
+        setLoading(false);
+      });
 
     // Keep in sync with auth state changes (login, logout, token refresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[useAuth] Auth state change:', event, !!session);
       if (session?.user) {
         const profile = await fetchUserProfile(session.user.id);
         setUser(profile);

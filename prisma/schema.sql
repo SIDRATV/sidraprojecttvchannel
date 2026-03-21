@@ -2,7 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username TEXT UNIQUE,
   email TEXT UNIQUE NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE users (
 );
 
 -- Wallet accounts (off-chain internal balances)
-CREATE TABLE wallet_accounts (
+CREATE TABLE IF NOT EXISTS wallet_accounts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   balance NUMERIC(20, 8) NOT NULL DEFAULT 0,
@@ -39,7 +39,7 @@ CREATE TYPE wallet_transaction_direction AS ENUM ('credit', 'debit');
 CREATE TYPE wallet_transaction_status AS ENUM ('pending', 'success', 'failed');
 
 -- Ledger table (single source of truth for wallet movement history)
-CREATE TABLE wallet_transactions (
+CREATE TABLE IF NOT EXISTS wallet_transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   counterparty_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -66,7 +66,7 @@ CREATE TABLE wallet_transactions (
 CREATE TYPE wallet_withdrawal_status AS ENUM ('pending', 'processing', 'success', 'failed');
 
 -- Withdrawal queue for on-chain payouts
-CREATE TABLE wallet_withdrawals (
+CREATE TABLE IF NOT EXISTS wallet_withdrawals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   amount NUMERIC(20, 8) NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE wallet_withdrawals (
 );
 
 -- Per-user withdrawal limits (daily)
-CREATE TABLE wallet_limits (
+CREATE TABLE IF NOT EXISTS wallet_limits (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   daily_withdrawal_limit NUMERIC(20, 8) NOT NULL DEFAULT 1000,
   single_withdrawal_limit NUMERIC(20, 8) NOT NULL DEFAULT 500,
@@ -96,7 +96,7 @@ CREATE TABLE wallet_limits (
 );
 
 -- Deposit addressing (unique address strategy)
-CREATE TABLE wallet_deposit_addresses (
+CREATE TABLE IF NOT EXISTS wallet_deposit_addresses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   network TEXT NOT NULL DEFAULT 'sidra',
@@ -110,7 +110,7 @@ CREATE TABLE wallet_deposit_addresses (
 );
 
 -- Optional wallet audit table for sensitive actions (retry, approval, sync)
-CREATE TABLE wallet_audit_logs (
+CREATE TABLE IF NOT EXISTS wallet_audit_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   action TEXT NOT NULL,
@@ -120,7 +120,7 @@ CREATE TABLE wallet_audit_logs (
 );
 
 -- Categories table
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT UNIQUE NOT NULL,
   description TEXT,
@@ -130,7 +130,7 @@ CREATE TABLE categories (
 );
 
 -- Videos table
-CREATE TABLE videos (
+CREATE TABLE IF NOT EXISTS videos (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -148,7 +148,7 @@ CREATE TABLE videos (
 );
 
 -- Comments table
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   video_id UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -159,7 +159,7 @@ CREATE TABLE comments (
 );
 
 -- Likes table
-CREATE TABLE likes (
+CREATE TABLE IF NOT EXISTS likes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   video_id UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
@@ -168,14 +168,14 @@ CREATE TABLE likes (
 );
 
 -- Newsletter subscriptions table
-CREATE TABLE newsletter (
+CREATE TABLE IF NOT EXISTS newsletter (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email TEXT UNIQUE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Analytics table
-CREATE TABLE analytics (
+CREATE TABLE IF NOT EXISTS analytics (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   video_id UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
   views INTEGER DEFAULT 0,
@@ -186,21 +186,21 @@ CREATE TABLE analytics (
 );
 
 -- Create indexes for better performance
-CREATE INDEX idx_videos_category_id ON videos(category_id);
-CREATE INDEX idx_videos_created_by ON videos(created_by);
-CREATE INDEX idx_videos_is_featured ON videos(is_featured);
-CREATE INDEX idx_comments_video_id ON comments(video_id);
-CREATE INDEX idx_comments_user_id ON comments(user_id);
-CREATE INDEX idx_likes_video_id ON likes(video_id);
-CREATE INDEX idx_likes_user_id ON likes(user_id);
-CREATE INDEX idx_analytics_video_id ON analytics(video_id);
-CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
-CREATE INDEX idx_wallet_transactions_user_id_created_at ON wallet_transactions(user_id, created_at DESC);
-CREATE INDEX idx_wallet_transactions_status_type ON wallet_transactions(status, type);
-CREATE INDEX idx_wallet_transactions_tx_hash ON wallet_transactions(tx_hash);
-CREATE INDEX idx_wallet_withdrawals_status_next_retry ON wallet_withdrawals(status, next_retry_at);
-CREATE INDEX idx_wallet_withdrawals_user_id ON wallet_withdrawals(user_id);
-CREATE INDEX idx_wallet_deposit_addresses_network_address ON wallet_deposit_addresses(network, address);
+CREATE INDEX IF NOT EXISTS idx_videos_category_id ON videos(category_id);
+CREATE INDEX IF NOT EXISTS idx_videos_created_by ON videos(created_by);
+CREATE INDEX IF NOT EXISTS idx_videos_is_featured ON videos(is_featured);
+CREATE INDEX IF NOT EXISTS idx_comments_video_id ON comments(video_id);
+CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_likes_video_id ON likes(video_id);
+CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_video_id ON analytics(video_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_accounts_user_id ON wallet_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_transactions_user_id_created_at ON wallet_transactions(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_wallet_transactions_status_type ON wallet_transactions(status, type);
+CREATE INDEX IF NOT EXISTS idx_wallet_transactions_tx_hash ON wallet_transactions(tx_hash);
+CREATE INDEX IF NOT EXISTS idx_wallet_withdrawals_status_next_retry ON wallet_withdrawals(status, next_retry_at);
+CREATE INDEX IF NOT EXISTS idx_wallet_withdrawals_user_id ON wallet_withdrawals(user_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_deposit_addresses_network_address ON wallet_deposit_addresses(network, address);
 
 -- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -217,23 +217,45 @@ ALTER TABLE wallet_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallet_deposit_addresses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallet_audit_logs ENABLE ROW LEVEL SECURITY;
 
--- Videos RLS policies
+-- Users RLS policies (all public read, authenticated can read own)
+DROP POLICY IF EXISTS "Users are publicly readable" ON users;
+DROP POLICY IF EXISTS "Users can update their own profile" ON users;
+DROP POLICY IF EXISTS "Users can read their own data" ON users;
+
+CREATE POLICY "Users are publicly readable" ON users FOR SELECT USING (true);
+
+CREATE POLICY "Users can update their own profile"
+  ON users FOR UPDATE 
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
+-- Videos RLS policies - ONLY ADMINS can INSERT, author/admin can UPDATE
+DROP POLICY IF EXISTS "Videos are publicly readable" ON videos;
+DROP POLICY IF EXISTS "Users can insert their own videos" ON videos;
+DROP POLICY IF EXISTS "Users can update their own videos" ON videos;
+DROP POLICY IF EXISTS "Admins can delete videos" ON videos;
+
 CREATE POLICY "Videos are publicly readable" ON videos FOR SELECT USING (true);
 
-CREATE POLICY "Users can insert their own videos"
+CREATE POLICY "Only admins can insert videos"
   ON videos FOR INSERT 
-  WITH CHECK (auth.uid() = created_by AND (SELECT is_admin FROM users WHERE id = auth.uid()) = true);
+  WITH CHECK ((SELECT is_admin FROM users WHERE id = auth.uid()) = true);
 
-CREATE POLICY "Users can update their own videos"
+CREATE POLICY "Author or admin can update videos"
   ON videos FOR UPDATE 
   USING (auth.uid() = created_by OR (SELECT is_admin FROM users WHERE id = auth.uid()) = true)
   WITH CHECK (auth.uid() = created_by OR (SELECT is_admin FROM users WHERE id = auth.uid()) = true);
 
-CREATE POLICY "Admins can delete videos"
+CREATE POLICY "Only admins can delete videos"
   ON videos FOR DELETE 
   USING ((SELECT is_admin FROM users WHERE id = auth.uid()) = true);
 
 -- Comments RLS policies
+DROP POLICY IF EXISTS "Comments are publicly readable" ON comments;
+DROP POLICY IF EXISTS "Authenticated users can insert comments" ON comments;
+DROP POLICY IF EXISTS "Users can update their own comments" ON comments;
+DROP POLICY IF EXISTS "Users can delete their own comments" ON comments;
+
 CREATE POLICY "Comments are publicly readable" ON comments FOR SELECT USING (true);
 
 CREATE POLICY "Authenticated users can insert comments"
@@ -250,6 +272,10 @@ CREATE POLICY "Users can delete their own comments"
   USING (auth.uid() = user_id);
 
 -- Likes RLS policies
+DROP POLICY IF EXISTS "Likes are publicly readable" ON likes;
+DROP POLICY IF EXISTS "Authenticated users can insert likes" ON likes;
+DROP POLICY IF EXISTS "Users can delete their own likes" ON likes;
+
 CREATE POLICY "Likes are publicly readable" ON likes FOR SELECT USING (true);
 
 CREATE POLICY "Authenticated users can insert likes"
@@ -261,6 +287,9 @@ CREATE POLICY "Users can delete their own likes"
   USING (auth.uid() = user_id);
 
 -- Categories RLS policies
+DROP POLICY IF EXISTS "Categories are publicly readable" ON categories;
+DROP POLICY IF EXISTS "Admins can manage categories" ON categories;
+
 CREATE POLICY "Categories are publicly readable" ON categories FOR SELECT USING (true);
 
 CREATE POLICY "Admins can manage categories"
@@ -268,14 +297,14 @@ CREATE POLICY "Admins can manage categories"
   WITH CHECK ((SELECT is_admin FROM users WHERE id = auth.uid()) = true);
 
 -- Newsletter RLS policies
+DROP POLICY IF EXISTS "Anyone can subscribe to newsletter" ON newsletter;
+
 CREATE POLICY "Anyone can subscribe to newsletter" ON newsletter FOR INSERT WITH CHECK (true);
 
--- Users table RLS policies
-CREATE POLICY "Users can read their own data" ON users FOR SELECT USING (auth.uid() = id OR true);
-
-CREATE POLICY "Users can update their own profile" ON users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
-
 -- Wallet RLS policies
+DROP POLICY IF EXISTS "Users can read own wallet account" ON wallet_accounts;
+DROP POLICY IF EXISTS "Service role can manage wallet accounts" ON wallet_accounts;
+
 CREATE POLICY "Users can read own wallet account"
   ON wallet_accounts FOR SELECT
   USING (auth.uid() = user_id);
@@ -284,6 +313,9 @@ CREATE POLICY "Service role can manage wallet accounts"
   ON wallet_accounts FOR ALL
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Users can read own wallet transactions" ON wallet_transactions;
+DROP POLICY IF EXISTS "Service role can manage wallet transactions" ON wallet_transactions;
 
 CREATE POLICY "Users can read own wallet transactions"
   ON wallet_transactions FOR SELECT
@@ -294,6 +326,9 @@ CREATE POLICY "Service role can manage wallet transactions"
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Users can read own withdrawals" ON wallet_withdrawals;
+DROP POLICY IF EXISTS "Service role can manage withdrawals" ON wallet_withdrawals;
+
 CREATE POLICY "Users can read own withdrawals"
   ON wallet_withdrawals FOR SELECT
   USING (auth.uid() = user_id);
@@ -302,6 +337,9 @@ CREATE POLICY "Service role can manage withdrawals"
   ON wallet_withdrawals FOR ALL
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Users can read own wallet limits" ON wallet_limits;
+DROP POLICY IF EXISTS "Service role can manage wallet limits" ON wallet_limits;
 
 CREATE POLICY "Users can read own wallet limits"
   ON wallet_limits FOR SELECT
@@ -312,6 +350,9 @@ CREATE POLICY "Service role can manage wallet limits"
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Users can read own deposit address" ON wallet_deposit_addresses;
+DROP POLICY IF EXISTS "Service role can manage deposit addresses" ON wallet_deposit_addresses;
+
 CREATE POLICY "Users can read own deposit address"
   ON wallet_deposit_addresses FOR SELECT
   USING (auth.uid() = user_id);
@@ -320,6 +361,8 @@ CREATE POLICY "Service role can manage deposit addresses"
   ON wallet_deposit_addresses FOR ALL
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Service role can manage wallet audit logs" ON wallet_audit_logs;
 
 CREATE POLICY "Service role can manage wallet audit logs"
   ON wallet_audit_logs FOR ALL
@@ -335,26 +378,31 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS wallet_accounts_set_updated_at ON wallet_accounts;
 CREATE TRIGGER wallet_accounts_set_updated_at
   BEFORE UPDATE ON wallet_accounts
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS wallet_transactions_set_updated_at ON wallet_transactions;
 CREATE TRIGGER wallet_transactions_set_updated_at
   BEFORE UPDATE ON wallet_transactions
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS wallet_withdrawals_set_updated_at ON wallet_withdrawals;
 CREATE TRIGGER wallet_withdrawals_set_updated_at
   BEFORE UPDATE ON wallet_withdrawals
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS wallet_limits_set_updated_at ON wallet_limits;
 CREATE TRIGGER wallet_limits_set_updated_at
   BEFORE UPDATE ON wallet_limits
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS wallet_deposit_addresses_set_updated_at ON wallet_deposit_addresses;
 CREATE TRIGGER wallet_deposit_addresses_set_updated_at
   BEFORE UPDATE ON wallet_deposit_addresses
   FOR EACH ROW
@@ -374,6 +422,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS users_create_default_wallet_resources ON users;
 CREATE TRIGGER users_create_default_wallet_resources
   AFTER INSERT ON users
   FOR EACH ROW

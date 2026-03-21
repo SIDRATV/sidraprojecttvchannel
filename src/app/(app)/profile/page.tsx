@@ -66,34 +66,45 @@ export default function ProfilePage() {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: user?.full_name || 'User',
-    bio: 'Passionate about Islamic media and innovative projects',
-    profilePhoto: null,
+    bio: user?.bio || '',
+    profilePhoto: user?.avatar_url || null,
     accountTier: 'free',
     emailNotifications: true,
     contentNotifications: true,
     weeklyDigest: false,
-    memberSince: 'January 15, 2024',
+    memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
   });
   const [editData, setEditData] = useState<ProfileData>(profileData);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load profile data from localStorage
+  // Sync profile data when user loads
   useEffect(() => {
-    try {
-      const savedProfile = localStorage.getItem('userProfile');
-      if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        setProfileData(parsed);
-        setEditData(parsed);
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
+    if (user) {
+      const data: ProfileData = {
+        fullName: user.full_name || 'User',
+        bio: user.bio || '',
+        profilePhoto: user.avatar_url || null,
+        accountTier: 'free',
+        emailNotifications: true,
+        contentNotifications: true,
+        weeklyDigest: false,
+        memberSince: user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
+      };
+      setProfileData(data);
+      setEditData(data);
     }
-  }, []);
+  }, [user]);
 
-  // Save profile to localStorage and update context
-  const handleSaveProfile = () => {
+  // Save profile to Supabase
+  const handleSaveProfile = async () => {
     try {
+      if (user?.id) {
+        await authService.updateProfile(user.id, {
+          full_name: editData.fullName,
+          bio: editData.bio,
+          avatar_url: editData.profilePhoto || undefined,
+        });
+      }
       updateProfile(editData);
       setProfileData(editData);
       setIsEditing(false);

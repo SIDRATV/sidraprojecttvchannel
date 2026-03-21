@@ -104,14 +104,15 @@ export const authService = {
   },
 
   async updateProfile(userId: string, updates: { full_name?: string; bio?: string; avatar_url?: string }) {
-    const { data, error } = await ((supabase.from("users") as any)
+    const { data, error } = await supabase
+      .from("users")
       .update({
         ...updates,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", userId)
       .select()
-      .single() as any);
+      .single();
 
     if (error) throw error;
     return data;

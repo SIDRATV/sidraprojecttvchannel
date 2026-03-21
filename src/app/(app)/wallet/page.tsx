@@ -12,6 +12,7 @@ import {
 } from '@/components/wallet';
 import { SDALogo } from '@/components/wallet/SDALogo';
 import { getInternalBalance } from '@/lib/internalTransfer';
+import { supabase } from '@/lib/supabase';
 
 export default function WalletPage() {
   const [balance, setBalance] = useState<string | null>(null);
@@ -19,10 +20,19 @@ export default function WalletPage() {
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
-  // Get auth token from context or localStorage
+  // Get auth token from Supabase session
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    setAuthToken(token);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        setAuthToken(session.access_token);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setAuthToken(session?.access_token ?? null);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Fetch balance when auth token is available
@@ -181,7 +191,7 @@ export default function WalletPage() {
                 className="bg-gradient-to-br from-blue-900/40 to-blue-800/30 backdrop-blur-xl border border-blue-600/40 rounded-2xl p-8 text-center"
               >
                 <p className="text-blue-300 text-lg font-medium">
-                  📝 Please log in to your account to use internal transfers.
+                  📝 Please log in to access your wallet.
                 </p>
               </motion.div>
             )}

@@ -474,6 +474,90 @@ export type Database = {
         };
         Relationships: [];
       };
+      live_streams: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          image: string;
+          viewers: number;
+          category: string;
+          streamer: string;
+          is_live: boolean;
+          is_featured: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string;
+          image?: string;
+          viewers?: number;
+          category?: string;
+          streamer?: string;
+          is_live?: boolean;
+          is_featured?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          image?: string;
+          viewers?: number;
+          category?: string;
+          streamer?: string;
+          is_live?: boolean;
+          is_featured?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      podcasts: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          image: string;
+          duration: string;
+          category: string;
+          creator: string;
+          views: number;
+          likes: number;
+          created_at: string;
+          is_featured: boolean;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string;
+          image?: string;
+          duration?: string;
+          category?: string;
+          creator?: string;
+          views?: number;
+          likes?: number;
+          created_at?: string;
+          is_featured?: boolean;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          image?: string;
+          duration?: string;
+          category?: string;
+          creator?: string;
+          views?: number;
+          likes?: number;
+          created_at?: string;
+          is_featured?: boolean;
+        };
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {

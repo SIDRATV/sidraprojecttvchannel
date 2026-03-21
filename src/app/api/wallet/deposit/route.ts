@@ -32,8 +32,13 @@ export async function POST(request: NextRequest) {
     await requireAdminApiKeyOrUser(request);
 
     const body = await request.json().catch(() => ({}));
+    const normalizedNetwork = String(body?.network || '').toLowerCase();
     const network: WalletNetwork | undefined =
-      body?.network === 'bsc' ? 'bsc' : body?.network === 'sidra' ? 'sidra' : undefined;
+      normalizedNetwork === 'bsc' || normalizedNetwork === 'bsk'
+        ? 'bsc'
+        : normalizedNetwork === 'sidra'
+          ? 'sidra'
+          : undefined;
     const result = await syncDeposits({
       maxBlocks: Number(body.maxBlocks || undefined),
       network,

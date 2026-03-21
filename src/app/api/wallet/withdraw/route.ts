@@ -7,7 +7,12 @@ export async function POST(request: NextRequest) {
     requireOptional2FA(request);
 
     const body = await request.json();
-    const network = body?.network === 'bsc' ? 'bsc' : body?.network === 'sidra' ? 'sidra' : undefined;
+    const normalizedNetwork = String(body?.network || '').toLowerCase();
+    const network = normalizedNetwork === 'bsc' || normalizedNetwork === 'bsk'
+      ? 'bsc'
+      : normalizedNetwork === 'sidra'
+        ? 'sidra'
+        : undefined;
     const result = await requestWithdrawal({
       userId: user.id,
       toAddress: String(body.toAddress || ''),

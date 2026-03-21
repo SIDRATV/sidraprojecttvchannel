@@ -63,7 +63,7 @@ const getProvider = (network: WalletNetwork): ethers.JsonRpcProvider => {
 };
 
 const getSigner = (network: WalletNetwork): ethers.Wallet => {
-  let signerPrivateKey = walletConfig.signerPrivateKey;
+  let signerPrivateKey = walletConfig.signerPrivateKeys?.[network] || walletConfig.signerPrivateKey;
 
   if (walletConfig.signerPrivateKeyEncrypted) {
     try {
@@ -74,10 +74,101 @@ const getSigner = (network: WalletNetwork): ethers.Wallet => {
   }
 
   if (!signerPrivateKey) {
-    throw new Error('WALLET_SIGNER_PRIVATE_KEY is not configured');
+    throw new Error(`Hot wallet private key is not configured for network: ${network}`);
   }
 
   return new ethers.Wallet(signerPrivateKey, getProvider(network));
+};
+
+const deriveDepositWallet = (derivationIndex: number, network: WalletNetwork): ethers.Wallet => {
+  if (!walletConfig.depositMnemonic) {
+    throw new Error('WALLET_DEPOSIT_MNEMONIC is not configured');
+  }
+
+  const derivationPath = `${walletConfig.depositDerivationPathPrefix}${derivationIndex}`;
+  const derivedWallet = ethers.HDNodeWallet.fromPhrase(
+    walletConfig.depositMnemonic,
+    undefined,
+    derivationPath
+  );
+
+  return new ethers.Wallet(derivedWallet.privateKey, getProvider(network));
+};
+
+const sweepDepositToHotWallet = async (input: {
+  depositAddressId: string;
+  userId: string;
+  depositAddress: string;
+  derivationIndex: number;
+  network: WalletNetwork;
+  sourceTxHash: string;
+}) => {
+  const { userId, depositAddress, derivationIndex, network, sourceTxHash } = input;
+  const wallet = deriveDepositWallet(derivationIndex, network);
+  const provider = getProvider(network);
+  const hotWalletAddress = (await getSigner(network).getAddress()).toLowerCase();
+  const sourceAddress = wallet.address.toLowerCase();
+
+  if (sourceAddress !== String(depositAddress || '').toLowerCase()) {
+    throw new Error('Derived wallet address mismatch for sweep');
+  }
+
+  const balance = await provider.getBalance(sourceAddress);
+  if (balance <= 0n) {
+    return {
+      status: 'skipped' as const,
+      reason: 'No balance to sweep',
+    };
+  }
+
+  const gasLimit = 21000n;
+  const feeData = await provider.getFeeData();
+  const gasPrice = feeData.gasPrice ?? 0n;
+
+  if (gasPrice <= 0n) {
+    throw new Error('Unable to resolve gas price for sweep');
+  }
+
+  const gasCost = gasLimit * gasPrice;
+  if (balance <= gasCost) {
+    return {
+      status: 'skipped' as const,
+      reason: 'Insufficient balance for sweep gas',
+    };
+  }
+
+  const sweepValue = balance - gasCost;
+  const tx = await wallet.sendTransaction({
+    to: hotWalletAddress,
+    value: sweepValue,
+    gasLimit,
+    gasPrice,
+  });
+
+  const receipt = await tx.wait(1);
+  if (!receipt || receipt.status !== 1) {
+    throw new Error('Sweep transaction reverted');
+  }
+
+  await writeAuditLog({
+    actorUserId: userId,
+    action: 'wallet.deposit.swept',
+    targetId: tx.hash,
+    details: {
+      depositAddressId: input.depositAddressId,
+      sourceTxHash,
+      from: sourceAddress,
+      to: hotWalletAddress,
+      amount: Number(ethers.formatEther(sweepValue)),
+      network,
+    },
+  });
+
+  return {
+    status: 'success' as const,
+    txHash: tx.hash,
+    amount: Number(ethers.formatEther(sweepValue)),
+  };
 };
 
 const getUserByUsername = async (username: string) => {
@@ -142,6 +233,44 @@ export const getInternalBalance = async (userId: string): Promise<WalletBalanceR
     lockedBalance: Number(account.locked_balance || 0),
     currency: account.currency || walletConfig.currency,
     lastUpdated: account.updated_at || nowIso(),
+  };
+};
+
+export const provisionUserWallet = async (userId: string) => {
+  const supabase = createServerClient();
+
+  const { error: accountError } = await supabase
+    .from('wallet_accounts')
+    .upsert(
+      {
+        user_id: userId,
+        balance: 0,
+        locked_balance: 0,
+        currency: walletConfig.currency,
+      },
+      { onConflict: 'user_id' }
+    );
+
+  if (accountError) {
+    throw new Error(`Failed to provision wallet account: ${accountError.message}`);
+  }
+
+  const depositAddress = await getOrCreateDepositAddress(userId);
+
+  await writeAuditLog({
+    actorUserId: userId,
+    action: 'wallet.user.provisioned',
+    targetId: depositAddress.id,
+    details: {
+      address: depositAddress.address,
+      network: depositAddress.network,
+    },
+  });
+
+  return {
+    accountCreated: true,
+    address: depositAddress.address,
+    network: depositAddress.network,
   };
 };
 
@@ -646,7 +775,7 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
 
   const { data: addresses, error: addressError } = await supabase
     .from('wallet_deposit_addresses')
-    .select('id, user_id, address, network, last_checked_block')
+    .select('id, user_id, address, network, derivation_index, last_checked_block')
     .eq('is_active', true)
     .eq('network', network);
 
@@ -729,6 +858,31 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
 
         if (!creditError) {
           credited += 1;
+          const derivationIndex = Number(depositOwner.derivation_index ?? -1);
+          if (Number.isFinite(derivationIndex) && derivationIndex >= 0) {
+            try {
+              await sweepDepositToHotWallet({
+                depositAddressId: depositOwner.id,
+                userId: depositOwner.user_id,
+                depositAddress: to,
+                derivationIndex,
+                network,
+                sourceTxHash: tx.hash,
+              });
+            } catch (sweepError: any) {
+              await writeAuditLog({
+                actorUserId: depositOwner.user_id,
+                action: 'wallet.deposit.sweep_failed',
+                targetId: tx.hash,
+                details: {
+                  error: sweepError?.message || 'Unknown sweep error',
+                  address: to,
+                  network,
+                },
+              });
+            }
+          }
+
           await writeAuditLog({
             actorUserId: depositOwner.user_id,
             action: 'wallet.deposit.credited',

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { provisionUserWallet } from '@/lib/wallet';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 
@@ -79,6 +80,17 @@ export async function POST(request: NextRequest) {
       await supabase.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json(
         { error: 'Failed to create user profile. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    try {
+      await provisionUserWallet(authData.user.id);
+    } catch {
+      await supabase.from('users').delete().eq('id', authData.user.id);
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      return NextResponse.json(
+        { error: 'Failed to provision wallet account. Please try again.' },
         { status: 500 }
       );
     }

@@ -4,121 +4,30 @@ export const dynamic = 'force-dynamic';
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { YouTubeFeaturedCarousel } from '@/components/app/YouTubeFeaturedCarousel';
 import { YouTubeSection } from '@/components/app/YouTubeSection';
 import { PremiumBanner, PremiumContentPreview } from '@/components/premium';
-import { Heart, MessageCircle, Share2, Star } from 'lucide-react';
+import { Heart, MessageCircle, Play } from 'lucide-react';
+import { videoService } from '@/services/videos';
+import type { VideoWithRelations } from '@/types';
 
 export default function DashboardPage() {
-  // Mock articles data from actualiter
-  const articles = [
-    {
-      id: '1',
-      title: 'Revolutionary AI Technology Transforms Islamic Education',
-      description: 'New artificial intelligence solutions are changing how Islamic studies are taught globally',
-      category: 'Technology',
-      author: 'Dr. Ahmed Hassan',
-      date: 'Today',
-      image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=400&fit=crop',
-      readTime: 5,
-      likes: 1245,
-      comments: 98,
-    },
-    {
-      id: '2',
-      title: 'Sustainable Development Initiative Reaches New Milestone',
-      description: 'Global partnership announces major achievement in environmental restoration',
-      category: 'Sustainability',
-      author: 'Sarah Johnson',
-      date: '2 hours ago',
-      image: 'https://images.unsplash.com/photo-1556075798-4825dfaaf498?w=800&h=400&fit=crop',
-      readTime: 7,
-      likes: 892,
-      comments: 54,
-    },
-    {
-      id: '3',
-      title: 'Youth Empowerment Program Celebrates 10,000 Graduates',
-      description: 'Landmark achievement as education initiative reaches international scale',
-      category: 'Education',
-      author: 'Fatima Al-Rashid',
-      date: '5 hours ago',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=400&fit=crop',
-      readTime: 4,
-      likes: 2341,
-      comments: 156,
-    },
-    {
-      id: '4',
-      title: 'Islamic Finance Innovations Attract Global Investment',
-      description: 'New digital platforms enable easier access to Shariah-compliant financial services',
-      category: 'Finance',
-      author: 'Mohammed Al-Madani',
-      date: '1 day ago',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=400&fit=crop',
-      readTime: 6,
-      likes: 1567,
-      comments: 123,
-    },
-    {
-      id: '5',
-      title: 'Healthcare Network Launches Community Wellness Program',
-      description: 'Comprehensive health initiative aims to improve wellbeing across developing regions',
-      category: 'Healthcare',
-      author: 'Dr. Layla Al-Fahad',
-      date: '1 day ago',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=400&fit=crop',
-      readTime: 8,
-      likes: 934,
-      comments: 67,
-    },
-    {
-      id: '6',
-      title: 'Creative Arts Festival Celebrates Digital Innovation',
-      description: 'International event showcases emerging trends in digital arts and media',
-      category: 'Arts & Culture',
-      author: 'Hassan Al-Rashid',
-      date: '2 days ago',
-      image: 'https://images.unsplash.com/photo-1516035069371-29a083244fa5?w=800&h=400&fit=crop',
-      readTime: 5,
-      likes: 1102,
-      comments: 89,
-    },
-  ];
+  const [recentVideos, setRecentVideos] = useState<VideoWithRelations[]>([]);
+  const [featuredVideos, setFeaturedVideos] = useState<VideoWithRelations[]>([]);
 
-  // Premium content data
-  const premiumContent = [
-    {
-      id: '1',
-      title: 'The Future of AI: How Startups are Changing the World',
-      image: 'https://images.unsplash.com/photo-1618761490192-04901461159e?w=500&h=300&fit=crop',
-      category: 'Documentary',
-    },
-    {
-      id: '2',
-      title: 'Founder Stories: From Idea to $1B Valuation',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop',
-      category: 'Interview',
-    },
-    {
-      id: '3',
-      title: 'Blockchain Revolution: Building Web3 Applications',
-      image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&h=300&fit=crop',
-      category: 'Masterclass',
-    },
-    {
-      id: '4',
-      title: 'Inside OpenAI: Secrets to Building Revolutionary Products',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop',
-      category: 'Documentary',
-    },
-    {
-      id: '5',
-      title: 'VC Insights: How to Raise Your First Million',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&h=300&fit=crop',
-      category: 'Masterclass',
-    },
-  ];
+  useEffect(() => {
+    videoService.getVideos(6).then(setRecentVideos).catch(() => {});
+    videoService.getFeaturedVideos(5).then(setFeaturedVideos).catch(() => {});
+  }, []);
+
+  // Map real videos to the format PremiumContentPreview expects
+  const premiumContent = featuredVideos.map(v => ({
+    id: v.id,
+    title: v.title,
+    image: v.thumbnail_url || 'https://images.unsplash.com/photo-1618761490192-04901461159e?w=500&h=300&fit=crop',
+    category: (v as any).categories?.name || 'Premium',
+  }));
 
   return (
     <motion.div
@@ -136,62 +45,64 @@ export default function DashboardPage() {
         maxResults={5}
       />
 
-      {/* Latest Articles Section - Horizontal Scrollable */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-950 dark:text-white mb-2">Latest News</h2>
-          <p className="text-gray-600 dark:text-gray-400">Stay updated with the latest articles from our community</p>
-        </div>
-        <Link href="/explore/actualiter" className="text-orange-600 hover:text-orange-700 font-semibold text-sm">
-          View all articles →
-        </Link>
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-4 pb-4">
-            {articles.map((article) => (
-              <Link key={article.id} href="/explore/actualiter">
-                <motion.div
-                  whileHover={{ y: -4 }}
-                  className="flex-shrink-0 w-80 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-all cursor-pointer shadow-md hover:shadow-lg"
-                >
-                  <div className="relative h-48 overflow-hidden">
-                    <div
-                      className="w-full h-full bg-cover bg-center"
-                      style={{ backgroundImage: `url(${article.image})` }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-semibold rounded">
-                        {article.category}
-                      </span>
-                      <span className="text-xs text-gray-500">{article.date}</span>
-                    </div>
-                    <h3 className="font-bold text-gray-950 dark:text-white mb-2 line-clamp-2 text-sm">
-                      {article.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-xs mb-3 line-clamp-2">
-                      {article.description}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1">
-                          <Heart size={14} />
-                          {article.likes}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle size={14} />
-                          {article.comments}
-                        </span>
-                      </div>
-                      <span>📖 {article.readTime}m</span>
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            ))}
+      {/* Latest Videos Section - Real data from Supabase */}
+      {recentVideos.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-950 dark:text-white mb-2">Latest Videos</h2>
+            <p className="text-gray-600 dark:text-gray-400">Recently added to the platform</p>
           </div>
-        </div>
-      </section>
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-4 pb-4">
+              {recentVideos.map((video) => (
+                <Link key={video.id} href={`/watch/${video.id}`}>
+                  <motion.div
+                    whileHover={{ y: -4 }}
+                    className="flex-shrink-0 w-80 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-all cursor-pointer shadow-md hover:shadow-lg"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <div
+                        className="w-full h-full bg-cover bg-center"
+                        style={{ backgroundImage: `url(${video.thumbnail_url || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=400&fit=crop'})` }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
+                        <Play className="w-12 h-12 text-white" fill="white" />
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-semibold rounded">
+                          {(video as any).categories?.name || 'Video'}
+                        </span>
+                        <span className="text-xs text-gray-500">{video.duration ? `${Math.floor(video.duration / 60)}m` : ''}</span>
+                      </div>
+                      <h3 className="font-bold text-gray-950 dark:text-white mb-2 line-clamp-2 text-sm">
+                        {video.title}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-xs mb-3 line-clamp-2">
+                        {video.description}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1">
+                            <Heart size={14} />
+                            {video.likes_count ?? 0}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle size={14} />
+                            {(video as any).comments_count ?? 0}
+                          </span>
+                        </div>
+                        <span>{(video as any).users?.full_name || ''}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Premium Content Section */}
       <section className="space-y-4">

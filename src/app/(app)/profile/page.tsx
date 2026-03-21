@@ -11,36 +11,6 @@ import { Button } from '@/components/ui/Button';
 import { ContentSection } from '@/components/app/ContentSection';
 import { useProfile } from '@/providers/ProfileProvider';
 
-const watchHistory = [
-  {
-    id: '1',
-    title: 'The Legacy of Innovation',
-    image: 'https://images.unsplash.com/photo-1542744173-8e90f7e3912d?w=400&h=600&fit=crop',
-    duration: '58:32',
-    category: 'Documentary',
-  },
-  {
-    id: '2',
-    title: 'Understanding Blockchain',
-    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&h=600&fit=crop',
-    duration: '48:23',
-    category: 'Tutorial',
-  },
-  {
-    id: '3',
-    title: 'Future of Islamic Finance',
-    image: 'https://images.unsplash.com/photo-1542744173-8e90f7e3912d?w=400&h=600&fit=crop',
-    duration: '45:30',
-    category: 'Finance',
-  },
-  {
-    id: '4',
-    title: 'Community Impact Stories',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=600&fit=crop',
-    duration: '52:15',
-    category: 'Documentary',
-  },
-];
 
 interface ProfileData {
   fullName: string;
@@ -180,9 +150,9 @@ export default function ProfilePage() {
   };
 
   const stats = [
-    { label: 'Videos Watched', value: '127', icon: '▶️', color: 'from-blue-500 to-cyan-500' },
-    { label: 'Watch Time', value: '342 hrs', icon: '⏱️', color: 'from-purple-500 to-pink-500' },
-    { label: 'Favorites', value: '34', icon: '⭐', color: 'from-yellow-500 to-orange-500' },
+    { label: 'Member Since', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—', icon: '📅', color: 'from-blue-500 to-cyan-500' },
+    { label: 'Username', value: user?.username ? `@${user.username}` : '—', icon: '👤', color: 'from-purple-500 to-pink-500' },
+    { label: 'Account', value: user?.is_admin ? 'Admin' : 'Member', icon: '⭐', color: 'from-yellow-500 to-orange-500' },
   ];
 
   return (
@@ -739,14 +709,7 @@ export default function ProfilePage() {
         </motion.div>
       )}
 
-      {/* Watch History */}
-      {watchHistory.length > 0 && (
-        <ContentSection
-          title="Your Watch History"
-          description="Videos you've recently watched"
-          items={watchHistory.slice(0, 5)}
-        />
-      )}
+      {/* Watch history will be shown here when viewing history table is available */}
     </div>
   );
 }

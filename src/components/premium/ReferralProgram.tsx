@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Share2, Copy, CheckCircle, Users, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Referral {
   id: string;
@@ -15,38 +16,15 @@ interface Referral {
 }
 
 export function ReferralProgram() {
-  const [referrals, setReferrals] = useState<Referral[]>([
-    {
-      id: 'r1',
-      name: 'Amina Hassan',
-      email: 'amina@example.com',
-      plan: 'premium',
-      joinedDate: '2026-02-15',
-      rewards: 100,
-      status: 'active',
-    },
-    {
-      id: 'r2',
-      name: 'Ahmed Ben',
-      email: 'ahmed@example.com',
-      plan: 'pro',
-      joinedDate: '2026-01-20',
-      rewards: 50,
-      status: 'active',
-    },
-    {
-      id: 'r3',
-      name: 'Fatima Zahra',
-      email: 'fatima@example.com',
-      plan: 'vip',
-      joinedDate: '2025-12-10',
-      rewards: 150,
-      status: 'active',
-    },
-  ]);
+  const { user } = useAuth();
+  // Referrals will be fetched from DB when referral table is created
+  const [referrals] = useState<Referral[]>([]);
 
   const [copied, setCopied] = useState(false);
-  const referralLink = 'https://sidra.tv/ref/USER123';
+  const referralCode = user?.username || user?.id?.slice(0, 8) || 'USER';
+  const referralLink = typeof window !== 'undefined'
+    ? `${window.location.origin}/ref/${referralCode}`
+    : `https://sidra.tv/ref/${referralCode}`;
   const totalRewards = referrals.reduce((acc, r) => acc + r.rewards, 0);
   const activeReferrals = referrals.filter((r) => r.status === 'active').length;
 

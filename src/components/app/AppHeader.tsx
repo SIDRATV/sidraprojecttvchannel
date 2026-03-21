@@ -27,13 +27,8 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // Sample notifications
-  const [notifications] = useState([
-    { id: 1, title: 'New video uploaded', message: 'Check out the latest documentary', time: '5m ago', read: false },
-    { id: 2, title: 'Someone liked your comment', message: 'Your comment got a like', time: '2h ago', read: true },
-    { id: 3, title: 'Premium subscription', message: 'Your plan expires in 7 days', time: '1d ago', read: true },
-  ]);
-
+  // Notifications (populated when notification table is available)
+  const [notifications] = useState<{ id: number; title: string; message: string; time: string; read: boolean }[]>([]);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {

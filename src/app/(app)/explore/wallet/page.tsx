@@ -9,6 +9,7 @@ import { TransferForm } from '@/components/wallet/TransferForm';
 import { TransactionHistory } from '@/components/wallet/TransactionHistory';
 import { SDALogo } from '@/components/wallet/SDALogo';
 import { getInternalBalance } from '@/lib/internalTransfer';
+import { supabase } from '@/lib/supabase';
 
 export default function WalletPage() {
   const [balance, setBalance] = useState<string | null>(null);
@@ -16,11 +17,15 @@ export default function WalletPage() {
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
-  // Get auth token from context or localStorage
+  // Get auth token from Supabase session
   useEffect(() => {
-    // In a real app, get this from your auth provider
-    const token = localStorage.getItem('auth_token');
-    setAuthToken(token);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) setAuthToken(session.access_token);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setAuthToken(session?.access_token ?? null);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Fetch balance when auth token is available

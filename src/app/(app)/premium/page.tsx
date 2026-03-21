@@ -25,9 +25,12 @@ import {
   PremiumFAQ,
 } from '@/components/premium';
 
+import { usePremium } from '@/hooks/usePremium';
+
 export default function PremiumPage() {
   const router = useRouter();
-  const [isPremiumUser] = React.useState(false); // Change to true to test premium state
+  const { status } = usePremium();
+  const isPremiumUser = status.isActive;
 
   const premiumFeatures = [
     {

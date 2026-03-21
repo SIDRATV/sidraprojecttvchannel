@@ -24,6 +24,10 @@ export default function LoginPage() {
 
     try {
       await authService.signIn(identifier, password);
+      
+      // Give Supabase a moment to establish the session
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       router.push('/dashboard');
     } catch (err) {
       setError(

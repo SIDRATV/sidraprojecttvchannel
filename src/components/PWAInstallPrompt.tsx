@@ -33,11 +33,20 @@ export function PWAInstallPrompt() {
       return;
     }
     
-    console.log('%c[PWA] 📱 App NOT in standalone - clearing cache and setting up listeners', 'color: purple');
+    console.log('%c[PWA] 📱 App NOT in standalone - checking reload counter', 'color: purple');
     
-    // Clear any old dismissal data
-    localStorage.removeItem('pwaPromptTime');
-    sessionStorage.removeItem('pwaPromptTime');
+    // Track reloads and only show prompt every 10 reloads
+    const reloadCount = parseInt(localStorage.getItem('pwaReloadCount') || '0', 10);
+    const newCount = reloadCount + 1;
+    localStorage.setItem('pwaReloadCount', newCount.toString());
+    
+    // Only show prompt if counter is multiple of 10
+    if (newCount % 10 !== 0) {
+      console.log(`%c[PWA] Reload count: ${newCount} - not showing prompt yet`, 'color: orange');
+      setShowPrompt(false);
+      console.groupEnd();
+      // Don't return, still set up listeners but don't show
+    }
 
     // Listen for beforeinstallprompt event - this is the main event
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -46,7 +55,13 @@ export function PWAInstallPrompt() {
       const event = e as BeforeInstallPromptEvent;
       setDeferredPrompt(event);
       setEventCaptured(true);
-      setShowPrompt(true);
+      
+      // Only show prompt if reload count is multiple of 10
+      const reloadCount = parseInt(localStorage.getItem('pwaReloadCount') || '0', 10);
+      if (reloadCount % 10 === 0) {
+        console.log(`%c[PWA] Showing prompt (reload ${reloadCount})`, 'color: green');
+        setShowPrompt(true);
+      }
     };
 
     // Register the listener immediately
@@ -81,11 +96,9 @@ export function PWAInstallPrompt() {
       if (outcome === 'accepted') {
         console.log('[PWA] User accepted installation');
         setIsInstalled(true);
-        localStorage.removeItem('pwaPromptTime');
+        localStorage.removeItem('pwaReloadCount');
       } else {
         console.log('[PWA] User dismissed installation');
-        // Remember when prompt was dismissed for 7 days
-        localStorage.setItem('pwaPromptTime', Date.now().toString());
       }
     } catch (error) {
       console.error('[PWA] Installation error:', error);
@@ -98,8 +111,7 @@ export function PWAInstallPrompt() {
   const handleDismiss = () => {
     console.log('[PWA] User dismissed install prompt');
     setShowPrompt(false);
-    // Remember user's choice for 7 days
-    localStorage.setItem('pwaPromptTime', Date.now().toString());
+    // No need to track dismissal - reload counter will manage when to show again
   };
 
   if (isInstalled) {

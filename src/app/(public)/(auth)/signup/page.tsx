@@ -43,6 +43,10 @@ export default function SignupPage() {
 
     try {
       await authService.signUp(email, password, fullName, username);
+      
+      // Give Supabase a moment to establish the session
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');

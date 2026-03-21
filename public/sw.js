@@ -1,5 +1,5 @@
 // Enhanced cache versioning with timestamp
-const CACHE_VERSION = '1.0.0';
+const CACHE_VERSION = '2.0.0';
 const CACHE_NAME = `sidra-tv-v${CACHE_VERSION}-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 const urlsToCache = [
   '/',
@@ -93,7 +93,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache first for static assets
+  // Navigation requests (HTML pages) — ALWAYS network first so users see latest deploy
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((r) => r || caches.match('/')))
+    );
+    return;
+  }
+
+  // Static assets (images, fonts, css, js) — cache first for performance
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
@@ -101,24 +119,17 @@ self.addEventListener('fetch', (event) => {
       }
 
       return fetch(event.request).then((response) => {
-        // Don't cache non-successful responses
         if (!response || response.status !== 200 || response.type === 'error') {
           return response;
         }
 
-        // Clone the response
         const responseToCache = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseToCache);
         });
 
         return response;
-      }).catch(() => {
-        // Return cached index.html for navigation requests
-        if (event.request.mode === 'navigate') {
-          return caches.match('/');
-        }
-      });
+      }).catch(() => undefined);
     })
   );
 });

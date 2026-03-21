@@ -4,8 +4,10 @@ const toNumber = (value: string | undefined, fallback: number): number => {
   return Number.isFinite(num) ? num : fallback;
 };
 
+import type { WalletNetwork } from './types';
+
 export const supportedWalletNetworks = ['sidra', 'bsc'] as const;
-export type WalletNetwork = (typeof supportedWalletNetworks)[number];
+export type { WalletNetwork };
 
 const defaultNetwork = String(process.env.WALLET_CHAIN_NAME || 'sidra').toLowerCase();
 

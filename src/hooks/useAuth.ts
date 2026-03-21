@@ -40,14 +40,10 @@ export const useAuth = () => {
 
     console.log('[useAuth] Initializing auth hook');
 
-    // First, refresh the session from localStorage (in case setSession was called)
+    // Get the current session (pulls from localStorage if available)
     supabase.auth
-      .refreshSession()
-      .then(async () => {
-        console.log('[useAuth] Session refreshed from storage');
-        
-        // Then get the session
-        const { data: { session } } = await supabase.auth.getSession();
+      .getSession()
+      .then(async ({ data: { session } }) => {
         console.log('[useAuth] getSession returned:', !!session, session?.access_token ? 'has token' : 'no token');
         
         if (session?.user) {
@@ -60,7 +56,7 @@ export const useAuth = () => {
         }
       })
       .catch((err) => {
-        console.error('[useAuth] Session refresh error:', err);
+        console.error('[useAuth] getSession error:', err);
         setUser(null);
       })
       .finally(() => {

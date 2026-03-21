@@ -19,14 +19,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  },
-});
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 // Server-side client (for API routes)
 export const createServerClient = () => {

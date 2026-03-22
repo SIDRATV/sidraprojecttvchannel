@@ -414,7 +414,6 @@ export type Database = {
           user_id: string;
           network: string;
           address: string;
-          memo: string | null;
           is_active: boolean;
           last_checked_block: number;
           created_at: string;
@@ -425,7 +424,6 @@ export type Database = {
           user_id: string;
           network?: string;
           address: string;
-          memo?: string | null;
           is_active?: boolean;
           last_checked_block?: number;
           created_at?: string;
@@ -436,7 +434,6 @@ export type Database = {
           user_id?: string;
           network?: string;
           address?: string;
-          memo?: string | null;
           is_active?: boolean;
           last_checked_block?: number;
           created_at?: string;

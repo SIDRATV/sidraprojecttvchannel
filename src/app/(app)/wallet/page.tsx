@@ -273,10 +273,13 @@ export default function WalletPage() {
             {walletMode === 'internal' && (
               <motion.div
                 key="internal"
-                initial={{ opacity: 0, x: -40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 40 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, x: 40, transition: { duration: 0.3 } }}
+                variants={{
+                  hidden: { opacity: 0, x: -40 },
+                  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1], staggerChildren: 0.1 } },
+                }}
                 className="space-y-8"
               >
                 {/* Balance + Transfer grid */}
@@ -298,7 +301,7 @@ export default function WalletPage() {
 
                         <div className="mb-6 flex items-baseline gap-3">
                           <span className="text-4xl font-extrabold tracking-tight text-white">
-                            {balance
+                            {balance !== null
                               ? parseFloat(balance).toLocaleString('en-US', {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 4,
@@ -382,10 +385,13 @@ export default function WalletPage() {
             {walletMode === 'external' && (
               <motion.div
                 key="external"
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, x: -40, transition: { duration: 0.3 } }}
+                variants={{
+                  hidden: { opacity: 0, x: 40 },
+                  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1], staggerChildren: 0.1 } },
+                }}
                 className="space-y-8"
               >
                 {/* Balance row on external too */}
@@ -397,7 +403,7 @@ export default function WalletPage() {
                         <p className="text-sm font-medium text-slate-400">Available for Withdrawal</p>
                         <div className="mt-1 flex items-baseline gap-3">
                           <span className="text-3xl font-extrabold tracking-tight text-white">
-                            {balance
+                            {balance !== null
                               ? parseFloat(balance).toLocaleString('en-US', {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 4,

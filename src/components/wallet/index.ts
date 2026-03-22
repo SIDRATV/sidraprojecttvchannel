@@ -8,3 +8,4 @@ export { InfoCard } from './InfoCard';
 export { SDALogo, SDALogoInline } from './SDALogo';
 export { WithdrawForm } from './WithdrawForm';
 export { DepositAddress } from './DepositAddress';
+export { WalletErrorBoundary } from './WalletErrorBoundary';

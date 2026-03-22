@@ -26,6 +26,7 @@ import {
 import { WithdrawForm } from '@/components/wallet/WithdrawForm';
 import { DepositAddress } from '@/components/wallet/DepositAddress';
 import { SDALogo } from '@/components/wallet/SDALogo';
+import { WalletErrorBoundary } from '@/components/wallet/WalletErrorBoundary';
 import { getInternalBalance } from '@/lib/internalTransfer';
 import { supabase } from '@/lib/supabase';
 
@@ -333,12 +334,14 @@ export default function WalletPage() {
 
                   {/* Transfer Form */}
                   <motion.div variants={item}>
-                    <TransferForm
-                      walletAddress={null}
-                      transferType="internal"
-                      authToken={authToken}
-                      onSuccess={handleTransferSuccess}
-                    />
+                    <WalletErrorBoundary title="Internal Transfer">
+                      <TransferForm
+                        walletAddress={null}
+                        transferType="internal"
+                        authToken={authToken}
+                        onSuccess={handleTransferSuccess}
+                      />
+                    </WalletErrorBoundary>
                   </motion.div>
                 </div>
 
@@ -350,12 +353,14 @@ export default function WalletPage() {
                     </div>
                     <h3 className="text-xl font-bold text-white">Transfer History</h3>
                   </div>
-                  <TransactionHistory
-                    walletAddress={null}
-                    transactionType="internal"
-                    authToken={authToken}
-                    limit={10}
-                  />
+                  <WalletErrorBoundary title="Transaction History">
+                    <TransactionHistory
+                      walletAddress={null}
+                      transactionType="internal"
+                      authToken={authToken}
+                      limit={10}
+                    />
+                  </WalletErrorBoundary>
                 </motion.div>
 
                 {/* Info Cards */}
@@ -420,10 +425,14 @@ export default function WalletPage() {
                 {/* Withdraw + Deposit grid */}
                 <div className="grid gap-6 lg:grid-cols-2">
                   <motion.div variants={item}>
-                    <WithdrawForm authToken={authToken} onSuccess={refreshBalance} />
+                    <WalletErrorBoundary title="Withdrawal Form">
+                      <WithdrawForm authToken={authToken} onSuccess={refreshBalance} />
+                    </WalletErrorBoundary>
                   </motion.div>
                   <motion.div variants={item}>
-                    <DepositAddress authToken={authToken} />
+                    <WalletErrorBoundary title="Deposit Address">
+                      <DepositAddress authToken={authToken} />
+                    </WalletErrorBoundary>
                   </motion.div>
                 </div>
 
@@ -435,12 +444,14 @@ export default function WalletPage() {
                     </div>
                     <h3 className="text-xl font-bold text-white">On-Chain Activity</h3>
                   </div>
-                  <TransactionHistory
-                    walletAddress={null}
-                    transactionType="internal"
-                    authToken={authToken}
-                    limit={10}
-                  />
+                  <WalletErrorBoundary title="On-Chain Activity">
+                    <TransactionHistory
+                      walletAddress={null}
+                      transactionType="internal"
+                      authToken={authToken}
+                      limit={10}
+                    />
+                  </WalletErrorBoundary>
                 </motion.div>
 
                 {/* Info Cards */}

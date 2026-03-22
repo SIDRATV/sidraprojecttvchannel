@@ -17,10 +17,11 @@ export function DepositAddress({ authToken }: DepositAddressProps) {
   const [copied, setCopied] = useState<'address' | 'memo' | null>(null);
 
   useEffect(() => {
-    fetchDepositAddress();
+    if (authToken) fetchDepositAddress();
   }, [authToken]);
 
   const fetchDepositAddress = async () => {
+    if (!authToken) return;
     setIsLoading(true);
     setError(null);
     try {

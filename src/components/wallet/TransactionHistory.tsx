@@ -37,7 +37,7 @@ export function TransactionHistory({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'onchain' | 'internal'>(
-    transactionType === 'all' ? 'onchain' : transactionType === 'onchain' ? 'onchain' : 'internal'
+    transactionType === 'onchain' ? 'onchain' : 'internal'
   );
 
   useEffect(() => {

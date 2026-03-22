@@ -371,7 +371,7 @@ export default function WalletPage() {
                   </div>
                   <TransactionHistory
                     walletAddress={null}
-                    transactionType="all"
+                    transactionType="internal"
                     authToken={authToken}
                     limit={10}
                   />

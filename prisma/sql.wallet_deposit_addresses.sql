@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS wallet_deposit_addresses (
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   network TEXT NOT NULL DEFAULT 'sidra',
   address TEXT UNIQUE NOT NULL,
-  derivation_index INTEGER UNIQUE,
   memo TEXT,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   last_checked_block BIGINT DEFAULT 0,

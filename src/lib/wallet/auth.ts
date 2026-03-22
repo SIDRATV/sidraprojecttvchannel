@@ -46,20 +46,54 @@ export const requireAuthenticatedUser = async (
     .eq('id', userId)
     .maybeSingle();
 
-  if (profileError || !profile) {
-    throw new Error('User profile not found');
+  let resolvedProfile = profile;
+
+  if (profileError) {
+    throw new Error(`User profile lookup failed: ${profileError.message}`);
   }
 
-  if (options?.mustBeAdmin && !profile.is_admin) {
+  if (!resolvedProfile) {
+    const fallbackEmail = authData.user.email || '';
+    const fallbackName =
+      String(authData.user.user_metadata?.full_name || '').trim() ||
+      fallbackEmail.split('@')[0] ||
+      'Wallet User';
+
+    await supabase
+      .from('users')
+      .upsert(
+        {
+          id: userId,
+          email: fallbackEmail,
+          full_name: fallbackName,
+          username: null,
+        },
+        { onConflict: 'id' }
+      );
+
+    const { data: reloadedProfile, error: reloadError } = await supabase
+      .from('users')
+      .select('id, email, username, full_name, is_admin')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (reloadError || !reloadedProfile) {
+      throw new Error('User profile not found');
+    }
+
+    resolvedProfile = reloadedProfile;
+  }
+
+  if (options?.mustBeAdmin && !resolvedProfile.is_admin) {
     throw new Error('Admin access required');
   }
 
   return {
-    id: profile.id,
-    email: profile.email,
-    username: profile.username,
-    fullName: profile.full_name,
-    isAdmin: profile.is_admin,
+    id: resolvedProfile.id,
+    email: resolvedProfile.email,
+    username: resolvedProfile.username,
+    fullName: resolvedProfile.full_name,
+    isAdmin: resolvedProfile.is_admin,
   };
 };
 

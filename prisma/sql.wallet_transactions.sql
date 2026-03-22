@@ -1,14 +1,21 @@
 -- CREATE TYPES for wallet transactions
-CREATE TYPE IF NOT EXISTS wallet_transaction_type AS ENUM (
-  'internal_transfer',
-  'withdrawal',
-  'deposit',
-  'fee',
-  'adjustment'
-);
+DO $$ BEGIN
+  CREATE TYPE wallet_transaction_type AS ENUM (
+    'internal_transfer',
+    'withdrawal',
+    'deposit',
+    'fee',
+    'adjustment'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE IF NOT EXISTS wallet_transaction_direction AS ENUM ('credit', 'debit');
-CREATE TYPE IF NOT EXISTS wallet_transaction_status AS ENUM ('pending', 'success', 'failed');
+DO $$ BEGIN
+  CREATE TYPE wallet_transaction_direction AS ENUM ('credit', 'debit');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE wallet_transaction_status AS ENUM ('pending', 'success', 'failed');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Wallet Transactions table (ledger) with RLS policies
 CREATE TABLE IF NOT EXISTS wallet_transactions (

@@ -35,23 +35,22 @@ export default function WalletPage() {
   const [balance, setBalance] = useState<string | null>(null);
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [isAuthResolving, setIsAuthResolving] = useState(true);
   const [walletMode, setWalletMode] = useState<WalletMode>('internal');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.access_token) setAuthToken(session.access_token);
+      setIsAuthResolving(false);
     });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_, session) => {
       setAuthToken(session?.access_token ?? null);
+      setIsAuthResolving(false);
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (authToken) refreshBalance();
-  }, [authToken]);
 
   const refreshBalance = useCallback(async () => {
     if (!authToken) return;
@@ -65,6 +64,19 @@ export default function WalletPage() {
       setIsRefreshingBalance(false);
     }
   }, [authToken]);
+
+  useEffect(() => {
+    if (authToken) refreshBalance();
+  }, [authToken, refreshBalance]);
+
+  useEffect(() => {
+    if (!authToken) return;
+    const intervalId = setInterval(() => {
+      refreshBalance();
+    }, 15000);
+
+    return () => clearInterval(intervalId);
+  }, [authToken, refreshBalance]);
 
   const handleTransferSuccess = useCallback(() => {
     setTimeout(() => refreshBalance(), 2000);
@@ -190,7 +202,15 @@ export default function WalletPage() {
 
       {/* Main Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {!authToken ? (
+        {isAuthResolving ? (
+          <motion.div
+            variants={item}
+            className="flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/50 via-slate-900/60 to-slate-900/50 backdrop-blur-xl p-16 text-center shadow-2xl"
+          >
+            <RefreshCw className="mb-4 h-7 w-7 animate-spin text-blue-400" />
+            <p className="text-slate-300">Checking wallet session...</p>
+          </motion.div>
+        ) : !authToken ? (
           <motion.div
             variants={item}
             className="flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-gradient-to-br from-blue-900/30 via-slate-900/50 to-purple-900/30 backdrop-blur-xl p-16 text-center shadow-2xl"

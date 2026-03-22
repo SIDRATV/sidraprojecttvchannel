@@ -60,7 +60,13 @@ export function TransactionHistory({
 
     try {
       const txs = await getInternalTransactionHistory(authToken, limit, 0);
-      setInternalTxs(txs);
+      setInternalTxs(
+        txs.map((tx) => ({
+          ...tx,
+          amount: Number.isFinite(Number(tx.amount)) ? Number(tx.amount) : 0,
+          fee: Number.isFinite(Number(tx.fee ?? 0)) ? Number(tx.fee ?? 0) : 0,
+        }))
+      );
     } catch (err: any) {
       setError(err.message || 'Failed to fetch transaction history');
       console.error('Error fetching transactions:', err);
@@ -214,14 +220,14 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
       const bcTx = tx as BlockchainTx;
       return (
         <span className="flex items-center gap-1">
-          {parseFloat(bcTx.value).toFixed(4)} <SDALogo size="sm" />
+            {(Number.isFinite(Number(bcTx.value)) ? Number(bcTx.value) : 0).toFixed(4)} <SDALogo size="sm" />
         </span>
       );
     } else {
       const iTx = tx as InternalTransaction;
       return (
         <span className="flex items-center gap-1">
-          {iTx.amount.toFixed(4)} <SDALogo size="sm" />
+            {(Number.isFinite(Number(iTx.amount)) ? Number(iTx.amount) : 0).toFixed(4)} <SDALogo size="sm" />
         </span>
       );
     }
@@ -238,7 +244,7 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
       }
 
       if (iTx.counterparty_user_id) {
-        return `User ${iTx.counterparty_user_id.slice(0, 8)}`;
+          return `User ${String(iTx.counterparty_user_id).slice(0, 8)}`;
       }
 
       return 'Internal wallet';
@@ -259,9 +265,9 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
 
   const getTimestamp = () => {
     if (isBlockchain) {
-      const bcTx = tx as BlockchainTx;
-      if (!bcTx.timestamp) return 'Pending';
-      const date = new Date(bcTx.timestamp * 1000);
+      const timestamp = Number((tx as any)?.timestamp ?? 0);
+      if (!timestamp) return 'Pending';
+      const date = new Date(timestamp * 1000);
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     } else {
       const iTx = tx as InternalTransaction;
@@ -326,11 +332,17 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
 }
 
 function shortenHash(hash: string): string {
-  return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
+  const value = String(hash || '');
+  if (!value) return 'N/A';
+  if (value.length <= 18) return value;
+  return `${value.slice(0, 10)}...${value.slice(-8)}`;
 }
 
 function shortenAddress(addr: string): string {
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  const value = String(addr || '');
+  if (!value) return 'N/A';
+  if (value.length <= 12) return value;
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
 function formatDate(timestamp: string | number): string {

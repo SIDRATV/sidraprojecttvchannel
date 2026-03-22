@@ -59,7 +59,7 @@ export const requireAuthenticatedUser = async (
       fallbackEmail.split('@')[0] ||
       'Wallet User';
 
-    await supabase
+    const { error: upsertError } = await supabase
       .from('users')
       .upsert(
         {
@@ -70,6 +70,10 @@ export const requireAuthenticatedUser = async (
         },
         { onConflict: 'id' }
       );
+
+    if (upsertError) {
+      throw new Error(`User profile auto-provision failed: ${upsertError.message}`);
+    }
 
     const { data: reloadedProfile, error: reloadError } = await supabase
       .from('users')

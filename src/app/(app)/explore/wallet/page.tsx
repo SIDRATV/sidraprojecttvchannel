@@ -36,13 +36,31 @@ export default function WalletPage() {
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [isAuthResolving, setIsAuthResolving] = useState(true);
+  const [walletLoadError, setWalletLoadError] = useState<string | null>(null);
   const [walletMode, setWalletMode] = useState<WalletMode>('internal');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) setAuthToken(session.access_token);
-      setIsAuthResolving(false);
-    });
+    const resolveSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.access_token) {
+          setAuthToken(session.access_token);
+          return;
+        }
+
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        setAuthToken(refreshed.session?.access_token ?? null);
+      } catch (error) {
+        console.error('Error resolving wallet session:', error);
+        setAuthToken(null);
+      } finally {
+        setIsAuthResolving(false);
+      }
+    };
+
+    resolveSession();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_, session) => {
@@ -55,11 +73,13 @@ export default function WalletPage() {
   const refreshBalance = useCallback(async () => {
     if (!authToken) return;
     setIsRefreshingBalance(true);
+    setWalletLoadError(null);
     try {
       const internalBalance = await getInternalBalance(authToken);
       setBalance(internalBalance.balance.toString());
     } catch (error) {
       console.error('Error fetching balance:', error);
+      setWalletLoadError('Impossible de charger le wallet. Recharge la page ou reconnecte-toi.');
     } finally {
       setIsRefreshingBalance(false);
     }
@@ -202,6 +222,15 @@ export default function WalletPage() {
 
       {/* Main Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {walletLoadError && (
+          <motion.div
+            variants={item}
+            className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+          >
+            {walletLoadError}
+          </motion.div>
+        )}
+
         {isAuthResolving ? (
           <motion.div
             variants={item}

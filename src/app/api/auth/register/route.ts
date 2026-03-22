@@ -79,20 +79,18 @@ export async function POST(request: NextRequest) {
       // Rollback: delete auth user so the account doesn't hang
       await supabase.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json(
-        { error: 'Failed to create user profile. Please try again.' },
+        { error: `Failed to create user profile: ${profileError.message}` },
         { status: 500 }
       );
     }
 
     try {
       await provisionUserWallet(authData.user.id);
-    } catch {
-      await supabase.from('users').delete().eq('id', authData.user.id);
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      return NextResponse.json(
-        { error: 'Failed to provision wallet account. Please try again.' },
-        { status: 500 }
-      );
+    } catch (walletError: any) {
+      // Wallet provisioning is non-critical at registration time.
+      // The wallet will be auto-provisioned on first wallet page visit.
+      // Do NOT roll back user creation — the account is usable without a wallet.
+      console.error('Wallet provisioning failed during registration (non-fatal):', walletError?.message);
     }
 
     // Auto sign-in after registration so the client gets a session

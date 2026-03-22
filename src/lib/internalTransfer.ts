@@ -60,7 +60,6 @@ export interface DepositAddressResponse {
   success: boolean;
   address: string;
   network: string;
-  memo?: string | null;
   createdAt: string;
 }
 

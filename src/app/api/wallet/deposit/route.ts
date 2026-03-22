@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
       success: true,
       address: address.address,
       network: address.network,
-      memo: address.memo,
       createdAt: address.created_at,
     });
   } catch (error: any) {

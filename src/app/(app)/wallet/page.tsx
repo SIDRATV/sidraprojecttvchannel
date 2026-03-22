@@ -470,7 +470,7 @@ export default function WalletPage() {
                   <InfoCard title="Deposits" type="success">
                     <p>• Send tokens to your unique deposit address</p>
                     <p>• Deposits are credited after confirmation on-chain</p>
-                    <p>• Include the memo if provided for faster crediting</p>
+                    <p>• Each user has a unique address — no memo needed</p>
                   </InfoCard>
                   <InfoCard title="Important" type="warning">
                     <p>⚠️ Only send supported tokens — sending wrong tokens may result in loss</p>

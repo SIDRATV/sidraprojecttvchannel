@@ -11,10 +11,9 @@ interface DepositAddressProps {
 export function DepositAddress({ authToken }: DepositAddressProps) {
   const [address, setAddress] = useState<string | null>(null);
   const [network, setNetwork] = useState<string | null>(null);
-  const [memo, setMemo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<'address' | 'memo' | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (authToken) fetchDepositAddress();
@@ -32,7 +31,6 @@ export function DepositAddress({ authToken }: DepositAddressProps) {
       if (!res.ok) throw new Error(data.error || 'Failed to load deposit address');
       setAddress(data.address);
       setNetwork(data.network);
-      setMemo(data.memo);
     } catch (err: any) {
       setError(err.message || 'Failed to load deposit address');
     } finally {
@@ -40,11 +38,11 @@ export function DepositAddress({ authToken }: DepositAddressProps) {
     }
   };
 
-  const copyToClipboard = async (text: string, type: 'address' | 'memo') => {
+  const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(type);
-      setTimeout(() => setCopied(null), 2500);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     } catch {
       // fallback
     }
@@ -107,10 +105,10 @@ export function DepositAddress({ authToken }: DepositAddressProps) {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => copyToClipboard(address, 'address')}
+                  onClick={() => copyToClipboard(address)}
                   className="flex-shrink-0 rounded-lg bg-white/10 p-2 transition hover:bg-white/20"
                 >
-                  {copied === 'address' ? (
+                  {copied ? (
                     <CheckCircle className="h-4 w-4 text-emerald-400" />
                   ) : (
                     <Copy className="h-4 w-4 text-slate-400" />
@@ -118,32 +116,6 @@ export function DepositAddress({ authToken }: DepositAddressProps) {
                 </motion.button>
               </div>
             </div>
-
-            {/* Memo */}
-            {memo && (
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                  Memo / Tag
-                </label>
-                <div className="group relative flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                  <code className="flex-1 text-sm font-mono text-amber-300">
-                    {memo}
-                  </code>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => copyToClipboard(memo, 'memo')}
-                    className="flex-shrink-0 rounded-lg bg-white/10 p-2 transition hover:bg-white/20"
-                  >
-                    {copied === 'memo' ? (
-                      <CheckCircle className="h-4 w-4 text-emerald-400" />
-                    ) : (
-                      <Copy className="h-4 w-4 text-slate-400" />
-                    )}
-                  </motion.button>
-                </div>
-              </div>
-            )}
 
             {/* Notice */}
             <div className="flex items-start gap-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 px-4 py-3">

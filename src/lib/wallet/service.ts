@@ -641,7 +641,7 @@ export const getOrCreateDepositAddress = async (userId: string) => {
 
   const { data: existing, error: existingError } = await supabase
     .from('wallet_deposit_addresses')
-    .select('id, address, network, memo, created_at')
+    .select('id, address, network, created_at')
     .eq('user_id', userId)
     .eq('is_active', true)
     .maybeSingle();
@@ -661,10 +661,9 @@ export const getOrCreateDepositAddress = async (userId: string) => {
       user_id: userId,
       network: walletConfig.chainName,
       address: generatedWallet.address.toLowerCase(),
-      memo: `dep-${userId.slice(0, 8)}`,
       is_active: true,
     })
-    .select('id, address, network, memo, created_at')
+    .select('id, address, network, created_at')
     .single();
 
   if (createError || !created) {
@@ -707,8 +706,11 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
   }
 
   if (!addresses || addresses.length === 0) {
+    console.log('[syncDeposits] No active deposit addresses found for network:', network);
     return { scannedBlocks: 0, credited: 0, matches: 0 };
   }
+
+  console.log(`[syncDeposits] Scanning ${addresses.length} deposit addresses on ${network}`);
 
   const byAddress = new Map<string, any>();
   for (const row of addresses) {
@@ -752,6 +754,7 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
 
       matches += 1;
       const depositOwner = byAddress.get(to);
+      console.log(`[syncDeposits] Match found: tx=${tx.hash} to=${to} value=${ethers.formatEther(tx.value)} block=${blockNumber}`);
 
       const receipt = await provider.getTransactionReceipt(tx.hash);
       if (!receipt || receipt.status !== 1) {
@@ -781,6 +784,7 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
 
         if (!creditError) {
           credited += 1;
+          console.log(`[syncDeposits] Deposit credited: user=${depositOwner.user_id} amount=${roundAmount(amount)} tx=${tx.hash}`);
           await sweepDepositToHotWallet({
             depositAddressId: depositOwner.id,
             userId: depositOwner.user_id,
@@ -802,8 +806,8 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
             },
           });
         }
-      } catch {
-        // intentionally ignore duplicate-credit race conditions
+      } catch (depositError: any) {
+        console.log(`[syncDeposits] Skipped tx=${tx.hash}: ${depositError?.message || 'duplicate or race condition'}`);
       }
     }
 
@@ -816,6 +820,8 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
       .update({ last_checked_block: latestBlock })
       .eq('id', row.id);
   }
+
+  console.log(`[syncDeposits] Done: network=${network} blocks=${scannedBlocks} matches=${matches} credited=${credited} range=${startBlock}-${latestBlock}`);
 
   return {
     network,

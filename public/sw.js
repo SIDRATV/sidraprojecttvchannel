@@ -36,11 +36,8 @@ self.addEventListener('activate', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (!cacheName.startsWith('sidra-tv-v')) {
-              return caches.delete(cacheName);
-            }
             // Delete old versioned caches
-            if (cacheName !== CACHE_NAME) {
+            if (cacheName.startsWith('sidra-tv-v') && cacheName !== CACHE_NAME) {
               console.log('[Service Worker] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -51,16 +48,6 @@ self.addEventListener('activate', (event) => {
       self.clients.claim()
     ])
   );
-  
-  // Notify all clients to reload
-  self.clients.matchAll().then((clients) => {
-    clients.forEach((client) => {
-      client.postMessage({
-        type: 'SKIP_WAITING',
-        message: 'New version available, reloading...'
-      });
-    });
-  });
 });
 
 // Fetch event - network first for dynamic content, cache first for static assets

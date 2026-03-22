@@ -79,7 +79,8 @@ export default function WalletPage() {
       setBalance(internalBalance.balance.toString());
     } catch (error) {
       console.error('Error fetching balance:', error);
-      setWalletLoadError('Impossible de charger le wallet. Recharge la page ou reconnecte-toi.');
+      const message = error instanceof Error ? error.message : 'Unknown wallet error';
+      setWalletLoadError(`Impossible de charger le wallet (${message}). Recharge la page ou reconnecte-toi.`);
     } finally {
       setIsRefreshingBalance(false);
     }

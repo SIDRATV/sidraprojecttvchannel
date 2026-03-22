@@ -99,19 +99,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
                         newWorker.addEventListener('statechange', () => {
                           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            console.log('[PWA] New service worker available, activating...');
-                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            console.log('[PWA] New service worker available. It will activate on next full reload.');
                           }
                         });
-                      });
-
-                      // Listen for service worker taking control
-                      navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        const reloaded = sessionStorage.getItem('sw-reloaded-once');
-                        if (reloaded) return;
-                        sessionStorage.setItem('sw-reloaded-once', '1');
-                        console.log('[PWA] New service worker is now controlling the page, reloading once...');
-                        window.location.reload();
                       });
                     })
                     .catch((error) => {

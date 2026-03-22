@@ -17,7 +17,7 @@ END$$;
 CREATE TABLE IF NOT EXISTS wallet_accounts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsk')),
+  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsc', 'bsk')),
   address TEXT NOT NULL UNIQUE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS wallet_accounts (
 CREATE TABLE IF NOT EXISTS wallet_balances (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsk')),
+  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsc', 'bsk')),
   balance NUMERIC(30, 12) NOT NULL DEFAULT 0,
   locked_balance NUMERIC(30, 12) NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS wallet_balances (
 CREATE TABLE IF NOT EXISTS wallet_transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsk')),
+  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsc', 'bsk')),
   type wallet_tx_type NOT NULL,
   amount NUMERIC(30, 12) NOT NULL CHECK (amount > 0),
   fee NUMERIC(30, 12) NOT NULL DEFAULT 0 CHECK (fee >= 0),
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS wallet_deposits (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   wallet_transaction_id UUID REFERENCES wallet_transactions(id) ON DELETE SET NULL,
-  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsk')),
+  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsc', 'bsk')),
   from_address TEXT,
   to_address TEXT NOT NULL,
   amount NUMERIC(30, 12) NOT NULL CHECK (amount > 0),
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS wallet_withdrawals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   wallet_transaction_id UUID REFERENCES wallet_transactions(id) ON DELETE SET NULL,
-  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsk')),
+  network TEXT NOT NULL CHECK (network IN ('sidra', 'bsc', 'bsk')),
   to_address TEXT NOT NULL,
   amount NUMERIC(30, 12) NOT NULL CHECK (amount > 0),
   fee NUMERIC(30, 12) NOT NULL DEFAULT 0 CHECK (fee >= 0),
@@ -100,6 +100,65 @@ CREATE TABLE IF NOT EXISTS wallet_logs (
   payload JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Backward-compatible migration for existing installations where tables already exist
+ALTER TABLE IF EXISTS wallet_accounts ADD COLUMN IF NOT EXISTS network TEXT;
+UPDATE wallet_accounts SET network = 'sidra' WHERE network IS NULL;
+ALTER TABLE wallet_accounts ALTER COLUMN network SET NOT NULL;
+
+ALTER TABLE IF EXISTS wallet_balances ADD COLUMN IF NOT EXISTS network TEXT;
+UPDATE wallet_balances SET network = 'sidra' WHERE network IS NULL;
+ALTER TABLE wallet_balances ALTER COLUMN network SET NOT NULL;
+
+ALTER TABLE IF EXISTS wallet_transactions ADD COLUMN IF NOT EXISTS network TEXT;
+UPDATE wallet_transactions SET network = 'sidra' WHERE network IS NULL;
+ALTER TABLE wallet_transactions ALTER COLUMN network SET NOT NULL;
+
+ALTER TABLE IF EXISTS wallet_deposits ADD COLUMN IF NOT EXISTS network TEXT;
+UPDATE wallet_deposits SET network = 'sidra' WHERE network IS NULL;
+ALTER TABLE wallet_deposits ALTER COLUMN network SET NOT NULL;
+
+ALTER TABLE IF EXISTS wallet_withdrawals ADD COLUMN IF NOT EXISTS network TEXT;
+UPDATE wallet_withdrawals SET network = 'sidra' WHERE network IS NULL;
+ALTER TABLE wallet_withdrawals ALTER COLUMN network SET NOT NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'wallet_accounts_network_check'
+  ) THEN
+    ALTER TABLE wallet_accounts
+      ADD CONSTRAINT wallet_accounts_network_check CHECK (network IN ('sidra', 'bsc', 'bsk'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'wallet_balances_network_check'
+  ) THEN
+    ALTER TABLE wallet_balances
+      ADD CONSTRAINT wallet_balances_network_check CHECK (network IN ('sidra', 'bsc', 'bsk'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'wallet_transactions_network_check'
+  ) THEN
+    ALTER TABLE wallet_transactions
+      ADD CONSTRAINT wallet_transactions_network_check CHECK (network IN ('sidra', 'bsc', 'bsk'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'wallet_deposits_network_check'
+  ) THEN
+    ALTER TABLE wallet_deposits
+      ADD CONSTRAINT wallet_deposits_network_check CHECK (network IN ('sidra', 'bsc', 'bsk'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'wallet_withdrawals_network_check'
+  ) THEN
+    ALTER TABLE wallet_withdrawals
+      ADD CONSTRAINT wallet_withdrawals_network_check CHECK (network IN ('sidra', 'bsc', 'bsk'));
+  END IF;
+END$$;
 
 CREATE INDEX IF NOT EXISTS idx_wallet_accounts_user_network ON wallet_accounts(user_id, network);
 CREATE INDEX IF NOT EXISTS idx_wallet_balances_user_network ON wallet_balances(user_id, network);

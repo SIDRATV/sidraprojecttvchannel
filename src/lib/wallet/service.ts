@@ -80,94 +80,37 @@ const getSigner = (network: WalletNetwork): ethers.Wallet => {
   return new ethers.Wallet(signerPrivateKey, getProvider(network));
 };
 
-const deriveDepositWallet = (derivationIndex: number, network: WalletNetwork): ethers.Wallet => {
-  if (!walletConfig.depositMnemonic) {
-    throw new Error('WALLET_DEPOSIT_MNEMONIC is not configured');
-  }
-
-  const derivationPath = `${walletConfig.depositDerivationPathPrefix}${derivationIndex}`;
-  const derivedWallet = ethers.HDNodeWallet.fromPhrase(
-    walletConfig.depositMnemonic,
-    undefined,
-    derivationPath
-  );
-
-  return new ethers.Wallet(derivedWallet.privateKey, getProvider(network));
-};
-
 const sweepDepositToHotWallet = async (input: {
   depositAddressId: string;
   userId: string;
   depositAddress: string;
-  derivationIndex: number;
+  amount: number;
   network: WalletNetwork;
   sourceTxHash: string;
 }) => {
-  const { userId, depositAddress, derivationIndex, network, sourceTxHash } = input;
-  const wallet = deriveDepositWallet(derivationIndex, network);
-  const provider = getProvider(network);
+  const { userId, depositAddress, amount, network, sourceTxHash } = input;
   const hotWalletAddress = (await getSigner(network).getAddress()).toLowerCase();
-  const sourceAddress = wallet.address.toLowerCase();
 
-  if (sourceAddress !== String(depositAddress || '').toLowerCase()) {
-    throw new Error('Derived wallet address mismatch for sweep');
-  }
-
-  const balance = await provider.getBalance(sourceAddress);
-  if (balance <= 0n) {
-    return {
-      status: 'skipped' as const,
-      reason: 'No balance to sweep',
-    };
-  }
-
-  const gasLimit = 21000n;
-  const feeData = await provider.getFeeData();
-  const gasPrice = feeData.gasPrice ?? 0n;
-
-  if (gasPrice <= 0n) {
-    throw new Error('Unable to resolve gas price for sweep');
-  }
-
-  const gasCost = gasLimit * gasPrice;
-  if (balance <= gasCost) {
-    return {
-      status: 'skipped' as const,
-      reason: 'Insufficient balance for sweep gas',
-    };
-  }
-
-  const sweepValue = balance - gasCost;
-  const tx = await wallet.sendTransaction({
-    to: hotWalletAddress,
-    value: sweepValue,
-    gasLimit,
-    gasPrice,
-  });
-
-  const receipt = await tx.wait(1);
-  if (!receipt || receipt.status !== 1) {
-    throw new Error('Sweep transaction reverted');
-  }
+  const sourceAddress = String(depositAddress || '').toLowerCase();
 
   await writeAuditLog({
     actorUserId: userId,
-    action: 'wallet.deposit.swept',
-    targetId: tx.hash,
+    action: 'wallet.deposit.sweep_skipped',
+    targetId: sourceTxHash,
     details: {
       depositAddressId: input.depositAddressId,
       sourceTxHash,
       from: sourceAddress,
       to: hotWalletAddress,
-      amount: Number(ethers.formatEther(sweepValue)),
+      amount,
       network,
+      reason: 'User private key is not stored by design; direct on-chain sweep from user address is disabled',
     },
   });
 
   return {
-    status: 'success' as const,
-    txHash: tx.hash,
-    amount: Number(ethers.formatEther(sweepValue)),
+    status: 'skipped' as const,
+    reason: 'Sweep disabled for non-custodial user addresses',
   };
 };
 
@@ -698,7 +641,7 @@ export const getOrCreateDepositAddress = async (userId: string) => {
 
   const { data: existing, error: existingError } = await supabase
     .from('wallet_deposit_addresses')
-    .select('id, address, network, memo, derivation_index, created_at')
+    .select('id, address, network, memo, created_at')
     .eq('user_id', userId)
     .eq('is_active', true)
     .maybeSingle();
@@ -710,37 +653,18 @@ export const getOrCreateDepositAddress = async (userId: string) => {
   if (existing) {
     return existing;
   }
-
-  if (!walletConfig.depositMnemonic) {
-    throw new Error('WALLET_DEPOSIT_MNEMONIC is not configured');
-  }
-
-  const { data: latest, error: latestError } = await supabase
-    .from('wallet_deposit_addresses')
-    .select('derivation_index')
-    .order('derivation_index', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (latestError) {
-    throw new Error(`Failed to allocate derivation index: ${latestError.message}`);
-  }
-
-  const derivationIndex = Number(latest?.derivation_index ?? -1) + 1;
-  const derivationPath = `${walletConfig.depositDerivationPathPrefix}${derivationIndex}`;
-  const derivedWallet = ethers.HDNodeWallet.fromPhrase(walletConfig.depositMnemonic, undefined, derivationPath);
+  const generatedWallet = ethers.Wallet.createRandom();
 
   const { data: created, error: createError } = await supabase
     .from('wallet_deposit_addresses')
     .insert({
       user_id: userId,
       network: walletConfig.chainName,
-      address: derivedWallet.address.toLowerCase(),
-      derivation_index: derivationIndex,
+      address: generatedWallet.address.toLowerCase(),
       memo: `dep-${userId.slice(0, 8)}`,
       is_active: true,
     })
-    .select('id, address, network, memo, derivation_index, created_at')
+    .select('id, address, network, memo, created_at')
     .single();
 
   if (createError || !created) {
@@ -753,7 +677,6 @@ export const getOrCreateDepositAddress = async (userId: string) => {
     targetId: created.id,
     details: {
       network: created.network,
-      derivationIndex: created.derivation_index,
     },
   });
 
@@ -775,7 +698,7 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
 
   const { data: addresses, error: addressError } = await supabase
     .from('wallet_deposit_addresses')
-    .select('id, user_id, address, network, derivation_index, last_checked_block')
+    .select('id, user_id, address, network, last_checked_block')
     .eq('is_active', true)
     .eq('network', network);
 
@@ -858,30 +781,14 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
 
         if (!creditError) {
           credited += 1;
-          const derivationIndex = Number(depositOwner.derivation_index ?? -1);
-          if (Number.isFinite(derivationIndex) && derivationIndex >= 0) {
-            try {
-              await sweepDepositToHotWallet({
-                depositAddressId: depositOwner.id,
-                userId: depositOwner.user_id,
-                depositAddress: to,
-                derivationIndex,
-                network,
-                sourceTxHash: tx.hash,
-              });
-            } catch (sweepError: any) {
-              await writeAuditLog({
-                actorUserId: depositOwner.user_id,
-                action: 'wallet.deposit.sweep_failed',
-                targetId: tx.hash,
-                details: {
-                  error: sweepError?.message || 'Unknown sweep error',
-                  address: to,
-                  network,
-                },
-              });
-            }
-          }
+          await sweepDepositToHotWallet({
+            depositAddressId: depositOwner.id,
+            userId: depositOwner.user_id,
+            depositAddress: to,
+            amount: roundAmount(amount),
+            network,
+            sourceTxHash: tx.hash,
+          });
 
           await writeAuditLog({
             actorUserId: depositOwner.user_id,

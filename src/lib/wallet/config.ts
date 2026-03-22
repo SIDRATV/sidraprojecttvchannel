@@ -42,8 +42,6 @@ export const walletConfig = {
   } as Record<WalletNetwork, string>,
   signerPrivateKey: process.env.WALLET_SIGNER_PRIVATE_KEY || process.env.HOT_WALLET_PRIVATE_KEY_SIDRA || '',
   signerPrivateKeyEncrypted: process.env.WALLET_SIGNER_PRIVATE_KEY_ENCRYPTED || '',
-  depositMnemonic: process.env.WALLET_DEPOSIT_MNEMONIC || '',
-  depositDerivationPathPrefix: process.env.WALLET_DEPOSIT_DERIVATION_PREFIX || "m/44'/60'/0'/0/",
   encryptionKey: process.env.ENCRYPTION_KEY || process.env.WALLET_ENCRYPTION_KEY || '',
   feeBps: toNumber(process.env.WALLET_INTERNAL_TRANSFER_FEE_BPS, 100),
   minWithdrawal: toNumber(process.env.WALLET_WITHDRAWAL_MIN, 0.01),

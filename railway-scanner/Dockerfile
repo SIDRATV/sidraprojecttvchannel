@@ -2,14 +2,15 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+# Copy from the railway-scanner subdirectory (build context is repo root)
+COPY railway-scanner/package.json railway-scanner/package-lock.json* ./
 RUN npm ci --omit=dev 2>/dev/null || npm install --omit=dev
 
-COPY tsconfig.json ./
-COPY src/ ./src/
+COPY railway-scanner/tsconfig.json ./
+COPY railway-scanner/src/ ./src/
 
-# Install typescript for build, then build, then remove devDeps
-RUN npm install typescript ts-node @types/node @types/express --save-dev \
+# Build TypeScript
+RUN npm install typescript @types/node @types/express --save-dev \
   && npx tsc \
   && rm -rf node_modules/.cache \
   && npm prune --omit=dev

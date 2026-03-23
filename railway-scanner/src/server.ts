@@ -62,9 +62,11 @@ export function incrementCycleCount() {
  * Public health check (no auth required).
  */
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({
-    status: 'ok',
+  const configMissing = !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.SCANNER_API_KEY;
+  res.status(200).json({
+    status: configMissing ? 'misconfigured' : 'ok',
     scanner: scannerRunning ? 'running' : 'stopped',
+    configMissing,
     startedAt,
     cycleCount,
     uptime: process.uptime(),

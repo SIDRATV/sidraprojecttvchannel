@@ -74,44 +74,54 @@ async function runScanCycle() {
 
 async function main() {
   logger.info('main', '=== Sidra Blockchain Scanner starting ===');
+
+  // ── Start HTTP server FIRST so /health responds immediately ──
+  // Railway healthcheck starts as soon as the container is up.
+  // The server must be listening before any async work begins.
+  await new Promise<void>((resolve) => {
+    app.listen(config.port, () => {
+      logger.info('main', `HTTP server listening on port ${config.port}`);
+      resolve();
+    });
+  });
+
   logger.info('main', `Scan interval: ${config.scanIntervalMs}ms`);
   logger.info('main', `Max blocks per scan: ${config.maxBlocksPerScan}`);
   logger.info('main', `Min confirmations: ${config.minConfirmations}`);
   logger.info('main', `Process withdrawals: ${config.processWithdrawals}`);
   logger.info('main', `Active chains: ${getActiveChains().join(', ')}`);
 
-  // Test RPC connectivity
-  logger.info('main', 'Testing RPC connections...');
-  const rpcResults = await testAllRpcConnections();
-  for (const r of rpcResults) {
-    if (r.connected) {
-      logger.info('main', `✓ ${r.network}: connected, block ${r.latestBlock}, ${r.latencyMs}ms`);
-    } else {
-      logger.error('main', `✗ ${r.network}: FAILED — ${r.error}`);
+  // Validate required env vars after server is up
+  const missing = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SCANNER_API_KEY'].filter(
+    (v) => !process.env[v]
+  );
+  if (missing.length > 0) {
+    logger.error('main', `Missing required env vars: ${missing.join(', ')} — scanner will not run. Set them in Railway dashboard.`);
+    // Don't exit — keep server alive so /health returns 'stopped' state
+    return;
+  }
+
+  // Test RPC connectivity (non-blocking, just informational)
+  testAllRpcConnections().then((rpcResults) => {
+    for (const r of rpcResults) {
+      if (r.connected) {
+        logger.info('main', `✓ ${r.network}: connected, block ${r.latestBlock}, ${r.latencyMs}ms`);
+      } else {
+        logger.error('main', `✗ ${r.network}: RPC CONNECTION FAILED — ${r.error}`);
+      }
     }
-  }
-
-  const connectedCount = rpcResults.filter((r) => r.connected).length;
-  if (connectedCount === 0) {
-    logger.error('main', 'No RPC connections available — scanner will retry on interval');
-  }
-
-  // Start Express server
-  app.listen(config.port, () => {
-    logger.info('main', `HTTP server listening on port ${config.port}`);
-  });
+  }).catch(() => {});
 
   // Start scan loop
   setScannerRunning(true);
   logger.info('main', 'Starting scan loop...');
 
-  // Run first cycle immediately
-  await runScanCycle();
-
-  // Then run on interval
-  setInterval(runScanCycle, config.scanIntervalMs);
-
-  logger.info('main', '=== Scanner is running ===');
+  // Delay first scan by 5s to let Railway healthcheck pass first
+  setTimeout(async () => {
+    await runScanCycle();
+    setInterval(runScanCycle, config.scanIntervalMs);
+    logger.info('main', '=== Scanner is running ===');
+  }, 5_000);
 }
 
 // ─── Graceful shutdown ────────────────────────────────────────

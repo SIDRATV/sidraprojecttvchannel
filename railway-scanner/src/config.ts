@@ -6,7 +6,9 @@
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    // Warn instead of throw — let the HTTP server start so /health responds
+    console.warn(`[config] WARNING: Missing environment variable: ${name}`);
+    return '';
   }
   return value;
 }

@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { syncDeposits, processPendingWithdrawals } from '@/lib/wallet';
+import { processPendingWithdrawals } from '@/lib/wallet';
 import { walletConfig } from '@/lib/wallet/config';
-import type { WalletNetwork } from '@/lib/wallet/types';
+import { runFullDepositScan, testAllRpcConnections } from '@/lib/wallet/deposit-scanner';
+import { isScannerAvailable, triggerDepositScan, getScannerStatus } from '@/lib/wallet/scanner-client';
 
 /**
  * GET /api/wallet/deposits/cron
  *
- * Vercel Cron endpoint (called every minute or on your configured schedule).
- * 1. Scans blockchain for new deposits on each supported network
- * 2. Processes pending/failed withdrawals
+ * Vercel Cron endpoint — runs every minute.
+ *
+ * If RAILWAY_SCANNER_URL is configured and reachable, delegates scanning
+ * to the Railway service. Otherwise falls back to local scanning.
  *
  * Protected by CRON_SECRET header or admin API key.
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
   const cronSecret = request.headers.get('authorization')?.replace('Bearer ', '');
   const adminKey = request.headers.get('x-admin-api-key');
 
@@ -29,40 +32,80 @@ export async function GET(request: NextRequest) {
 
   const results: Record<string, unknown> = {};
 
-  // Sync deposits on each configured network
-  const networks: WalletNetwork[] = ['sidra'];
+  // Check if Railway scanner is available
+  const railwayAvailable = await isScannerAvailable();
 
-  // Only add BSC if RPC URL is configured
-  if (walletConfig.rpcUrls.bsc) {
-    networks.push('bsc');
-  }
+  if (railwayAvailable) {
+    // ── Delegate to Railway scanner ──────────────────────────
+    console.log('[cron] Railway scanner is available — delegating scan');
+    results.mode = 'railway';
 
-  for (const network of networks) {
     try {
-      console.log(`[cron] Starting deposit sync for ${network}...`);
-      const syncResult = await syncDeposits({ network });
-      results[`deposits_${network}`] = syncResult;
-      console.log(`[cron] Deposit sync ${network}: credited=${syncResult.credited} matches=${syncResult.matches} blocks=${syncResult.scannedBlocks}`);
+      const scannerStatus = await getScannerStatus();
+      results.scanner_status = {
+        scanner: scannerStatus.scanner,
+        cycleCount: scannerStatus.cycleCount,
+        uptime: scannerStatus.uptime,
+        rpcHealth: scannerStatus.rpcHealth,
+        lastScan: scannerStatus.lastScan,
+      };
+      console.log(`[cron] Railway scanner has run ${scannerStatus.cycleCount} cycles`);
     } catch (error: any) {
-      console.error(`[cron] Deposit sync failed for ${network}:`, error?.message);
-      results[`deposits_${network}`] = { error: error?.message || 'sync failed' };
+      console.error('[cron] Failed to fetch scanner status:', error?.message);
+      results.scanner_status = { error: error?.message };
     }
-  }
+  } else {
+    // ── Fall back to local scanning ──────────────────────────
+    console.log('[cron] Railway scanner not available — running local scan');
+    results.mode = 'local';
 
-  // Process pending withdrawals
-  try {
-    console.log('[cron] Processing pending withdrawals...');
-    const withdrawalResult = await processPendingWithdrawals({ limit: 10 });
-    results.withdrawals = withdrawalResult;
-    console.log(`[cron] Withdrawals: processed=${withdrawalResult.processed} success=${withdrawalResult.success} failed=${withdrawalResult.failed}`);
-  } catch (error: any) {
-    console.error('[cron] Withdrawal processing failed:', error?.message);
-    results.withdrawals = { error: error?.message || 'processing failed' };
+    // Step 1: RPC health check
+    try {
+      const rpcHealth = await testAllRpcConnections();
+      results.rpc_health = rpcHealth;
+
+      const failedNetworks = rpcHealth.filter((r) => !r.connected);
+      if (failedNetworks.length > 0) {
+        console.error(
+          `[cron] RPC CONNECTION FAILED for: ${failedNetworks.map((r) => r.network).join(', ')}`
+        );
+      }
+    } catch (error: any) {
+      console.error('[cron] RPC health check failed:', error?.message);
+      results.rpc_health = { error: error?.message };
+    }
+
+    // Step 2: Scan all chains for deposits
+    try {
+      console.log('[cron] Starting blockchain deposit scan...');
+      const depositScan = await runFullDepositScan({ maxBlocks: 20 });
+      results.deposits = depositScan;
+      console.log(
+        `[cron] Deposit scan complete: credited=${depositScan.totalCredited} matches=${depositScan.totalMatches} errors=${depositScan.totalErrors} duration=${depositScan.durationMs}ms`
+      );
+    } catch (error: any) {
+      console.error('[cron] Deposit scan failed:', error?.message);
+      results.deposits = { error: error?.message || 'scan failed' };
+    }
+
+    // Step 3: Process pending withdrawals
+    try {
+      console.log('[cron] Processing pending withdrawals...');
+      const withdrawalResult = await processPendingWithdrawals({ limit: 10 });
+      results.withdrawals = withdrawalResult;
+      console.log(
+        `[cron] Withdrawals: processed=${withdrawalResult.processed} success=${withdrawalResult.success} failed=${withdrawalResult.failed}`
+      );
+    } catch (error: any) {
+      console.error('[cron] Withdrawal processing failed:', error?.message);
+      results.withdrawals = { error: error?.message || 'processing failed' };
+    }
   }
 
   return NextResponse.json({
     ok: true,
     timestamp: new Date().toISOString(),
+    durationMs: Date.now() - startTime,
     ...results,
   });
 }

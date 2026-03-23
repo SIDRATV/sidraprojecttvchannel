@@ -1,10 +1,10 @@
--- Wallet Deposit Addresses table (unique address strategy) with RLS policies
+-- Wallet Deposit Addresses table (unique address strategy, NO memo/tag) with RLS policies
 CREATE TABLE IF NOT EXISTS wallet_deposit_addresses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   network TEXT NOT NULL DEFAULT 'sidra',
   address TEXT UNIQUE NOT NULL,
-  memo TEXT,
+  derivation_index INTEGER UNIQUE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   last_checked_block BIGINT DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

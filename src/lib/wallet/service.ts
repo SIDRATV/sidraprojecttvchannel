@@ -684,8 +684,10 @@ export const getOrCreateDepositAddress = async (userId: string) => {
 
 const safeGetBlock = async (provider: ethers.JsonRpcProvider, blockNumber: number) => {
   try {
-    return await provider.getBlock(blockNumber, true);
-  } catch {
+    const block = await provider.getBlock(blockNumber, true);
+    return block;
+  } catch (err: any) {
+    console.error(`[syncDeposits] Failed to fetch block ${blockNumber}:`, err?.message || err);
     return null;
   }
 };
@@ -717,16 +719,25 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
     byAddress.set(String(row.address).toLowerCase(), row);
   }
 
-  const latestBlock = await provider.getBlockNumber();
+  let latestBlock: number;
+  try {
+    latestBlock = await provider.getBlockNumber();
+    console.log(`[syncDeposits] RPC connected to ${network} — latest block: ${latestBlock}`);
+  } catch (rpcErr: any) {
+    console.error(`[syncDeposits] RPC CONNECTION FAILED for ${network}:`, rpcErr?.message || rpcErr);
+    throw new Error(`RPC CONNECTION FAILED for ${network}: ${rpcErr?.message || 'unknown error'}`);
+  }
+
   const maxBlocks = Math.max(10, Math.min(2000, options?.maxBlocks || walletConfig.maxDepositBlocksPerSync));
 
-  const minTracked = Math.min(
-    ...addresses.map((row) => Number(row.last_checked_block || 0)).filter((value) => value > 0),
-    latestBlock
-  );
+  const trackedBlocks = addresses
+    .map((row) => Number(row.last_checked_block || 0))
+    .filter((value) => value > 0);
+
+  const minTracked = trackedBlocks.length > 0 ? Math.min(...trackedBlocks) : 0;
 
   const fallbackFrom = Math.max(0, latestBlock - maxBlocks);
-  const startBlock = Number.isFinite(minTracked) && minTracked > 0 ? Math.max(minTracked, fallbackFrom) : fallbackFrom;
+  const startBlock = minTracked > 0 ? Math.max(minTracked + 1, fallbackFrom) : fallbackFrom;
 
   let credited = 0;
   let matches = 0;
@@ -740,13 +751,24 @@ export const syncDeposits = async (options?: { maxBlocks?: number; network?: Wal
       continue;
     }
 
-    const transactions = block.transactions as Array<string | ethers.TransactionResponse>;
-
-    for (const tx of transactions) {
-      if (typeof tx === 'string') {
-        continue;
+    // ethers v6: block.prefetchedTransactions contains full TransactionResponse objects
+    // block.transactions only returns string hashes — we must use prefetchedTransactions
+    let fullTxs: ethers.TransactionResponse[] = [];
+    try {
+      fullTxs = block.prefetchedTransactions || [];
+    } catch {
+      // Fallback: if prefetchedTransactions is not available, fetch individually
+      for (const txHash of block.transactions) {
+        try {
+          const tx = await provider.getTransaction(txHash);
+          if (tx) fullTxs.push(tx);
+        } catch {
+          // skip individual tx fetch failures
+        }
       }
+    }
 
+    for (const tx of fullTxs) {
       const to = tx.to?.toLowerCase();
       if (!to || !byAddress.has(to) || tx.value <= 0n) {
         continue;

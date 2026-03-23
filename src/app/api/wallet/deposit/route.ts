@@ -3,8 +3,8 @@ import {
   getOrCreateDepositAddress,
   requireAdminApiKeyOrUser,
   requireAuthenticatedUser,
-  syncDeposits,
 } from '@/lib/wallet';
+import { scanSidraDeposits, scanBscDeposits, runFullDepositScan } from '@/lib/wallet/deposit-scanner';
 import type { WalletNetwork } from '@/lib/wallet/types';
 
 export async function GET(request: NextRequest) {
@@ -32,16 +32,17 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const normalizedNetwork = String(body?.network || '').toLowerCase();
-    const network: WalletNetwork | undefined =
-      normalizedNetwork === 'bsc' || normalizedNetwork === 'bsk'
-        ? 'bsc'
-        : normalizedNetwork === 'sidra'
-          ? 'sidra'
-          : undefined;
-    const result = await syncDeposits({
-      maxBlocks: Number(body.maxBlocks || undefined),
-      network,
-    });
+    const maxBlocks = Number(body?.maxBlocks) || undefined;
+
+    let result;
+
+    if (normalizedNetwork === 'sidra') {
+      result = await scanSidraDeposits({ maxBlocks });
+    } else if (normalizedNetwork === 'bsc') {
+      result = await scanBscDeposits({ maxBlocks });
+    } else {
+      result = await runFullDepositScan({ maxBlocks });
+    }
 
     return NextResponse.json({ success: true, ...result });
   } catch (error: any) {

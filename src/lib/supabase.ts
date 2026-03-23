@@ -19,7 +19,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'sb-sidra-auth',
+  },
+});
 
 // Server-side client (for API routes)
 export const createServerClient = () => {

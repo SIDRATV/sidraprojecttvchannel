@@ -2,26 +2,21 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@/types";
 
-const fetchUserProfile = async (userId: string): Promise<User | null> => {
+// Pass the session token directly — never call getSession() inside getSession().then()
+// Doing so deadlocks the Supabase auth queue and causes an infinite loading spinner on refresh.
+const fetchUserProfile = async (userId: string, accessToken?: string): Promise<User | null> => {
   try {
-    console.log('[useAuth] Fetching profile for user:', userId);
-    
-    // Get current session to ensure we have a valid token
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('[useAuth] Current session:', !!session, session?.access_token ? 'has token' : 'no token');
-    
     const { data, error } = await supabase
       .from("users")
       .select("*")
       .eq("id", userId)
       .single();
-    
+
     if (error) {
       console.error('[useAuth] Profile fetch error:', error);
       return null;
     }
-    
-    console.log('[useAuth] Profile fetched successfully:', data?.id);
+
     return data || null;
   } catch (err) {
     console.error('[useAuth] Profile fetch exception:', err);
@@ -38,20 +33,19 @@ export const useAuth = () => {
     if (initialized.current) return;
     initialized.current = true;
 
-    console.log('[useAuth] Initializing auth hook');
+    // Safety timeout — if auth doesn't resolve in 10s, unblock the UI
+    const safetyTimer = setTimeout(() => {
+      console.warn('[useAuth] Auth timeout — forcing loading=false');
+      setLoading(false);
+    }, 10_000);
 
-    // Get the current session (pulls from localStorage if available)
     supabase.auth
       .getSession()
       .then(async ({ data: { session } }) => {
-        console.log('[useAuth] getSession returned:', !!session, session?.access_token ? 'has token' : 'no token');
-        
         if (session?.user) {
-          console.log('[useAuth] Session user found:', session.user.id);
-          const profile = await fetchUserProfile(session.user.id);
+          const profile = await fetchUserProfile(session.user.id, session.access_token);
           setUser(profile);
         } else {
-          console.log('[useAuth] No session user found');
           setUser(null);
         }
       })
@@ -60,17 +54,15 @@ export const useAuth = () => {
         setUser(null);
       })
       .finally(() => {
-        console.log('[useAuth] Initial load complete');
+        clearTimeout(safetyTimer);
         setLoading(false);
       });
 
-    // Keep in sync with auth state changes (login, logout, token refresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[useAuth] Auth state change:', event, !!session);
       if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
+        const profile = await fetchUserProfile(session.user.id, session.access_token);
         setUser(profile);
       } else {
         setUser(null);
@@ -78,8 +70,12 @@ export const useAuth = () => {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return { user, loading };
 };
+

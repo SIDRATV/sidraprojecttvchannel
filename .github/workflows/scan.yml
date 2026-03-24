@@ -1,4 +1,4 @@
-name: Blockchain Deposit Scanner
+name: Blockchain Deposit Scanner & Withdrawal Processor
 
 on:
   # Run on every push to main
@@ -39,3 +39,15 @@ jobs:
           SCAN_API_KEY: ${{ secrets.SCAN_API_KEY }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: node index.js
+
+      - name: Process pending withdrawals
+        working-directory: scanner
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          RPC_URL_SIDRA: ${{ secrets.RPC_URL_SIDRA }}
+          RPC_URL_BSC: ${{ secrets.RPC_URL_BSC }}
+          HOT_WALLET_PRIVATE_KEY_SIDRA: ${{ secrets.HOT_WALLET_PRIVATE_KEY_SIDRA }}
+          HOT_WALLET_PRIVATE_KEY_BSC: ${{ secrets.HOT_WALLET_PRIVATE_KEY_BSC }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: node process-withdrawals.js

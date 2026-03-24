@@ -118,18 +118,33 @@ const getUserByUsername = async (username: string) => {
   const supabase = createServerClient();
   const normalized = username.trim().toLowerCase();
 
-  const { data, error } = await supabase
+  // Try exact username match first (case-insensitive)
+  const { data: byUsername, error: usernameError } = await supabase
     .from('users')
     .select('id, username, full_name, email')
-    .or(`username.eq.${normalized},email.ilike.${normalized}@%`)
+    .ilike('username', normalized)
     .limit(1)
     .maybeSingle();
 
-  if (error) {
-    throw new Error(`Unable to verify recipient: ${error.message}`);
+  if (usernameError) {
+    throw new Error(`Unable to verify recipient: ${usernameError.message}`);
   }
 
-  return data;
+  if (byUsername) return byUsername;
+
+  // Fall back to exact email match (case-insensitive)
+  const { data: byEmail, error: emailError } = await supabase
+    .from('users')
+    .select('id, username, full_name, email')
+    .ilike('email', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (emailError) {
+    throw new Error(`Unable to verify recipient: ${emailError.message}`);
+  }
+
+  return byEmail;
 };
 
 export const estimateInternalFee = (amount: number) => {
@@ -249,9 +264,12 @@ export const internalTransfer = async (input: InternalTransferInput) => {
     throw new Error('Invalid recipient or amount');
   }
 
+  console.log(`[transfer] User ${senderUserId} initiating internal transfer of ${amount} to "${recipientUsername}"`);
+
   const recipient = await getUserByUsername(recipientUsername);
 
   if (!recipient) {
+    console.warn(`[transfer] Recipient "${recipientUsername}" not found`);
     throw new Error('Recipient user not found');
   }
 
@@ -273,8 +291,11 @@ export const internalTransfer = async (input: InternalTransferInput) => {
   });
 
   if (error || !data) {
+    console.error(`[transfer] Internal transfer RPC failed: ${error?.message || 'unknown'}`);
     throw new Error(error?.message || 'Internal transfer failed');
   }
+
+  console.log(`[transfer] Success: ${senderUserId} → ${recipient.id} amount=${roundAmount(amount)} fee=${fee} ref=${referenceId}`);
 
   await writeAuditLog({
     actorUserId: senderUserId,
@@ -339,6 +360,24 @@ const getTodayWithdrawnAmount = async (userId: string): Promise<number> => {
   return (data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
 };
 
+const getLastWithdrawalTime = async (userId: string): Promise<Date | null> => {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from('wallet_withdrawals')
+    .select('created_at')
+    .eq('user_id', userId)
+    .in('status', ['pending', 'processing', 'success'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return new Date(data.created_at);
+};
+
+const WITHDRAWAL_COOLDOWN_SECONDS = 300; // 5 minutes between withdrawals
+
 export const requestWithdrawal = async (input: WithdrawalInput) => {
   const { userId, amount, toAddress, description } = input;
   const network = normalizeNetwork(input.network);
@@ -364,6 +403,18 @@ export const requestWithdrawal = async (input: WithdrawalInput) => {
   if (withdrawnToday + amount > limits.daily) {
     throw new Error(`Daily withdrawal limit exceeded (${limits.daily} ${walletConfig.currency})`);
   }
+
+  // Rate limiting: enforce cooldown between withdrawals
+  const lastWithdrawalTime = await getLastWithdrawalTime(userId);
+  if (lastWithdrawalTime) {
+    const secondsSinceLast = (Date.now() - lastWithdrawalTime.getTime()) / 1000;
+    if (secondsSinceLast < WITHDRAWAL_COOLDOWN_SECONDS) {
+      const waitSeconds = Math.ceil(WITHDRAWAL_COOLDOWN_SECONDS - secondsSinceLast);
+      throw new Error(`Please wait ${waitSeconds} seconds before requesting another withdrawal`);
+    }
+  }
+
+  console.log(`[withdrawal] User ${userId} requesting ${amount} ${walletConfig.currency} to ${normalizedToAddress} on ${network}`);
 
   const fee = calcFee(amount);
   const encryptedAddress = encryptText(normalizedToAddress);
@@ -413,6 +464,25 @@ export const requestWithdrawal = async (input: WithdrawalInput) => {
     },
   });
 
+  // Auto-process: attempt immediate on-chain broadcast (best-effort)
+  try {
+    console.log(`[withdrawal] Auto-processing withdrawal ${payload.withdrawal_id} on ${network}`);
+    const supabaseForProcess = createServerClient();
+    const { data: freshWithdrawal } = await supabaseForProcess
+      .from('wallet_withdrawals')
+      .select('id, user_id, amount, fee, to_address, network, status, attempts, next_retry_at, wallet_transaction_id')
+      .eq('id', payload.withdrawal_id)
+      .single();
+
+    if (freshWithdrawal && freshWithdrawal.status === 'pending') {
+      const processResult = await processSingleWithdrawal(freshWithdrawal);
+      console.log(`[withdrawal] Auto-process result for ${payload.withdrawal_id}: ${processResult.status}`);
+    }
+  } catch (autoProcessError: any) {
+    // Non-fatal: the periodic processor will pick it up
+    console.warn(`[withdrawal] Auto-process failed for ${payload.withdrawal_id}: ${autoProcessError?.message || 'unknown'}`);
+  }
+
   return {
     withdrawalId: payload.withdrawal_id,
     transactionId: payload.transaction_id,
@@ -458,6 +528,7 @@ const markWithdrawalSuccess = async (withdrawal: any, txHash: string) => {
 };
 
 const refundFailedWithdrawal = async (withdrawal: any, reason: string) => {
+  console.log(`[withdrawal] Refunding failed withdrawal ${withdrawal.id}: ${Number(withdrawal.amount || 0) + Number(withdrawal.fee || 0)} ${walletConfig.currency} to user ${withdrawal.user_id}`);
   const supabase = createServerClient();
 
   const { data: account, error: accountError } = await supabase
@@ -531,6 +602,7 @@ const markWithdrawalFailed = async (withdrawal: any, errorMessage: string) => {
 
 const processSingleWithdrawal = async (withdrawal: any) => {
   const withdrawalNetwork = normalizeNetwork(withdrawal.network);
+  console.log(`[withdrawal] Processing ${withdrawal.id} — ${withdrawal.amount} ${walletConfig.currency} to ${withdrawal.to_address?.slice(0, 20)}... on ${withdrawalNetwork} (attempt ${(withdrawal.attempts || 0) + 1})`);
   const signer = getSigner(withdrawalNetwork);
   const destinationAddress = maybeDecryptAddress(withdrawal.to_address);
 
@@ -564,6 +636,7 @@ const processSingleWithdrawal = async (withdrawal: any) => {
       throw new Error('On-chain withdrawal reverted');
     }
 
+    console.log(`[withdrawal] On-chain success: ${withdrawal.id} txHash=${tx.hash}`);
     await markWithdrawalSuccess(withdrawal, tx.hash);
     await writeAuditLog({
       actorUserId: withdrawal.user_id,
@@ -582,6 +655,7 @@ const processSingleWithdrawal = async (withdrawal: any) => {
       txHash: tx.hash,
     };
   } catch (error: any) {
+    console.error(`[withdrawal] On-chain failed for ${withdrawal.id}: ${error?.message || 'unknown'}`);
     await markWithdrawalFailed(withdrawal, error?.message || 'Withdrawal broadcast failed');
     await writeAuditLog({
       actorUserId: withdrawal.user_id,
@@ -620,6 +694,8 @@ export const processPendingWithdrawals = async (options?: { onlyFailed?: boolean
   if (error) {
     throw new Error(`Failed to load withdrawals: ${error.message}`);
   }
+
+  console.log(`[withdrawal] Processing batch: ${(withdrawals || []).length} withdrawal(s) found`);
 
   const results = [];
 

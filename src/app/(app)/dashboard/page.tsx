@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { YouTubeFeaturedCarousel } from '@/components/app/YouTubeFeaturedCarousel';
 import { YouTubeSection } from '@/components/app/YouTubeSection';
+import { LazySection } from '@/components/app/LazySection';
 import { PremiumBanner, PremiumContentPreview } from '@/components/premium';
 import { Heart, MessageCircle, Play } from 'lucide-react';
 import { videoService } from '@/services/videos';
@@ -114,44 +115,54 @@ export default function DashboardPage() {
       </section>
 
       {/* Educational Videos */}
-      <YouTubeSection
-        title="Educational Content"
-        description="Learn new skills and concepts"
-        query="education tutorial learning"
-        maxResults={12}
-      />
+      <LazySection>
+        <YouTubeSection
+          title="Educational Content"
+          description="Learn new skills and concepts"
+          query="education tutorial learning"
+          maxResults={12}
+        />
+      </LazySection>
 
       {/* Business & Entrepreneurship */}
-      <YouTubeSection
-        title="Business & Entrepreneurship"
-        description="Insights for founders and business leaders"
-        query="startup business entrepreneurship investor"
-        maxResults={12}
-      />
+      <LazySection>
+        <YouTubeSection
+          title="Business & Entrepreneurship"
+          description="Insights for founders and business leaders"
+          query="startup business entrepreneurship investor"
+          maxResults={12}
+        />
+      </LazySection>
 
       {/* Trending Now */}
-      <YouTubeSection
-        title="Trending Now"
-        description="What's popular this week"
-        query="trending viral"
-        maxResults={12}
-      />
+      <LazySection>
+        <YouTubeSection
+          title="Trending Now"
+          description="What's popular this week"
+          query="trending viral"
+          maxResults={12}
+        />
+      </LazySection>
 
       {/* Technology Deep Dives */}
-      <YouTubeSection
-        title="Technology Deep Dives"
-        description="In-depth explorations of tech topics"
-        query="blockchain cryptocurrency AI machine learning"
-        maxResults={12}
-      />
+      <LazySection>
+        <YouTubeSection
+          title="Technology Deep Dives"
+          description="In-depth explorations of tech topics"
+          query="blockchain cryptocurrency AI machine learning"
+          maxResults={12}
+        />
+      </LazySection>
 
       {/* Community & Culture */}
-      <YouTubeSection
-        title="Community & Culture"
-        description="Stories that inspire and unite"
-        query="community culture inspiration"
-        maxResults={8}
-      />
+      <LazySection>
+        <YouTubeSection
+          title="Community & Culture"
+          description="Stories that inspire and unite"
+          query="community culture inspiration"
+          maxResults={8}
+        />
+      </LazySection>
     </motion.div>
   );
 }

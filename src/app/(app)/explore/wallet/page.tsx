@@ -28,48 +28,19 @@ import { DepositAddress } from '@/components/wallet/DepositAddress';
 import { SDALogo } from '@/components/wallet/SDALogo';
 import { WalletErrorBoundary } from '@/components/wallet/WalletErrorBoundary';
 import { getInternalBalance } from '@/lib/internalTransfer';
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 type WalletMode = 'internal' | 'external';
 
 export default function WalletPage() {
+  // ── Auth from shared context (single getSession, no duplicates) ──
+  const { user, session } = useAuth();
+  const authToken = session?.access_token;
+
   const [balance, setBalance] = useState<string | null>(null);
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
-  const [authToken, setAuthToken] = useState<string | null>(null);
-  const [isAuthResolving, setIsAuthResolving] = useState(true);
   const [walletLoadError, setWalletLoadError] = useState<string | null>(null);
   const [walletMode, setWalletMode] = useState<WalletMode>('internal');
-
-  useEffect(() => {
-    const resolveSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session?.access_token) {
-          setAuthToken(session.access_token);
-          return;
-        }
-
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        setAuthToken(refreshed.session?.access_token ?? null);
-      } catch (error) {
-        console.error('Error resolving wallet session:', error);
-        setAuthToken(null);
-      } finally {
-        setIsAuthResolving(false);
-      }
-    };
-
-    resolveSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_, session) => {
-      setAuthToken(session?.access_token ?? null);
-      setIsAuthResolving(false);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   const refreshBalance = useCallback(async () => {
     if (!authToken) return;
@@ -112,6 +83,15 @@ export default function WalletPage() {
     hidden: { opacity: 0, y: 24 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
   };
+
+  // Guard: ProtectedRoute guarantees user/session, but narrow type for TS
+  if (!authToken) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#060918]">
+        <RefreshCw className="h-7 w-7 animate-spin text-blue-400" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -233,36 +213,8 @@ export default function WalletPage() {
           </motion.div>
         )}
 
-        {isAuthResolving ? (
-          <motion.div
-            variants={item}
-            className="flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/50 via-slate-900/60 to-slate-900/50 backdrop-blur-xl p-16 text-center shadow-2xl"
-          >
-            <RefreshCw className="mb-4 h-7 w-7 animate-spin text-blue-400" />
-            <p className="text-slate-300">Checking wallet session...</p>
-          </motion.div>
-        ) : !authToken ? (
-          <motion.div
-            variants={item}
-            className="flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-gradient-to-br from-blue-900/30 via-slate-900/50 to-purple-900/30 backdrop-blur-xl p-16 text-center shadow-2xl"
-          >
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30"
-            >
-              <Wallet className="h-10 w-10 text-blue-400" />
-            </motion.div>
-            <h2 className="mb-2 text-2xl font-bold text-white">Welcome to Your Wallet</h2>
-            <p className="mb-6 max-w-md text-slate-400">
-              Log in to access your wallet, transfer tokens, and interact with the blockchain.
-            </p>
-            <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-5 py-2 text-sm font-medium text-blue-300">
-              <Shield className="h-4 w-4" /> Please log in to continue
-            </span>
-          </motion.div>
-        ) : (
-          <AnimatePresence mode="wait">
+        {/* Wallet guaranteed to have user via ProtectedRoute */}
+        <AnimatePresence mode="wait">
             {walletMode === 'internal' && (
               <motion.div
                 key="internal"
@@ -417,12 +369,12 @@ export default function WalletPage() {
                 <div className="grid gap-6 lg:grid-cols-2">
                   <motion.div variants={item}>
                     <WalletErrorBoundary title="Withdrawal Form">
-                      <WithdrawForm authToken={authToken} onSuccess={refreshBalance} />
+                      <WithdrawForm authToken={authToken!} onSuccess={refreshBalance} />
                     </WalletErrorBoundary>
                   </motion.div>
                   <motion.div variants={item}>
                     <WalletErrorBoundary title="Deposit Address">
-                      <DepositAddress authToken={authToken} />
+                      <DepositAddress authToken={authToken!} />
                     </WalletErrorBoundary>
                   </motion.div>
                 </div>
@@ -464,7 +416,6 @@ export default function WalletPage() {
               </motion.div>
             )}
           </AnimatePresence>
-        )}
       </div>
 
       <div className="pointer-events-none fixed bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#060918] to-transparent z-20" />

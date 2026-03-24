@@ -50,6 +50,13 @@ const fetchUserProfile = async (authUser: SupabaseUser): Promise<User> => {
   }
 };
 
+const mergeProfile = (baseUser: User, profile: User): User => ({
+  ...baseUser,
+  ...profile,
+  email: profile.email || baseUser.email,
+  full_name: profile.full_name || baseUser.full_name,
+});
+
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,10 +81,22 @@ export const useAuth = () => {
       }
 
       lastUserIdRef.current = session.user.id;
+      const authBackedUser = toAppUser(session.user);
+
+      if (!cancelled && requestId === requestIdRef.current) {
+        setUser((currentUser) => {
+          if (currentUser?.id === authBackedUser.id) {
+            return mergeProfile(authBackedUser, currentUser);
+          }
+
+          return authBackedUser;
+        });
+      }
+
       const profile = await fetchUserProfile(session.user);
 
       if (!cancelled && requestId === requestIdRef.current) {
-        setUser(profile);
+        setUser(mergeProfile(authBackedUser, profile));
       }
     };
 

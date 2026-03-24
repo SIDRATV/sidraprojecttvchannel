@@ -25,6 +25,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storageKey: 'sb-sidra-auth',
+    flowType: 'pkce',
   },
 });
 

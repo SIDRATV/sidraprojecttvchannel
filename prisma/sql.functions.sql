@@ -178,7 +178,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Atomic deposit credit RPC
+-- Atomic deposit credit RPC (handles both new deposits and pending→confirmed)
 CREATE OR REPLACE FUNCTION wallet_credit_deposit(
   p_user_id UUID,
   p_amount NUMERIC,
@@ -191,6 +191,8 @@ CREATE OR REPLACE FUNCTION wallet_credit_deposit(
 RETURNS UUID AS $$
 DECLARE
   transaction_ref UUID;
+  existing_status wallet_transaction_status;
+  existing_id UUID;
 BEGIN
   IF p_amount <= 0 THEN
     RAISE EXCEPTION 'Amount must be greater than zero';
@@ -199,16 +201,35 @@ BEGIN
   INSERT INTO wallet_accounts (user_id) VALUES (p_user_id)
   ON CONFLICT (user_id) DO NOTHING;
 
-  IF EXISTS (
-    SELECT 1 FROM wallet_transactions
-    WHERE tx_hash = p_tx_hash
-      AND user_id = p_user_id
-      AND type = 'deposit'
-      AND status = 'success'
-  ) THEN
+  -- Check if this tx already exists
+  SELECT id, status INTO existing_id, existing_status
+  FROM wallet_transactions
+  WHERE tx_hash = p_tx_hash
+    AND user_id = p_user_id
+    AND type = 'deposit'
+  LIMIT 1;
+
+  -- Already credited
+  IF existing_status = 'success' THEN
     RAISE EXCEPTION 'Deposit already credited';
   END IF;
 
+  -- Pending → Confirmed: update status and credit balance
+  IF existing_status = 'pending' THEN
+    UPDATE wallet_transactions
+    SET status = 'success',
+        description = 'On-chain deposit credited',
+        metadata = jsonb_build_object('confirmations', p_confirmations, 'confirmed_at', NOW()::text) || COALESCE(p_metadata, '{}'::jsonb)
+    WHERE id = existing_id;
+
+    UPDATE wallet_accounts
+    SET balance = balance + p_amount
+    WHERE user_id = p_user_id;
+
+    RETURN existing_id;
+  END IF;
+
+  -- New deposit: insert as success + credit balance
   UPDATE wallet_accounts
   SET balance = balance + p_amount
   WHERE user_id = p_user_id;

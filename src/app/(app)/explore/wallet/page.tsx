@@ -25,6 +25,7 @@ import {
 } from '@/components/wallet';
 import { WithdrawForm } from '@/components/wallet/WithdrawForm';
 import { DepositAddress } from '@/components/wallet/DepositAddress';
+import { PendingDeposits } from '@/components/wallet/PendingDeposits';
 import { SDALogo } from '@/components/wallet/SDALogo';
 import { WalletErrorBoundary } from '@/components/wallet/WalletErrorBoundary';
 import { getInternalBalance } from '@/lib/internalTransfer';
@@ -378,6 +379,13 @@ export default function WalletPage() {
                     </WalletErrorBoundary>
                   </motion.div>
                 </div>
+
+                {/* Pending & Recently Confirmed Deposits */}
+                <motion.div variants={item}>
+                  <WalletErrorBoundary title="Pending Deposits">
+                    <PendingDeposits authToken={authToken!} onDepositConfirmed={refreshBalance} />
+                  </WalletErrorBoundary>
+                </motion.div>
 
                 <motion.div variants={item}>
                   <div className="mb-5 flex items-center gap-3">

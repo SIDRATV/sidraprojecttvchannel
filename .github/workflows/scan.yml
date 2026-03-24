@@ -1,11 +1,15 @@
 name: Blockchain Deposit Scanner
 
 on:
+  # Run on every push to main
+  push:
+    branches:
+      - main
+  # Run on schedule (every 3 minutes)
   schedule:
-    # Runs every 3 minutes
     - cron: '*/3 * * * *'
+  # Allow manual trigger from GitHub UI
   workflow_dispatch:
-    # Allow manual trigger from GitHub UI
 
 jobs:
   scan:

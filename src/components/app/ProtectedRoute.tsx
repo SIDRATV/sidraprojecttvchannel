@@ -10,38 +10,39 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const router = useRouter();
-  // Track how long we've been done loading with no user
-  const noUserSinceRef = useRef<number | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (loading) {
-      noUserSinceRef.current = null;
+    if (!initialized || loading) {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
       return;
     }
 
     if (!user) {
-      // Record when loading finished with no user
-      if (noUserSinceRef.current === null) {
-        noUserSinceRef.current = Date.now();
-      }
-
-      // Only redirect after 300ms with no user — avoids redirect on brief
-      // flicker between getSession() resolving and profile being set
-      const delay = setTimeout(() => {
-        if (!user) {
-          router.push('/login');
-        }
+      redirectTimerRef.current = setTimeout(() => {
+        router.replace('/login');
       }, 300);
 
-      return () => clearTimeout(delay);
-    } else {
-      noUserSinceRef.current = null;
+      return () => {
+        if (redirectTimerRef.current) {
+          clearTimeout(redirectTimerRef.current);
+          redirectTimerRef.current = null;
+        }
+      };
     }
-  }, [user, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loading) {
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+  }, [initialized, user, loading, router]);
+
+  if (!initialized || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-950">
         <motion.div
@@ -54,7 +55,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    // Show spinner while the 300ms redirect delay is pending
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-950">
         <motion.div

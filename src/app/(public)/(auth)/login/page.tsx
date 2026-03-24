@@ -24,12 +24,9 @@ export default function LoginPage() {
 
     try {
       await authService.signIn(identifier, password);
-      
-      // Wait longer to ensure session is persisted to localStorage
-      // and client is ready to make authenticated API calls
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      router.push('/dashboard');
+
+      router.replace('/dashboard');
+      router.refresh();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Invalid credentials. Please try again.'

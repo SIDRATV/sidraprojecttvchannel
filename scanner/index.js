@@ -18,6 +18,7 @@
 
 const { ethers } = require('ethers');
 const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
 
 // ─── Configuration ────────────────────────────────────────────
 
@@ -55,6 +56,130 @@ const CHAINS = {
     maxBlocksPerScan: 100,
   },
 };
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '';
+
+const HOT_WALLETS = {
+  sidra: process.env.HOT_WALLET_PRIVATE_KEY_SIDRA || '',
+  bsc: process.env.HOT_WALLET_PRIVATE_KEY_BSC || process.env.HOT_WALLET_PRIVATE_KEY_BSK || '',
+};
+
+// ─── Decryption (AES-256-GCM, matches src/lib/wallet/crypto.ts) ─────
+function decryptText(encrypted) {
+  if (!encrypted || !ENCRYPTION_KEY) return null;
+  const parts = String(encrypted).split(':');
+  if (parts.length !== 3) return null;
+
+  try {
+    const [ivHex, authTagHex, cipherHex] = parts;
+    const keyHash = crypto.createHash('sha256').update(ENCRYPTION_KEY).digest();
+    const decipher = crypto.createDecipheriv('aes-256-gcm', keyHash, Buffer.from(ivHex, 'hex'));
+    decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
+    let decrypted = decipher.update(cipherHex, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Sweep deposit address funds to hot wallet ───────────────
+async function sweepToHotWallet(depositOwner, chain, provider) {
+  const network = chain.network;
+  const hotWalletKey = HOT_WALLETS[network];
+  if (!hotWalletKey) {
+    log('warn', 'sweep', `No hot wallet key for ${network} — skip sweep`);
+    return null;
+  }
+
+  // Load encrypted private key from deposit address record
+  const { data: addrRecord } = await supabase
+    .from('wallet_deposit_addresses')
+    .select('id, encrypted_private_key, swept_at')
+    .eq('id', depositOwner.id)
+    .maybeSingle();
+
+  if (!addrRecord?.encrypted_private_key) {
+    log('info', 'sweep', `No encrypted key for deposit address ${depositOwner.id} — skip sweep`);
+    return null;
+  }
+
+  const depositPrivateKey = decryptText(addrRecord.encrypted_private_key);
+  if (!depositPrivateKey) {
+    log('warn', 'sweep', `Failed to decrypt private key for ${depositOwner.id}`);
+    return null;
+  }
+
+  try {
+    const depositSigner = new ethers.Wallet(depositPrivateKey, provider);
+    const depositAddress = await depositSigner.getAddress();
+    const hotWalletSigner = new ethers.Wallet(hotWalletKey, provider);
+    const hotWalletAddress = await hotWalletSigner.getAddress();
+
+    const balance = await provider.getBalance(depositAddress);
+    if (balance === 0n) {
+      return null;
+    }
+
+    const gasPrice = (await provider.getFeeData()).gasPrice || ethers.parseUnits('5', 'gwei');
+    const gasLimit = 21000n;
+    const gasCost = gasPrice * gasLimit;
+
+    if (balance <= gasCost) {
+      log('info', 'sweep', `Balance ${ethers.formatEther(balance)} too low to cover gas on ${depositAddress}`);
+      return null;
+    }
+
+    const sweepAmount = balance - gasCost;
+    log('info', 'sweep', `Sweeping ${ethers.formatEther(sweepAmount)} from ${depositAddress} to ${hotWalletAddress}`, { network });
+
+    const tx = await depositSigner.sendTransaction({
+      to: hotWalletAddress,
+      value: sweepAmount,
+      gasLimit,
+      gasPrice,
+    });
+
+    const receipt = await tx.wait(1);
+    if (!receipt || receipt.status !== 1) {
+      throw new Error('Sweep transaction reverted');
+    }
+
+    log('info', 'sweep', `✓ Swept ${ethers.formatEther(sweepAmount)} — tx: ${tx.hash}`, { network, depositAddress, hotWalletAddress });
+
+    // Update deposit address record
+    await supabase
+      .from('wallet_deposit_addresses')
+      .update({ swept_at: new Date().toISOString(), sweep_tx_hash: tx.hash })
+      .eq('id', depositOwner.id);
+
+    // Audit log
+    await supabase.from('wallet_audit_logs').insert({
+      actor_user_id: depositOwner.user_id,
+      action: 'wallet.deposit.swept',
+      target_id: tx.hash,
+      details: {
+        depositAddressId: depositOwner.id,
+        from: depositAddress.toLowerCase(),
+        to: hotWalletAddress.toLowerCase(),
+        amount: Number(ethers.formatEther(sweepAmount)),
+        network,
+        swept_by: 'github-actions-scanner',
+      },
+    });
+
+    return { txHash: tx.hash, amount: ethers.formatEther(sweepAmount) };
+  } catch (err) {
+    log('error', 'sweep', `Sweep failed for ${depositOwner.id}: ${err.message}`, { network });
+    await supabase.from('wallet_audit_logs').insert({
+      actor_user_id: depositOwner.user_id,
+      action: 'wallet.deposit.sweep_failed',
+      target_id: depositOwner.id,
+      details: { error: err.message, network, swept_by: 'github-actions-scanner' },
+    });
+    return null;
+  }
+}
 
 // ─── Logging ──────────────────────────────────────────────────
 
@@ -253,6 +378,13 @@ async function creditDeposit(depositOwner, tx, amount, blockNumber, confirmation
     },
   }).then(() => {});
 
+  // Sweep deposit address funds to hot wallet (best-effort)
+  try {
+    await sweepToHotWallet(depositOwner, chain, provider);
+  } catch (sweepErr) {
+    log('warn', 'scanner', `Sweep attempt failed after credit: ${sweepErr.message}`, { network, txHash: tx.hash });
+  }
+
   return 'credited';
 }
 
@@ -359,6 +491,21 @@ async function confirmPendingDeposits(network, provider, chain) {
         log('info', 'scanner', `✓ Pending deposit confirmed: ${ptx.amount} ${chain.symbol}`, {
           network, txHash: ptx.tx_hash, userId: ptx.user_id, confirmations,
         });
+
+        // Sweep deposit address to hot wallet (best-effort)
+        try {
+          const { data: depositAddr } = await supabase
+            .from('wallet_deposit_addresses')
+            .select('id, user_id, address, encrypted_private_key')
+            .eq('user_id', ptx.user_id)
+            .eq('is_active', true)
+            .maybeSingle();
+          if (depositAddr) {
+            await sweepToHotWallet(depositAddr, chain, provider);
+          }
+        } catch (sweepErr) {
+          log('warn', 'scanner', `Sweep after pending confirm failed: ${sweepErr.message}`, { network });
+        }
 
         // Audit log
         supabase.from('wallet_audit_logs').insert({

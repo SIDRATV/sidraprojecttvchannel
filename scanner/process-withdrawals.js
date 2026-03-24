@@ -79,6 +79,20 @@ async function processWithdrawal(withdrawal) {
 
   try {
     const signer = getSigner(network);
+
+    // Check hot wallet balance before sending
+    const hotWalletBalance = await signer.provider.getBalance(await signer.getAddress());
+    const requiredAmount = ethers.parseEther(String(withdrawal.amount));
+    const gasEstimate = ethers.parseUnits('5', 'gwei') * 21000n;
+
+    if (hotWalletBalance < requiredAmount + gasEstimate) {
+      const balanceStr = ethers.formatEther(hotWalletBalance);
+      const msg = `Hot wallet insufficient balance: ${balanceStr} < ${withdrawal.amount} + gas on ${network}`;
+      console.error(`  ✗ ${msg}`);
+      await markFailed(withdrawal, msg);
+      return { id: withdrawal.id, status: 'failed', error: msg };
+    }
+
     const tx = await signer.sendTransaction({
       to: destination,
       value: ethers.parseEther(String(withdrawal.amount)),

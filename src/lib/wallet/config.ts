@@ -18,7 +18,7 @@ const fallbackSidraRpc =
   process.env.NEXT_PUBLIC_SIDRA_RPC_URL ||
   '';
 
-const fallbackBscRpc = process.env.RPC_URL_BSK || process.env.WALLET_RPC_URL_BSC || '';
+const fallbackBscRpc = process.env.RPC_URL_BSC || process.env.RPC_URL_BSK || process.env.WALLET_RPC_URL_BSC || '';
 
 export const walletConfig = {
   currency: process.env.WALLET_CURRENCY || 'SIDRA',
@@ -35,6 +35,7 @@ export const walletConfig = {
       process.env.WALLET_SIGNER_PRIVATE_KEY ||
       '',
     bsc:
+      process.env.HOT_WALLET_PRIVATE_KEY_BSC ||
       process.env.HOT_WALLET_PRIVATE_KEY_BSK ||
       process.env.WALLET_SIGNER_PRIVATE_KEY_BSC ||
       process.env.WALLET_SIGNER_PRIVATE_KEY ||

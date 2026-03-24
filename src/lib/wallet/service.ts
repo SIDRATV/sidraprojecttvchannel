@@ -90,28 +90,115 @@ const sweepDepositToHotWallet = async (input: {
 }) => {
   const { userId, depositAddress, amount, network, sourceTxHash } = input;
   const hotWalletAddress = (await getSigner(network).getAddress()).toLowerCase();
-
   const sourceAddress = String(depositAddress || '').toLowerCase();
 
-  await writeAuditLog({
-    actorUserId: userId,
-    action: 'wallet.deposit.sweep_skipped',
-    targetId: sourceTxHash,
-    details: {
-      depositAddressId: input.depositAddressId,
-      sourceTxHash,
-      from: sourceAddress,
-      to: hotWalletAddress,
-      amount,
-      network,
-      reason: 'User private key is not stored by design; direct on-chain sweep from user address is disabled',
-    },
-  });
+  // Skip if deposit address is the hot wallet itself
+  if (sourceAddress === hotWalletAddress) {
+    return { status: 'skipped' as const, reason: 'Deposit address is the hot wallet' };
+  }
 
-  return {
-    status: 'skipped' as const,
-    reason: 'Sweep disabled for non-custodial user addresses',
-  };
+  // Load the encrypted private key from the deposit address record
+  const supabase = createServerClient();
+  const { data: addrRecord } = await supabase
+    .from('wallet_deposit_addresses')
+    .select('id, encrypted_private_key, swept_at')
+    .eq('id', input.depositAddressId)
+    .maybeSingle();
+
+  if (!addrRecord?.encrypted_private_key) {
+    await writeAuditLog({
+      actorUserId: userId,
+      action: 'wallet.deposit.sweep_skipped',
+      targetId: sourceTxHash,
+      details: {
+        depositAddressId: input.depositAddressId,
+        from: sourceAddress,
+        to: hotWalletAddress,
+        amount,
+        network,
+        reason: 'No encrypted private key stored for this deposit address',
+      },
+    });
+    return { status: 'skipped' as const, reason: 'No private key available for sweep' };
+  }
+
+  try {
+    const provider = getProvider(network);
+    const depositPrivateKey = decryptText(addrRecord.encrypted_private_key);
+    const depositSigner = new ethers.Wallet(depositPrivateKey, provider);
+
+    // Check balance on the deposit address
+    const balance = await provider.getBalance(sourceAddress);
+    if (balance === 0n) {
+      return { status: 'skipped' as const, reason: 'Zero balance on deposit address' };
+    }
+
+    // Estimate gas cost and leave enough for the sweep tx
+    const gasPrice = (await provider.getFeeData()).gasPrice || ethers.parseUnits('5', 'gwei');
+    const gasLimit = 21000n;
+    const gasCost = gasPrice * gasLimit;
+
+    if (balance <= gasCost) {
+      console.log(`[sweep] Balance ${ethers.formatEther(balance)} too low to cover gas on ${sourceAddress}`);
+      return { status: 'skipped' as const, reason: 'Balance too low to cover gas' };
+    }
+
+    const sweepAmount = balance - gasCost;
+
+    console.log(`[sweep] Sweeping ${ethers.formatEther(sweepAmount)} from ${sourceAddress} to hot wallet ${hotWalletAddress} on ${network}`);
+
+    const tx = await depositSigner.sendTransaction({
+      to: hotWalletAddress,
+      value: sweepAmount,
+      gasLimit,
+      gasPrice,
+    });
+
+    const receipt = await tx.wait(1);
+    if (!receipt || receipt.status !== 1) {
+      throw new Error('Sweep transaction reverted on-chain');
+    }
+
+    console.log(`[sweep] Success: ${tx.hash} — ${ethers.formatEther(sweepAmount)} swept to hot wallet`);
+
+    // Update deposit address record with sweep info
+    await supabase
+      .from('wallet_deposit_addresses')
+      .update({ swept_at: nowIso(), sweep_tx_hash: tx.hash })
+      .eq('id', input.depositAddressId);
+
+    await writeAuditLog({
+      actorUserId: userId,
+      action: 'wallet.deposit.swept',
+      targetId: tx.hash,
+      details: {
+        depositAddressId: input.depositAddressId,
+        sourceTxHash,
+        from: sourceAddress,
+        to: hotWalletAddress,
+        amount: Number(ethers.formatEther(sweepAmount)),
+        network,
+      },
+    });
+
+    return { status: 'success' as const, txHash: tx.hash, amount: Number(ethers.formatEther(sweepAmount)) };
+  } catch (sweepErr: any) {
+    console.error(`[sweep] Failed for ${sourceAddress}: ${sweepErr?.message || 'unknown'}`);
+    await writeAuditLog({
+      actorUserId: userId,
+      action: 'wallet.deposit.sweep_failed',
+      targetId: sourceTxHash,
+      details: {
+        depositAddressId: input.depositAddressId,
+        from: sourceAddress,
+        to: hotWalletAddress,
+        amount,
+        network,
+        error: sweepErr?.message || 'unknown',
+      },
+    });
+    return { status: 'failed' as const, error: sweepErr?.message || 'Sweep failed' };
+  }
 };
 
 const getUserByUsername = async (username: string) => {
@@ -624,6 +711,36 @@ const processSingleWithdrawal = async (withdrawal: any) => {
     };
   }
 
+  // Check hot wallet balance before sending
+  try {
+    const provider = getProvider(withdrawalNetwork);
+    const hotWalletBalance = await provider.getBalance(await signer.getAddress());
+    const requiredAmount = ethers.parseEther(String(withdrawal.amount));
+    const gasEstimate = ethers.parseUnits('5', 'gwei') * 21000n;
+
+    if (hotWalletBalance < requiredAmount + gasEstimate) {
+      const balanceStr = ethers.formatEther(hotWalletBalance);
+      const msg = `Hot wallet insufficient balance: ${balanceStr} < ${withdrawal.amount} + gas on ${withdrawalNetwork}`;
+      console.error(`[withdrawal] ${msg}`);
+      await markWithdrawalFailed(withdrawal, msg);
+      await writeAuditLog({
+        actorUserId: withdrawal.user_id,
+        action: 'wallet.withdrawal.failed',
+        targetId: withdrawal.id,
+        details: {
+          reason: 'Hot wallet insufficient balance',
+          hotWalletBalance: balanceStr,
+          requiredAmount: String(withdrawal.amount),
+          network: withdrawalNetwork,
+        },
+      });
+      return { withdrawalId: withdrawal.id, status: 'failed', error: msg };
+    }
+  } catch (balanceErr: any) {
+    console.warn(`[withdrawal] Could not check hot wallet balance: ${balanceErr?.message}`);
+    // Continue anyway — the sendTransaction will fail if balance is truly insufficient
+  }
+
   try {
     const tx = await signer.sendTransaction({
       to: destinationAddress,
@@ -730,6 +847,7 @@ export const getOrCreateDepositAddress = async (userId: string) => {
     return existing;
   }
   const generatedWallet = ethers.Wallet.createRandom();
+  const encryptedPrivateKey = encryptText(generatedWallet.privateKey);
 
   const { data: created, error: createError } = await supabase
     .from('wallet_deposit_addresses')
@@ -737,6 +855,7 @@ export const getOrCreateDepositAddress = async (userId: string) => {
       user_id: userId,
       network: walletConfig.chainName,
       address: generatedWallet.address.toLowerCase(),
+      encrypted_private_key: encryptedPrivateKey,
       is_active: true,
     })
     .select('id, address, network, created_at')

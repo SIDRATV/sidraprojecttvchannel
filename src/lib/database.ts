@@ -414,8 +414,11 @@ export type Database = {
           user_id: string;
           network: string;
           address: string;
+          encrypted_private_key: string | null;
           is_active: boolean;
           last_checked_block: number;
+          swept_at: string | null;
+          sweep_tx_hash: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -424,8 +427,11 @@ export type Database = {
           user_id: string;
           network?: string;
           address: string;
+          encrypted_private_key?: string | null;
           is_active?: boolean;
           last_checked_block?: number;
+          swept_at?: string | null;
+          sweep_tx_hash?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -434,8 +440,11 @@ export type Database = {
           user_id?: string;
           network?: string;
           address?: string;
+          encrypted_private_key?: string | null;
           is_active?: boolean;
           last_checked_block?: number;
+          swept_at?: string | null;
+          sweep_tx_hash?: string | null;
           created_at?: string;
           updated_at?: string;
         };

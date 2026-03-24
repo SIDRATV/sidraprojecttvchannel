@@ -4,9 +4,12 @@ CREATE TABLE IF NOT EXISTS wallet_deposit_addresses (
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   network TEXT NOT NULL DEFAULT 'sidra',
   address TEXT UNIQUE NOT NULL,
+  encrypted_private_key TEXT,
   derivation_index INTEGER UNIQUE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   last_checked_block BIGINT DEFAULT 0,
+  swept_at TIMESTAMP WITH TIME ZONE,
+  sweep_tx_hash TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

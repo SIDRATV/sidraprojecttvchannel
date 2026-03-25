@@ -20,4 +20,57 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            bash /opt/sidra/scripts/deploy.sh
+            set -e
+
+            # Install Node.js if missing
+            if ! command -v node &>/dev/null; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+              apt-get install -y -qq nodejs
+            fi
+
+            # Install PM2 if missing
+            if ! command -v pm2 &>/dev/null; then
+              npm install -g pm2
+            fi
+
+            # Clone or update repo
+            if [ -d /opt/sidra/.git ]; then
+              cd /opt/sidra && git fetch origin main --depth=1 && git reset --hard origin/main
+            else
+              mkdir -p /opt/sidra
+              git clone --depth=1 --branch main https://github.com/SIDRATV/sidraprojecttvchannel.git /opt/sidra
+            fi
+
+            # Install scanner deps
+            cd /opt/sidra/scanner && npm ci --production
+
+            # Create .env if missing
+            if [ ! -f /opt/sidra/scanner/.env ]; then
+              cat > /opt/sidra/scanner/.env << 'ENVEOF'
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+            RPC_URL_SIDRA=${{ secrets.RPC_URL_SIDRA }}
+            RPC_URL_BSC=${{ secrets.RPC_URL_BSC }}
+            HOT_WALLET_PRIVATE_KEY_SIDRA=${{ secrets.HOT_WALLET_PRIVATE_KEY_SIDRA }}
+            HOT_WALLET_PRIVATE_KEY_BSC=${{ secrets.HOT_WALLET_PRIVATE_KEY_BSC }}
+            ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
+            SCAN_API_KEY=${{ secrets.SCAN_API_KEY }}
+            CRON_SECRET=${{ secrets.CRON_SECRET }}
+            ENVEOF
+              chmod 600 /opt/sidra/scanner/.env
+            fi
+
+            mkdir -p /opt/sidra/logs
+
+            # Start or restart scanner
+            cd /opt/sidra/scanner
+            if pm2 describe blockchain-scanner &>/dev/null; then
+              pm2 restart ecosystem.config.js
+            else
+              pm2 start ecosystem.config.js
+              pm2 save
+              pm2 startup systemd -u root --hp /root 2>/dev/null || true
+            fi
+
+            echo "Deploy complete — scanner status:"
+            pm2 status

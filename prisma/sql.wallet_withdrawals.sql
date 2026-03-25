@@ -1,6 +1,17 @@
 -- CREATE TYPE for wallet withdrawals
 -- 'refunded' = terminal state after max retries exhausted (balance credited back to user)
-CREATE TYPE IF NOT EXISTS wallet_withdrawal_status AS ENUM ('pending', 'processing', 'success', 'failed', 'refunded');
+DO $$ BEGIN
+  CREATE TYPE wallet_withdrawal_status AS ENUM ('pending', 'processing', 'success', 'failed', 'refunded');
+EXCEPTION WHEN duplicate_object THEN
+  -- Type already exists — add 'refunded' value if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    WHERE t.typname = 'wallet_withdrawal_status' AND e.enumlabel = 'refunded'
+  ) THEN
+    ALTER TYPE wallet_withdrawal_status ADD VALUE 'refunded';
+  END IF;
+END $$;
 
 -- Wallet Withdrawals table (on-chain payouts queue) with RLS policies
 CREATE TABLE IF NOT EXISTS wallet_withdrawals (

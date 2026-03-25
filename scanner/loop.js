@@ -27,7 +27,7 @@ if (fs.existsSync(envFile)) {
   }
 }
 
-const SCAN_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
+const SCAN_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
 
 function timestamp() {
   return new Date().toISOString();

@@ -54,7 +54,7 @@ export default function LoginPage() {
               className="relative w-20 h-20 mx-auto mb-6"
             >
               <Image
-                src="/sidra-logo-v2.png?v=3"
+                src="/sidra-logo.webp"
                 alt="Sidra Logo"
                 fill
                 className="object-contain"

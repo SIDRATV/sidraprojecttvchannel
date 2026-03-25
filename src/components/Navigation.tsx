@@ -22,7 +22,7 @@ export function Navigation() {
               className="relative w-10 h-10 flex-shrink-0"
             >
               <Image
-                src="/sidra-logo-v2.png?v=3"
+                src="/sidra-logo.webp"
                 alt="Sidra Logo"
                 fill
                 className="object-contain"

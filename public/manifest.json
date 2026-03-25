@@ -11,29 +11,29 @@
   "theme_color": "#3B82F6",
   "icons": [
     {
-      "src": "/sidra-logo-v2.png",
+      "src": "/sidra-logo.webp",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any"
     },
     {
-      "src": "/sidra-logo-v2.png",
+      "src": "/sidra-logo.webp",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any"
     },
     {
-      "src": "/sidra-logo-v2.png",
+      "src": "/sidra-logo.webp",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/sidra-logo-v2.png",
+      "src": "/sidra-logo.webp",
       "sizes": "540x720",
-      "type": "image/png",
+      "type": "image/webp",
       "form_factor": "narrow"
     }
   ],

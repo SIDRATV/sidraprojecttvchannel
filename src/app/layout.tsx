@@ -30,8 +30,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: '/sidra-logo.png',
-    apple: '/sidra-logo.png',
+    icon: '/sidra-logo-v2.png',
+    apple: '/sidra-logo-v2.png',
   },
   openGraph: {
     type: 'website',
@@ -61,8 +61,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         
         <link rel="manifest" href="/manifest.json?v=1.0.0" />
-        <link rel="icon" href="/logo.png" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="icon" href="/sidra-logo-v2.png" />
+        <link rel="apple-touch-icon" href="/sidra-logo-v2.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

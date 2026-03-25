@@ -5,7 +5,9 @@
   "description": "Standalone blockchain deposit scanner for GitHub Actions",
   "main": "index.js",
   "scripts": {
-    "scan": "node index.js"
+    "scan": "node index.js",
+    "withdrawals": "node process-withdrawals.js",
+    "loop": "node loop.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",

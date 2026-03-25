@@ -361,3 +361,102 @@ BEGIN
   UPDATE videos SET views = views + 1 WHERE id = video_id;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Atomic withdrawal refund RPC (called after MAX_RETRIES exhausted)
+-- Guards against double-refund: raises exception if already in terminal state
+CREATE OR REPLACE FUNCTION wallet_refund_withdrawal(
+  p_withdrawal_id UUID,
+  p_error_message TEXT DEFAULT NULL
+)
+RETURNS VOID AS $$
+DECLARE
+  w RECORD;
+  refund_amount NUMERIC;
+BEGIN
+  -- Lock the withdrawal row to prevent race conditions
+  SELECT * INTO w
+  FROM wallet_withdrawals
+  WHERE id = p_withdrawal_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Withdrawal not found: %', p_withdrawal_id;
+  END IF;
+
+  -- Guard: already in a terminal state — do nothing (prevents double-refund)
+  IF w.status IN ('refunded', 'success') THEN
+    RAISE EXCEPTION 'Withdrawal % already in terminal state: %', p_withdrawal_id, w.status;
+  END IF;
+
+  refund_amount := COALESCE(w.amount, 0) + COALESCE(w.fee, 0);
+
+  -- Mark withdrawal as refunded
+  UPDATE wallet_withdrawals
+  SET status = 'refunded',
+      updated_at = NOW(),
+      next_retry_at = NULL,
+      last_error = p_error_message
+  WHERE id = p_withdrawal_id;
+
+  -- Update linked wallet transaction to refunded
+  IF w.wallet_transaction_id IS NOT NULL THEN
+    UPDATE wallet_transactions
+    SET status = 'refunded',
+        error_message = p_error_message,
+        metadata = jsonb_build_object(
+          'phase', 'refunded',
+          'refunded_at', NOW()::text,
+          'reason', p_error_message
+        )
+    WHERE id = w.wallet_transaction_id;
+  END IF;
+
+  -- Atomically credit balance back (no race condition — single UPDATE)
+  INSERT INTO wallet_accounts (user_id, balance)
+  VALUES (w.user_id, refund_amount)
+  ON CONFLICT (user_id)
+  DO UPDATE SET balance = wallet_accounts.balance + refund_amount;
+
+  -- Insert refund credit transaction record
+  INSERT INTO wallet_transactions (
+    user_id,
+    type,
+    direction,
+    amount,
+    fee,
+    status,
+    description,
+    metadata
+  ) VALUES (
+    w.user_id,
+    'adjustment',
+    'credit',
+    refund_amount,
+    0,
+    'success',
+    'Automatic refund for failed withdrawal',
+    jsonb_build_object(
+      'source_withdrawal_id', p_withdrawal_id,
+      'reason', p_error_message,
+      'refunded_at', NOW()::text
+    )
+  );
+
+  -- Audit log
+  INSERT INTO wallet_audit_logs (
+    actor_user_id,
+    action,
+    target_id,
+    details
+  ) VALUES (
+    w.user_id,
+    'wallet.withdrawal.refunded',
+    p_withdrawal_id,
+    jsonb_build_object(
+      'refund_amount', refund_amount,
+      'reason', p_error_message,
+      'network', w.network
+    )
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

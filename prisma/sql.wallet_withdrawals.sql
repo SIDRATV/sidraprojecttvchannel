@@ -1,5 +1,6 @@
 -- CREATE TYPE for wallet withdrawals
-CREATE TYPE IF NOT EXISTS wallet_withdrawal_status AS ENUM ('pending', 'processing', 'success', 'failed');
+-- 'refunded' = terminal state after max retries exhausted (balance credited back to user)
+CREATE TYPE IF NOT EXISTS wallet_withdrawal_status AS ENUM ('pending', 'processing', 'success', 'failed', 'refunded');
 
 -- Wallet Withdrawals table (on-chain payouts queue) with RLS policies
 CREATE TABLE IF NOT EXISTS wallet_withdrawals (

@@ -190,31 +190,24 @@ async function markFailed(withdrawal, errorMessage) {
       .eq('id', withdrawal.wallet_transaction_id);
   }
 
-  // Refund if max retries exhausted
+  // Refund if max retries exhausted — use atomic RPC to prevent double-credit
   if (!shouldRetry) {
-    console.log(`  ↩ Refunding ${withdrawal.amount} + ${withdrawal.fee} to user ${withdrawal.user_id}`);
-    const { data: account } = await supabase
-      .from('wallet_accounts')
-      .select('balance')
-      .eq('user_id', withdrawal.user_id)
-      .maybeSingle();
-
     const refundAmount = Number(withdrawal.amount || 0) + Number(withdrawal.fee || 0);
-    await supabase
-      .from('wallet_accounts')
-      .update({ balance: Number(account?.balance || 0) + refundAmount })
-      .eq('user_id', withdrawal.user_id);
-
-    await supabase.from('wallet_transactions').insert({
-      user_id: withdrawal.user_id,
-      type: 'adjustment',
-      direction: 'credit',
-      amount: refundAmount,
-      fee: 0,
-      status: 'success',
-      description: 'Automatic refund for failed withdrawal',
-      metadata: { source_withdrawal_id: withdrawal.id, reason: errorMessage },
+    console.log(`  ↩ Refunding ${refundAmount} to user ${withdrawal.user_id} via atomic RPC`);
+    const { error: refundError } = await supabase.rpc('wallet_refund_withdrawal', {
+      p_withdrawal_id: withdrawal.id,
+      p_error_message: errorMessage,
     });
+    if (refundError) {
+      // 'already in terminal state' means a previous cycle already refunded — not an error
+      if (refundError.message && refundError.message.includes('terminal state')) {
+        console.log(`  ↩ Already refunded (skipping duplicate)`);
+      } else {
+        console.error(`  ✗ Refund RPC failed: ${refundError.message}`);
+      }
+    } else {
+      console.log(`  ✓ Refund credited: ${refundAmount}`);
+    }
   }
 
   await supabase.from('wallet_audit_logs').insert({

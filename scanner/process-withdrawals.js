@@ -161,11 +161,14 @@ async function markFailed(withdrawal, errorMessage) {
     ? new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 min
     : null;
 
+  // Use 'refunded' as terminal status so this row is never picked up again
+  const finalStatus = shouldRetry ? 'failed' : 'refunded';
+
   await supabase
     .from('wallet_withdrawals')
     .update({
       attempts,
-      status: 'failed',
+      status: finalStatus,
       last_error: errorMessage,
       next_retry_at: nextRetry,
       updated_at: new Date().toISOString(),
@@ -176,11 +179,11 @@ async function markFailed(withdrawal, errorMessage) {
     await supabase
       .from('wallet_transactions')
       .update({
-        status: 'failed',
+        status: finalStatus,
         retry_count: attempts,
         error_message: errorMessage,
         metadata: {
-          phase: shouldRetry ? 'retry_scheduled' : 'retry_exhausted',
+          phase: shouldRetry ? 'retry_scheduled' : 'refunded',
           next_retry_at: nextRetry,
         },
       })
@@ -236,12 +239,13 @@ async function main() {
 
   const now = new Date().toISOString();
 
-  // Fetch pending and retryable failed withdrawals
+  // Fetch pending and retryable failed withdrawals (exclude 'refunded' and 'success' — terminal states)
   const { data: withdrawals, error } = await supabase
     .from('wallet_withdrawals')
     .select('id, user_id, amount, fee, to_address, network, status, attempts, next_retry_at, wallet_transaction_id')
     .in('status', ['pending', 'failed'])
     .or(`next_retry_at.is.null,next_retry_at.lte.${now}`)
+    .lt('attempts', MAX_RETRIES) // never pick up rows that already hit max retries
     .order('created_at', { ascending: true })
     .limit(MAX_BATCH);
 

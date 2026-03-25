@@ -10,6 +10,22 @@
 
 const { execFileSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+
+// Load .env file manually (PM2 env_file doesn't always propagate to child processes)
+const envFile = path.join(__dirname, '.env');
+if (fs.existsSync(envFile)) {
+  const lines = fs.readFileSync(envFile, 'utf8').split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx < 0) continue;
+    const key = trimmed.substring(0, eqIdx).trim();
+    const val = trimmed.substring(eqIdx + 1).trim();
+    if (key && !(key in process.env)) process.env[key] = val;
+  }
+}
 
 const SCAN_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 

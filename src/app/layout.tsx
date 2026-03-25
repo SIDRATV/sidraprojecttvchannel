@@ -30,8 +30,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: '/sidra-logo-v2.png',
-    apple: '/sidra-logo-v2.png',
+    icon: '/sidra-logo-v2.png?v=3',
+    apple: '/sidra-logo-v2.png?v=3',
   },
   openGraph: {
     type: 'website',

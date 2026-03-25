@@ -7,6 +7,8 @@ const nextConfig = {
     pagesBufferLength: 5,
   },
   images: {
+    unoptimized: false,
+    minimumCacheTTL: 0,
     remotePatterns: [
       {
         protocol: "https",
@@ -54,11 +56,11 @@ const nextConfig = {
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
-      // Images - Cache for 1 hour with revalidation
+      // Images - No cache on Vercel CDN so updates propagate immediately
       {
         source: "/(:path*\\.(?:svg|png|jpg|jpeg|gif|webp|ico))",
         headers: [
-          { key: "Cache-Control", value: "public, max-age=3600, must-revalidate" },
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate, s-maxage=0" },
           { key: "X-Content-Type-Options", value: "nosniff" },
         ],
       },

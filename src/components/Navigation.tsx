@@ -19,7 +19,7 @@ export function Navigation() {
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="relative w-10 h-10 flex-shrink-0"
+              className="relative w-14 h-14 flex-shrink-0"
             >
               <Image
                 src="/sidra-logo.webp"

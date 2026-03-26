@@ -71,7 +71,7 @@ export default function SignupPage() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.4 }}
-              className="relative w-20 h-20 mx-auto mb-6"
+              className="relative w-28 h-28 mx-auto mb-6"
             >
               <Image
                 src="/sidra-logo.webp"

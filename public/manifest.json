@@ -46,7 +46,7 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/logo.png",
+          "src": "/sidra-logo.webp",
           "sizes": "192x192"
         }
       ]
@@ -58,7 +58,7 @@
       "url": "/premium",
       "icons": [
         {
-          "src": "/logo.png",
+          "src": "/sidra-logo.webp",
           "sizes": "192x192"
         }
       ]

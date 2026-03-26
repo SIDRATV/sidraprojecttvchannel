@@ -1,6 +1,6 @@
-const CACHE_VERSION = '2.1.0';
+const CACHE_VERSION = '3.0.0';
 const CACHE_NAME = `sidra-tv-v${CACHE_VERSION}`;
-const PRECACHE_URLS = ['/manifest.json', '/sidra-logo.png'];
+const PRECACHE_URLS = ['/manifest.json', '/sidra-logo.webp'];
 
 const isSameOrigin = (requestUrl) => {
   return new URL(requestUrl).origin === self.location.origin;
@@ -56,6 +56,27 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (!isStaticAssetRequest(event.request)) return;
 
+  const { pathname } = new URL(event.request.url);
+
+  // Images: network-first so updates propagate immediately
+  const isImage = /\.(png|jpg|jpeg|svg|webp|gif|ico)$/.test(pathname);
+
+  if (isImage) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Other static assets (JS, CSS, fonts): cache-first
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

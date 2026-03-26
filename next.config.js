@@ -7,7 +7,7 @@ const nextConfig = {
     pagesBufferLength: 5,
   },
   images: {
-    unoptimized: false,
+    unoptimized: true,
     minimumCacheTTL: 0,
     remotePatterns: [
       {

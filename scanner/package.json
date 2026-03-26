@@ -15,5 +15,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "tweetsodium": "^0.0.6"
   }
 }

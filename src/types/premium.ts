@@ -33,7 +33,7 @@ export const PREMIUM_PLANS: Record<'pro' | 'premium' | 'vip', PremiumPlan> = {
     price: 9.99,
     sptc: 100,
     icon: 'Zap',
-    color: 'from-blue-600 to-blue-500',
+    color: 'from-brand-500 to-brand-400',
     features: [
       'Up to 1080p streaming',
       'Download 5 videos per month',
@@ -49,7 +49,7 @@ export const PREMIUM_PLANS: Record<'pro' | 'premium' | 'vip', PremiumPlan> = {
     price: 19.99,
     sptc: 200,
     icon: 'Crown',
-    color: 'from-yellow-600 to-orange-600',
+    color: 'from-gold-500 to-gold-400',
     features: [
       '4K Ultra HD streaming',
       'Download unlimited videos',

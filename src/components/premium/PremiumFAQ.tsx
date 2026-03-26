@@ -25,7 +25,7 @@ export default function PremiumFAQ({ faqs }: PremiumFAQProps) {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: idx * 0.1, duration: 0.4 }}
           viewport={{ once: true }}
-          className="border border-blue-500/20 rounded-xl overflow-hidden hover:border-blue-500/50 transition-colors"
+          className="border border-brand-500/20 rounded-xl overflow-hidden hover:border-brand-500/50 transition-colors"
         >
           <motion.button
             onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
@@ -36,7 +36,7 @@ export default function PremiumFAQ({ faqs }: PremiumFAQProps) {
               animate={{ rotate: openIndex === idx ? 180 : 0 }}
               transition={{ duration: 0.3 }}
             >
-              <ChevronDown className="text-blue-400" size={20} />
+              <ChevronDown className="text-brand-400" size={20} />
             </motion.div>
           </motion.button>
 
@@ -47,7 +47,7 @@ export default function PremiumFAQ({ faqs }: PremiumFAQProps) {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
-                className="bg-gray-900/50 border-t border-blue-500/20"
+                className="bg-gray-900/50 border-t border-brand-500/20"
               >
                 <p className="p-4 text-gray-300 leading-relaxed">{item.answer}</p>
               </motion.div>

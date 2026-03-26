@@ -37,11 +37,11 @@ export function PremiumAnalytics({ sptcEarned, totalEarned, referrals }: Analyti
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gradient-to-br from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-xl p-6 space-y-3"
+          className="bg-gradient-to-br from-brand-500/20 to-brand-500/10 border border-brand-500/30 rounded-xl p-6 space-y-3"
         >
           <div className="flex items-center justify-between">
             <h3 className="text-gray-700 dark:text-gray-400 text-sm font-medium">Current Balance</h3>
-            <DollarSign size={20} className="text-blue-600 dark:text-blue-400" />
+            <DollarSign size={20} className="text-brand-500 dark:text-brand-400" />
           </div>
           <p className="text-4xl font-bold text-gray-950 dark:text-white">{sptcEarned}</p>
           <p className="text-xs text-gray-600 dark:text-gray-400">SPTC Tokens</p>
@@ -87,7 +87,7 @@ export function PremiumAnalytics({ sptcEarned, totalEarned, referrals }: Analyti
         >
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-gray-950 dark:text-white">Earnings Trend</h3>
-            <BarChart3 className="text-blue-600 dark:text-blue-400" size={20} />
+            <BarChart3 className="text-brand-500 dark:text-brand-400" size={20} />
           </div>
 
           <div className="space-y-4">
@@ -101,7 +101,7 @@ export function PremiumAnalytics({ sptcEarned, totalEarned, referrals }: Analyti
                   initial={{ width: 0 }}
                   whileInView={{ width: '100%' }}
                   transition={{ duration: 0.6, delay: idx * 0.05 }}
-                  className="h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full overflow-hidden"
+                  className="h-2 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full overflow-hidden"
                   style={{
                     width: `${(item.earned / maxValue) * 100}%`,
                   }}
@@ -123,7 +123,7 @@ export function PremiumAnalytics({ sptcEarned, totalEarned, referrals }: Analyti
           <div className="space-y-4">
             {sourceData.map((item, idx) => {
               const colors = [
-                'from-blue-500 to-blue-400',
+                'from-brand-500 to-brand-400',
                 'from-orange-500 to-orange-400',
                 'from-purple-500 to-purple-400',
               ];

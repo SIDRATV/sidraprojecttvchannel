@@ -51,7 +51,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 border-4 border-gray-800 border-t-blue-500 rounded-full"
+          className="w-12 h-12 border-4 border-gray-800 border-t-brand-500 rounded-full"
         />
       </div>
     );

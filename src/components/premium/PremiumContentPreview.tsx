@@ -67,7 +67,7 @@ export default function PremiumContentPreview({ content }: PremiumContentPreview
 
             {/* Info */}
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/50 to-transparent">
-              <p className="text-xs text-blue-400 font-semibold mb-1">{item.category}</p>
+              <p className="text-xs text-brand-400 font-semibold mb-1">{item.category}</p>
               <h3 className="text-white font-bold text-sm line-clamp-2">{item.title}</h3>
             </div>
           </motion.div>
@@ -78,7 +78,7 @@ export default function PremiumContentPreview({ content }: PremiumContentPreview
       <motion.div
         animate={{ x: [0, 10, 0] }}
         transition={{ duration: 2, repeat: Infinity }}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-400 opacity-70"
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-400 opacity-70"
       >
         →
       </motion.div>

@@ -46,7 +46,7 @@ export default function PremiumModal({
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="relative w-full max-w-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-blue-500/50 rounded-2xl overflow-hidden">
+            <div className="relative w-full max-w-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-brand-500/50 rounded-2xl overflow-hidden">
               {/* Close Button */}
               <button
                 onClick={onClose}
@@ -81,7 +81,7 @@ export default function PremiumModal({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={onClose}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-lg"
+                    className="px-6 py-3 bg-gradient-to-r from-brand-500 to-brand-500 text-white font-bold rounded-lg"
                   >
                     Close
                   </motion.button>
@@ -104,8 +104,8 @@ export default function PremiumModal({
                         onClick={() => setSelectedPlan(planKey)}
                         className={`p-4 rounded-lg transition-all ${
                           selectedPlan === planKey
-                            ? 'bg-gradient-to-br from-blue-600 to-blue-500 border border-blue-400'
-                            : 'bg-gray-700/50 border border-gray-600 hover:border-blue-500'
+                            ? 'bg-gradient-to-br from-brand-500 to-brand-500 border border-brand-400'
+                            : 'bg-gray-700/50 border border-gray-600 hover:border-brand-500'
                         }`}
                       >
                         <p className="font-bold text-white">{plans[planKey].name}</p>
@@ -140,10 +140,10 @@ export default function PremiumModal({
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => onPaymentMethod('card')}
-                        className="p-4 bg-gradient-to-br from-blue-600/30 to-cyan-600/30 border border-blue-500/50 hover:border-blue-500 rounded-lg transition-all text-left"
+                        className="p-4 bg-gradient-to-br from-brand-500/30 to-cyan-600/30 border border-brand-500/50 hover:border-brand-500 rounded-lg transition-all text-left"
                       >
                         <div className="flex items-center gap-3 mb-2">
-                          <CreditCard className="text-blue-400" size={20} />
+                          <CreditCard className="text-brand-400" size={20} />
                           <span className="font-bold text-white">Credit Card</span>
                         </div>
                         <p className="text-xs text-gray-300">${plans[selectedPlan].price}/month</p>

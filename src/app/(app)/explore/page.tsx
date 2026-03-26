@@ -22,7 +22,7 @@ const exploreCards: ExploreCard[] = [
     title: 'My Wallet',
     description: 'Manage your digital assets and track all your transactions securely in one place',
     icon: Wallet,
-    gradient: 'from-purple-500 to-blue-500',
+    gradient: 'from-purple-500 to-brand-500',
     stats: '10+ Digital Currencies',
   },
   {
@@ -30,7 +30,7 @@ const exploreCards: ExploreCard[] = [
     title: 'Voting Projects',
     description: 'Participate in community decisions and vote on innovative projects that matter',
     icon: TrendingUp,
-    gradient: 'from-blue-500 to-cyan-500',
+    gradient: 'from-brand-500 to-cyan-500',
     stats: '2,500+ Active Votes',
   },
   {

@@ -138,7 +138,7 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
                 onClick={() => setSelectedNetwork(net.id)}
                 className={`relative flex items-center gap-2.5 rounded-xl border px-4 py-3 text-left transition-all ${
                   selectedNetwork === net.id
-                    ? 'border-blue-500/60 bg-blue-500/10 shadow-lg shadow-blue-500/10'
+                    ? 'border-brand-500/60 bg-brand-500/10 shadow-lg shadow-brand-500/10'
                     : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
                 }`}
               >
@@ -152,7 +152,7 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
                     layoutId="network-check"
                     className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
-                    <CheckCircle className="h-4 w-4 text-blue-400" />
+                    <CheckCircle className="h-4 w-4 text-brand-400" />
                   </motion.div>
                 )}
               </motion.button>
@@ -172,7 +172,7 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
               onChange={(e) => setToAddress(e.target.value)}
               placeholder={`0x... (${activeNetwork.name})`}
               disabled={isLoading}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
             />
           </div>
 
@@ -189,7 +189,7 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
               disabled={isLoading}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
             />
           </div>
 
@@ -204,7 +204,7 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this withdrawal for?"
               disabled={isLoading}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
             />
           </div>
 

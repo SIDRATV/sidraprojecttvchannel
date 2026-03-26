@@ -118,9 +118,9 @@ export function DepositAddress({ authToken }: DepositAddressProps) {
             </div>
 
             {/* Notice */}
-            <div className="flex items-start gap-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 px-4 py-3">
-              <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400" />
-              <p className="text-xs leading-relaxed text-blue-200/80">
+            <div className="flex items-start gap-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 px-4 py-3">
+              <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-400" />
+              <p className="text-xs leading-relaxed text-brand-200/80">
                 Only send supported tokens to this address. Deposits are detected automatically every
                 3 minutes and require {'\u2248'}3 confirmations before being credited.
                 You&apos;ll see a &quot;pending&quot; status while the transaction is being confirmed.

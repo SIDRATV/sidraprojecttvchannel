@@ -72,9 +72,9 @@ export function Hero() {
           <div className="max-w-2xl">
             {/* Badge */}
             <motion.div variants={itemVariants} className="mb-6 inline-block">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-500/30">
-                <span className="w-2 h-2 bg-islamic-green rounded-full animate-pulse"></span>
-                <span className="text-sm text-brand-300">Now Streaming Premium Content</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 dark:bg-brand-400/10 border border-brand-500/30 dark:border-brand-400/30 backdrop-blur-sm">
+                <span className="w-2 h-2 bg-brand-400 rounded-full animate-pulse"></span>
+                <span className="text-sm text-brand-600 dark:text-brand-300 font-medium">Now Streaming Premium Content</span>
               </div>
             </motion.div>
 

@@ -136,7 +136,7 @@ export function PremiumStatus() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleUpgrade(plan.id)}
-                      className="p-6 bg-gray-800 border-2 border-gray-700 hover:border-blue-500 rounded-xl text-left transition-all"
+                      className="p-6 bg-gray-800 border-2 border-gray-700 hover:border-brand-500 rounded-xl text-left transition-all"
                     >
                       <div className="flex items-start justify-between">
                         <div>

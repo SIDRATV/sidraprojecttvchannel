@@ -144,11 +144,11 @@ export function PWAInstallPrompt() {
             transition={{ type: 'spring', duration: 0.5 }}
             className="fixed inset-0 flex items-center justify-center z-50 p-4"
           >
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-blue-200 dark:border-blue-500/30 p-6 sm:p-8 w-full max-w-md">
+            <div className="bg-gradient-to-br from-brand-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-brand-200/50 dark:border-brand-400/20 p-6 sm:p-8 w-full max-w-md">
               {/* Close Button */}
               <button
                 onClick={handleDismiss}
-                className="absolute top-4 right-4 p-2 hover:bg-blue-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                className="absolute top-4 right-4 p-2 hover:bg-brand-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
               >
                 <X size={20} className="text-gray-600 dark:text-gray-400" />
               </button>
@@ -184,7 +184,7 @@ export function PWAInstallPrompt() {
                 {/* Features */}
                 <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-2 sm:space-y-3 text-left">
                   <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-white text-xs font-bold">✓</span>
                     </div>
                     <div className="min-w-0">
@@ -194,7 +194,7 @@ export function PWAInstallPrompt() {
                   </div>
 
                   <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-white text-xs font-bold">✓</span>
                     </div>
                     <div className="min-w-0">
@@ -204,7 +204,7 @@ export function PWAInstallPrompt() {
                   </div>
 
                   <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-white text-xs font-bold">✓</span>
                     </div>
                     <div className="min-w-0">
@@ -229,7 +229,7 @@ export function PWAInstallPrompt() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleInstall}
-                    className="py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-xs sm:text-sm rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-blue-700 shadow-lg transition-all flex items-center justify-center gap-2"
+                    className="py-2.5 sm:py-3 px-4 bg-gradient-to-r from-brand-500 to-brand-400 text-white font-semibold text-xs sm:text-sm rounded-lg sm:rounded-xl hover:shadow-glow shadow-lg transition-all flex items-center justify-center gap-2"
                   >
                     <Download size={16} className="sm:w-5 sm:h-5" />
                     <span>Install</span>

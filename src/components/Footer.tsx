@@ -41,7 +41,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="border-t border-gray-200 dark:border-gray-900 bg-white dark:bg-gray-950 transition-colors">
+    <footer className="border-t border-gray-200/50 dark:border-gray-900 bg-white dark:bg-gray-950 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer */}
         <motion.div

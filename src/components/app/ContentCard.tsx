@@ -65,7 +65,7 @@ export function ContentCard({
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowPlayer(true)}
-            className="p-4 bg-blue-600/90 hover:bg-blue-700 text-white rounded-full shadow-lg backdrop-blur-sm transition-all"
+            className="p-4 bg-brand-500/90 hover:bg-brand-600 text-white rounded-full shadow-lg backdrop-blur-sm transition-all"
           >
             <Play size={28} fill="currentColor" />
           </motion.button>
@@ -78,7 +78,7 @@ export function ContentCard({
       {/* Category Badge */}
       {category && !isHorizontal && (
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-500/80 text-white rounded">
+          <span className="inline-block px-2 py-1 text-xs font-semibold bg-brand-500/80 text-white rounded">
             {category}
           </span>
         </div>
@@ -95,7 +95,7 @@ export function ContentCard({
               <motion.button
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.95 }}
-                className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
+                className="p-2 bg-brand-500 hover:bg-brand-500 text-white rounded-full transition-colors"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

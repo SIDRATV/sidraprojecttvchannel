@@ -17,11 +17,11 @@ interface BalanceCardProps {
 
 const colorConfig = {
   blue: {
-    gradient: 'from-blue-600/20 via-blue-500/10 to-cyan-500/10',
-    border: 'border-blue-500/30',
-    badge: 'bg-blue-500/20 text-blue-300',
-    icon: 'text-blue-400',
-    accent: 'text-blue-500',
+    gradient: 'from-brand-500/20 via-brand-500/10 to-cyan-500/10',
+    border: 'border-brand-500/30',
+    badge: 'bg-brand-500/20 text-brand-300',
+    icon: 'text-brand-400',
+    accent: 'text-brand-500',
   },
   emerald: {
     gradient: 'from-emerald-600/20 via-emerald-500/10 to-green-500/10',

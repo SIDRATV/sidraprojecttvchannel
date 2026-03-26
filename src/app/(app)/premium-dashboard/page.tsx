@@ -25,7 +25,7 @@ export default function PremiumDashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-gray-400">Loading your premium dashboard...</p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export default function PremiumDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:bg-gradient-to-br dark:from-gray-950 dark:via-blue-900/20 dark:to-gray-950 py-12 px-4 transition-colors">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-brand-50 dark:bg-gradient-to-br dark:from-gray-950 dark:via-brand-800/20 dark:to-gray-950 py-12 px-4 transition-colors">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Welcome Header */}
         <motion.div
@@ -46,7 +46,7 @@ export default function PremiumDashboardPage() {
           transition={{ duration: 0.6 }}
           className="text-center space-y-4"
         >
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 dark:from-white dark:via-blue-200 dark:to-white bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-brand-500 via-purple-600 to-brand-500 dark:from-white dark:via-brand-200 dark:to-white bg-clip-text text-transparent">
             Welcome to Premium
           </h1>
           <p className="text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
@@ -117,7 +117,7 @@ export default function PremiumDashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-300 dark:border-blue-500/20 rounded-xl p-8 space-y-6"
+          className="bg-gradient-to-r from-brand-100 to-purple-100 dark:from-brand-800/30 dark:to-purple-900/30 border border-brand-300 dark:border-brand-500/20 rounded-xl p-8 space-y-6"
         >
           <h3 className="text-2xl font-bold text-gray-950 dark:text-white">More Premium Features Coming Soon</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

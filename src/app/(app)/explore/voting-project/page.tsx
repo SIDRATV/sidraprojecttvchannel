@@ -124,7 +124,7 @@ export default function VotingProjectPage() {
         className="mb-8"
       >
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-cyan-500 rounded-lg flex items-center justify-center">
             <TrendingUp className="text-white" size={24} />
           </div>
           <h1 className="text-4xl font-bold text-gray-950 dark:text-white">Community Voting Projects</h1>
@@ -143,7 +143,7 @@ export default function VotingProjectPage() {
             onClick={() => setFilterStatus(status)}
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               filterStatus === status
-                ? 'bg-blue-600 text-white'
+                ? 'bg-brand-500 text-white'
                 : 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'
             }`}
           >
@@ -175,7 +175,7 @@ export default function VotingProjectPage() {
             >
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
-                <Icon className="text-blue-600 dark:text-blue-400" size={20} />
+                <Icon className="text-brand-500 dark:text-brand-400" size={20} />
               </div>
               <p className="text-3xl font-bold text-gray-950 dark:text-white">{stat.value}</p>
             </motion.div>
@@ -203,7 +203,7 @@ export default function VotingProjectPage() {
               onClick={() => setSelectedProject(selectedProject === project.id ? null : project.id)}
               className={`bg-gradient-to-br rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 transition-all cursor-pointer ${
                 selectedProject === project.id
-                  ? 'ring-2 ring-blue-500'
+                  ? 'ring-2 ring-brand-500'
                   : ''
               } ${
                 project.status === 'completed'
@@ -224,7 +224,7 @@ export default function VotingProjectPage() {
                   <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                     project.status === 'active' ? 'bg-green-500 text-white' :
                     project.status === 'upcoming' ? 'bg-yellow-500 text-white' :
-                    'bg-blue-500 text-white'
+                    'bg-brand-500 text-white'
                   }`}>
                     {project.status.toUpperCase()}
                   </span>
@@ -232,7 +232,7 @@ export default function VotingProjectPage() {
 
                 {/* Category */}
                 <div className="absolute bottom-4 left-4">
-                  <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">
+                  <span className="px-3 py-1 bg-brand-500 text-white text-xs font-semibold rounded-full">
                     {project.category}
                   </span>
                 </div>
@@ -260,7 +260,7 @@ export default function VotingProjectPage() {
                   <div className="flex gap-1 h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                     {/* Upvotes Bar (Blue) */}
                     <motion.div
-                      className="h-full bg-blue-600"
+                      className="h-full bg-brand-500"
                       initial={{ width: 0 }}
                       animate={{ width: `${votePercentage}%` }}
                       transition={{ duration: 0.8, delay: idx * 0.1 }}
@@ -276,7 +276,7 @@ export default function VotingProjectPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between mt-2 text-xs">
-                    <span className="text-blue-600 font-semibold flex items-center gap-1">
+                    <span className="text-brand-500 font-semibold flex items-center gap-1">
                       <ThumbsUp size={12} /> {votePercentage.toFixed(1)}%
                     </span>
                     <span className="text-red-600 font-semibold flex items-center gap-1">

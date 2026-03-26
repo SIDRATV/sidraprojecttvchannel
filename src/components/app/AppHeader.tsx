@@ -67,14 +67,14 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3 }}
-      className="sticky top-0 z-40 bg-white dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 transition-colors"
+      className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 transition-colors"
     >
       <div className="flex items-center justify-between px-4 lg:px-8 py-4">
         {/* Logo */}
         <div className="flex items-center gap-3">
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="relative w-14 h-14 flex-shrink-0"
+            className="relative w-12 h-12 flex-shrink-0"
           >
             <Image
               src="/sidra-logo.webp"
@@ -86,7 +86,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
           </motion.div>
           <div>
             <h1 className="font-bold text-lg text-gray-950 dark:text-white">Sidra</h1>
-            <p className="text-xs text-gray-600 dark:text-gray-400">TV Channel</p>
+            <p className="text-xs text-brand-500 dark:text-brand-400 font-medium">TV Channel</p>
           </div>
         </div>
 
@@ -98,7 +98,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+              className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-xl transition-colors"
             >
               <Bell size={20} />
               {unreadCount > 0 && (
@@ -128,11 +128,11 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                         key={notif.id}
                         whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
                         className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-colors ${
-                          !notif.read ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''
+                          !notif.read ? 'bg-brand-50/50 dark:bg-brand-400/5' : ''
                         }`}
                       >
                         <div className="flex gap-3">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                          <div className="w-2 h-2 rounded-full bg-brand-400 mt-2 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{notif.title}</h4>
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{notif.message}</p>
@@ -144,7 +144,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                   </div>
 
                   <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2 bg-gray-50 dark:bg-gray-900/50">
-                    <button className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium py-1 transition-colors">
+                    <button className="w-full text-center text-sm text-brand-500 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 font-medium py-1 transition-colors">
                       View All
                     </button>
                   </div>
@@ -158,10 +158,10 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleTheme}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-xl transition-colors"
           >
             {isDark ? (
-              <Sun size={20} className="text-yellow-500" />
+              <Sun size={20} className="text-gold-400" />
             ) : (
               <Moon size={20} />
             )}
@@ -173,7 +173,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-2 p-1 pl-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800/50 transition-colors"
+              className="flex items-center gap-2 p-1 pl-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
             >
               {profile?.profilePhoto ? (
                 <img
@@ -182,7 +182,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                   className="w-9 h-9 rounded-full object-cover flex-shrink-0"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-400 flex items-center justify-center flex-shrink-0">
                   <User size={18} className="text-white" />
                 </div>
               )}
@@ -212,7 +212,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                           className="w-12 h-12 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-brand-400 flex items-center justify-center flex-shrink-0">
                           <User size={20} className="text-white" />
                         </div>
                       )}
@@ -287,7 +287,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                 placeholder="Search videos, channels, categories..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                className="w-full pl-12 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400/50 transition-all"
               />
             </motion.div>
           </form>

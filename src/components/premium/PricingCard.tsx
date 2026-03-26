@@ -37,15 +37,15 @@ export default function PricingCard({
       viewport={{ once: true }}
       className={`relative rounded-2xl overflow-hidden transition-all ${
         isPopular
-          ? 'ring-2 ring-blue-500 lg:scale-105'
-          : 'border border-gray-700 hover:border-blue-500/50'
+          ? 'ring-2 ring-brand-500 lg:scale-105'
+          : 'border border-gray-700 hover:border-brand-500/50'
       }`}
     >
       {/* Background */}
       <div
         className={`absolute inset-0 ${
           isPopular
-            ? 'bg-gradient-to-br from-blue-900/30 to-gray-900'
+            ? 'bg-gradient-to-br from-brand-800/30 to-gray-900'
             : 'bg-gradient-to-br from-gray-800/50 to-gray-900/50'
         }`}
       />
@@ -57,7 +57,7 @@ export default function PricingCard({
           transition={{ duration: 2, repeat: Infinity }}
           className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
         >
-          <div className="px-4 py-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-bold rounded-full">
+          <div className="px-4 py-1 bg-gradient-to-r from-brand-500 to-brand-500 text-white text-sm font-bold rounded-full">
             Most Popular
           </div>
         </motion.div>
@@ -87,7 +87,7 @@ export default function PricingCard({
           onClick={onSelect}
           className={`w-full py-3 px-4 font-bold rounded-lg transition-all ${
             isPopular
-              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:shadow-lg hover:shadow-blue-500/50'
+              ? 'bg-gradient-to-r from-brand-500 to-brand-500 text-white hover:shadow-lg hover:shadow-brand-500/50'
               : 'bg-gray-700/50 text-white hover:bg-gray-600/50 border border-gray-600'
           }`}
         >
@@ -105,8 +105,8 @@ export default function PricingCard({
               viewport={{ once: true }}
               className="flex items-center gap-3"
             >
-              <div className="w-5 h-5 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                <Check size={12} className="text-blue-400" />
+              <div className="w-5 h-5 bg-brand-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <Check size={12} className="text-brand-400" />
               </div>
               <span className="text-gray-300 text-sm">{feature}</span>
             </motion.div>

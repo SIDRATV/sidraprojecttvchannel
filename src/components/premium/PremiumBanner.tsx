@@ -18,7 +18,7 @@ export function PremiumBanner() {
   if (isLoading || !activePlan) return null;
 
   const planConfig = {
-    pro: { name: 'Pro', icon: Zap, color: 'from-blue-600 to-blue-500', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/30' },
+    pro: { name: 'Pro', icon: Zap, color: 'from-brand-500 to-brand-500', bgColor: 'bg-brand-500/10', borderColor: 'border-brand-500/30' },
     premium: { name: 'Premium', icon: Crown, color: 'from-yellow-600 to-orange-600', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/30' },
     vip: { name: 'VIP', icon: Star, color: 'from-purple-600 to-pink-600', bgColor: 'bg-purple-500/10', borderColor: 'border-purple-500/30' },
   };
@@ -43,7 +43,7 @@ export function PremiumBanner() {
         </div>
       </div>
       <Link href="/premium">
-        <button className="px-3 py-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold rounded-lg hover:shadow-lg transition-all">
+        <button className="px-3 py-1 bg-gradient-to-r from-brand-500 to-brand-500 text-white text-xs font-bold rounded-lg hover:shadow-lg transition-all">
           View Details
         </button>
       </Link>

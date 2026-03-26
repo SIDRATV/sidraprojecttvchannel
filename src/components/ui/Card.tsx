@@ -14,8 +14,8 @@ export function Card({ children, hover = true, className }: CardProps) {
     <motion.div
       whileHover={hover ? { y: -4 } : {}}
       className={cn(
-        'bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-4 backdrop-blur-sm',
-        'hover:border-brand-500 dark:hover:border-brand-500/50 transition-all duration-300',
+        'bg-white dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-4 backdrop-blur-sm',
+        'hover:border-brand-400/30 dark:hover:border-brand-400/30 hover:shadow-premium transition-all duration-300',
         className
       )}
     >

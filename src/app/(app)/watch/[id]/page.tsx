@@ -46,7 +46,7 @@ export default function WatchPage() {
     return (
       <div className="bg-white dark:bg-gray-950 min-h-screen flex flex-col items-center justify-center gap-4">
         <div className="text-red-600">{error || 'Video not found'}</div>
-        <Link href="/dashboard" className="text-blue-600 hover:underline">
+        <Link href="/dashboard" className="text-brand-500 hover:underline">
           Back to Dashboard
         </Link>
       </div>
@@ -95,7 +95,7 @@ export default function WatchPage() {
 
         {/* Actions */}
         <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          <button className="flex items-center gap-2 px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors">
             <Heart size={20} />
             Add to Watchlist
           </button>

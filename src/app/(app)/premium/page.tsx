@@ -248,7 +248,7 @@ export default function PremiumPage() {
             <h2 className="text-5xl md:text-6xl font-bold">
               Premium Benefits
               <br />
-              <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
                 You Deserve
               </span>
             </h2>
@@ -272,7 +272,7 @@ export default function PremiumPage() {
       </section>
 
       {/* Premium Content Preview */}
-      <section className="py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent">
+      <section className="py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-brand-800/10 to-transparent">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -330,7 +330,7 @@ export default function PremiumPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent">
+      <section className="py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-brand-800/10 to-transparent">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -380,7 +380,7 @@ export default function PremiumPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-900/20 via-blue-900/10 to-blue-900/20 border-t border-blue-500/20">
+      <section className="py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-brand-800/20 via-brand-800/10 to-brand-800/20 border-t border-brand-500/20">
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -392,7 +392,7 @@ export default function PremiumPage() {
             <h2 className="text-5xl md:text-6xl font-bold">
               Join the Sidra
               <br />
-              <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
                 Innovation Community
               </span>
             </h2>
@@ -405,7 +405,7 @@ export default function PremiumPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => router.push('/try-premium')}
-            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all text-lg"
+            className="px-8 py-4 bg-gradient-to-r from-brand-500 to-brand-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all text-lg"
           >
             🚀 Activate Premium
           </motion.button>

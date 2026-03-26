@@ -6,8 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, AtSign, AlertCircle, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { authService } from '@/services/auth';
 
 export default function SignupPage() {
@@ -57,32 +55,40 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 transition-colors">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-400 to-brand-500 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-400/30 dark:bg-brand-400/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gold-500/20 dark:bg-gold-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-300/10 dark:bg-brand-400/5 rounded-full blur-3xl" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md relative z-10"
       >
-        <Card className="p-8">
+        <div className="glass-card p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.4 }}
-              className="relative w-28 h-28 mx-auto mb-6"
+              className="relative w-24 h-24 mx-auto mb-6"
             >
+              <div className="absolute inset-0 bg-brand-400/20 dark:bg-brand-400/10 rounded-full blur-xl animate-pulse-glow" />
               <Image
                 src="/sidra-logo.webp"
                 alt="Sidra Logo"
                 fill
-                className="object-contain"
+                className="object-contain relative z-10 drop-shadow-lg"
                 priority
               />
             </motion.div>
-            <h1 className="text-3xl font-bold text-gray-950 dark:text-white mb-2">Join Sidra</h1>
-            <p className="text-gray-600 dark:text-gray-400">Create your premium account</p>
+            <h1 className="text-3xl font-bold text-white dark:text-white mb-2">Join Sidra</h1>
+            <p className="text-white/70 dark:text-gray-400">Create your premium account</p>
           </div>
 
           {/* Error Alert */}
@@ -90,10 +96,10 @@ export default function SignupPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg flex items-center gap-2 transition-colors"
+              className="mb-6 p-4 bg-red-500/10 border border-red-400/30 rounded-2xl flex items-center gap-2"
             >
-              <AlertCircle size={20} className="text-red-700 dark:text-red-400 shrink-0" />
-              <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
+              <AlertCircle size={20} className="text-red-300 shrink-0" />
+              <span className="text-sm text-red-200">{error}</span>
             </motion.div>
           )}
 
@@ -101,18 +107,18 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-white/80 dark:text-gray-300 mb-2">
                 Full Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
+                <User className="absolute left-3 top-3 text-white/40 dark:text-gray-500" size={20} />
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="John Doe"
                   autoComplete="name"
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/10 dark:bg-gray-900 border border-white/20 dark:border-gray-700 rounded-xl text-white dark:text-white placeholder-white/40 dark:placeholder-gray-500 focus:outline-none focus:border-brand-300 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-300/50 dark:focus:ring-brand-400/50 backdrop-blur-sm transition-all"
                   required
                 />
               </div>
@@ -120,42 +126,42 @@ export default function SignupPage() {
 
             {/* Username */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-white/80 dark:text-gray-300 mb-2">
                 Username
               </label>
               <div className="relative">
-                <AtSign className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
+                <AtSign className="absolute left-3 top-3 text-white/40 dark:text-gray-500" size={20} />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
                   placeholder="john_doe"
                   autoComplete="username"
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/10 dark:bg-gray-900 border border-white/20 dark:border-gray-700 rounded-xl text-white dark:text-white placeholder-white/40 dark:placeholder-gray-500 focus:outline-none focus:border-brand-300 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-300/50 dark:focus:ring-brand-400/50 backdrop-blur-sm transition-all"
                   required
                   minLength={3}
                   maxLength={30}
                 />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              <p className="text-xs text-white/40 dark:text-gray-500 mt-1">
                 3–30 characters · letters, numbers and underscores only
               </p>
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-white/80 dark:text-gray-300 mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
+                <Mail className="absolute left-3 top-3 text-white/40 dark:text-gray-500" size={20} />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   autoComplete="email"
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/10 dark:bg-gray-900 border border-white/20 dark:border-gray-700 rounded-xl text-white dark:text-white placeholder-white/40 dark:placeholder-gray-500 focus:outline-none focus:border-brand-300 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-300/50 dark:focus:ring-brand-400/50 backdrop-blur-sm transition-all"
                   required
                 />
               </div>
@@ -163,18 +169,18 @@ export default function SignupPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-white/80 dark:text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
+                <Lock className="absolute left-3 top-3 text-white/40 dark:text-gray-500" size={20} />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="new-password"
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/10 dark:bg-gray-900 border border-white/20 dark:border-gray-700 rounded-xl text-white dark:text-white placeholder-white/40 dark:placeholder-gray-500 focus:outline-none focus:border-brand-300 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-300/50 dark:focus:ring-brand-400/50 backdrop-blur-sm transition-all"
                   required
                   minLength={6}
                 />
@@ -183,18 +189,18 @@ export default function SignupPage() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-950 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-white/80 dark:text-gray-300 mb-2">
                 Confirm Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
+                <Lock className="absolute left-3 top-3 text-white/40 dark:text-gray-500" size={20} />
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="new-password"
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/10 dark:bg-gray-900 border border-white/20 dark:border-gray-700 rounded-xl text-white dark:text-white placeholder-white/40 dark:placeholder-gray-500 focus:outline-none focus:border-brand-300 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-300/50 dark:focus:ring-brand-400/50 backdrop-blur-sm transition-all"
                   required
                 />
               </div>
@@ -204,27 +210,25 @@ export default function SignupPage() {
             <label className="flex items-start gap-2 mt-2">
               <input
                 type="checkbox"
-                className="w-4 h-4 mt-0.5 rounded bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700"
+                className="w-4 h-4 mt-0.5 rounded bg-white/10 dark:bg-gray-900 border border-white/20 dark:border-gray-700 accent-brand-400"
                 required
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-white/60 dark:text-gray-400">
                 I agree to the{' '}
-                <Link href="#" className="text-brand-700 dark:text-brand-400 hover:underline">
+                <Link href="#" className="text-gold-300 dark:text-brand-400 hover:underline">
                   Terms of Service
                 </Link>
                 {' '}and{' '}
-                <Link href="#" className="text-brand-700 dark:text-brand-400 hover:underline">
+                <Link href="#" className="text-gold-300 dark:text-brand-400 hover:underline">
                   Privacy Policy
                 </Link>
               </span>
             </label>
 
             {/* Submit */}
-            <Button
+            <button
               type="submit"
-              size="lg"
-              variant="primary"
-              className="w-full mt-4"
+              className="w-full mt-4 py-3 px-6 bg-white dark:bg-gradient-to-r dark:from-brand-500 dark:to-brand-400 text-brand-500 dark:text-white font-semibold rounded-xl hover:shadow-glow transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
               disabled={loading}
             >
               {loading ? (
@@ -235,20 +239,20 @@ export default function SignupPage() {
               ) : (
                 'Create Account'
               )}
-            </Button>
+            </button>
           </form>
 
           {/* Login Link */}
-          <p className="text-center text-gray-600 dark:text-gray-400 mt-6">
+          <p className="text-center text-white/60 dark:text-gray-400 mt-6">
             Already have an account?{' '}
             <Link
               href="/login"
-              className="text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 font-semibold"
+              className="text-gold-300 dark:text-brand-400 hover:text-gold-200 dark:hover:text-brand-300 font-semibold"
             >
               Sign in
             </Link>
           </p>
-        </Card>
+        </div>
       </motion.div>
     </div>
   );

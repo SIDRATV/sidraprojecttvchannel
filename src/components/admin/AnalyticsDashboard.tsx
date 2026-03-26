@@ -12,7 +12,7 @@ export function AnalyticsDashboard() {
       value: '525.2K',
       change: '+12.5%',
       icon: Eye,
-      color: 'from-blue-600 to-blue-400',
+      color: 'from-brand-500 to-brand-400',
     },
     {
       title: 'Watch Time',
@@ -26,7 +26,7 @@ export function AnalyticsDashboard() {
       value: '8,432',
       change: '+5.2%',
       icon: Users,
-      color: 'from-blue-600 to-blue-400',
+      color: 'from-brand-500 to-brand-400',
     },
     {
       title: 'Engagement',

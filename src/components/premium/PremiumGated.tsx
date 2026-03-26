@@ -44,9 +44,9 @@ export function PremiumGated({
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="w-16 h-16 rounded-full bg-blue-600/30 border-2 border-blue-400 flex items-center justify-center mx-auto"
+            className="w-16 h-16 rounded-full bg-brand-500/30 border-2 border-brand-400 flex items-center justify-center mx-auto"
           >
-            <Lock className="text-blue-400" size={32} />
+            <Lock className="text-brand-400" size={32} />
           </motion.div>
 
           <div>
@@ -60,7 +60,7 @@ export function PremiumGated({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-lg flex items-center gap-2 mx-auto hover:shadow-lg transition-all"
+              className="px-6 py-2 bg-gradient-to-r from-brand-500 to-brand-500 text-white font-semibold rounded-lg flex items-center gap-2 mx-auto hover:shadow-lg transition-all"
             >
               <Sparkles size={18} />
               {status.isActive ? 'Upgrade Plan' : 'Get Premium'}

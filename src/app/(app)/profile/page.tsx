@@ -106,7 +106,7 @@ export default function ProfilePage() {
       case 'pro':
         return 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30 text-purple-700 dark:text-purple-400';
       default:
-        return 'bg-blue-500/20 border-blue-500/30 text-blue-700 dark:text-blue-400';
+        return 'bg-brand-500/20 border-brand-500/30 text-brand-600 dark:text-brand-400';
     }
   };
 
@@ -150,7 +150,7 @@ export default function ProfilePage() {
   };
 
   const stats = [
-    { label: 'Member Since', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—', icon: '📅', color: 'from-blue-500 to-cyan-500' },
+    { label: 'Member Since', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—', icon: '📅', color: 'from-brand-500 to-cyan-500' },
     { label: 'Username', value: user?.username ? `@${user.username}` : '—', icon: '👤', color: 'from-purple-500 to-pink-500' },
     { label: 'Account', value: user?.is_admin ? 'Admin' : 'Member', icon: '⭐', color: 'from-yellow-500 to-orange-500' },
   ];
@@ -167,7 +167,7 @@ export default function ProfilePage() {
         <div className="relative h-48 rounded-3xl overflow-hidden mb-8 shadow-2xl">
           {/* Base gradient background */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+            className="absolute inset-0 bg-gradient-to-r from-brand-500 via-purple-500 to-pink-500"
             animate={{
               backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
             }}
@@ -180,7 +180,7 @@ export default function ProfilePage() {
 
           {/* Animated overlay with multiple gradients */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-l from-cyan-400/30 to-blue-600/30"
+            className="absolute inset-0 bg-gradient-to-l from-cyan-400/30 to-brand-500/30"
             animate={{
               opacity: [0.3, 0.8, 0.3],
             }}
@@ -274,7 +274,7 @@ export default function ProfilePage() {
             className="relative group flex-shrink-0"
           >
             <motion.div
-              className="w-40 h-40 bg-gradient-to-br from-blue-400 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden border-6 border-white dark:border-gray-950"
+              className="w-40 h-40 bg-gradient-to-br from-brand-400 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden border-6 border-white dark:border-gray-950"
               whileHover={{
                 boxShadow: '0 0 60px rgba(59, 130, 246, 0.8)',
               }}
@@ -312,13 +312,13 @@ export default function ProfilePage() {
                   type="text"
                   value={editData.fullName}
                   onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
-                  className="text-3xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none text-gray-950 dark:text-white w-full"
+                  className="text-3xl font-bold bg-transparent border-b-2 border-brand-500 focus:outline-none text-gray-950 dark:text-white w-full"
                   placeholder="Your Name"
                 />
                 <textarea
                   value={editData.bio}
                   onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                  className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="Add a bio..."
                   rows={2}
                 />
@@ -374,7 +374,7 @@ export default function ProfilePage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center space-x-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-semibold"
+                  className="flex items-center space-x-2 px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors font-semibold"
                 >
                   <Edit2 size={18} />
                   <span>Edit Profile</span>
@@ -420,7 +420,7 @@ export default function ProfilePage() {
             className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800"
           >
             <div className="flex items-center gap-3 mb-6">
-              <Lock size={24} className="text-blue-600 dark:text-blue-400" />
+              <Lock size={24} className="text-brand-500 dark:text-brand-400" />
               <h3 className="font-bold text-lg">Account Information</h3>
             </div>
             <div className="space-y-4">
@@ -463,7 +463,7 @@ export default function ProfilePage() {
             className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800"
           >
             <div className="flex items-center gap-3 mb-6">
-              <Bell size={24} className="text-blue-600 dark:text-blue-400" />
+              <Bell size={24} className="text-brand-500 dark:text-brand-400" />
               <h3 className="font-bold text-lg">Notification Preferences</h3>
             </div>
             <div className="space-y-3">
@@ -472,7 +472,7 @@ export default function ProfilePage() {
                   type="checkbox"
                   checked={editData.emailNotifications}
                   onChange={(e) => setEditData({ ...editData, emailNotifications: e.target.checked })}
-                  className="w-5 h-5 rounded accent-blue-500 cursor-pointer"
+                  className="w-5 h-5 rounded accent-brand-500 cursor-pointer"
                 />
                 <div className="flex-1">
                   <p className="font-semibold text-gray-950 dark:text-white">Email Recommendations</p>
@@ -484,7 +484,7 @@ export default function ProfilePage() {
                   type="checkbox"
                   checked={editData.contentNotifications}
                   onChange={(e) => setEditData({ ...editData, contentNotifications: e.target.checked })}
-                  className="w-5 h-5 rounded accent-blue-500 cursor-pointer"
+                  className="w-5 h-5 rounded accent-brand-500 cursor-pointer"
                 />
                 <div className="flex-1">
                   <p className="font-semibold text-gray-950 dark:text-white">New Content Alerts</p>
@@ -496,7 +496,7 @@ export default function ProfilePage() {
                   type="checkbox"
                   checked={editData.weeklyDigest}
                   onChange={(e) => setEditData({ ...editData, weeklyDigest: e.target.checked })}
-                  className="w-5 h-5 rounded accent-blue-500 cursor-pointer"
+                  className="w-5 h-5 rounded accent-brand-500 cursor-pointer"
                 />
                 <div className="flex-1">
                   <p className="font-semibold text-gray-950 dark:text-white">Weekly Digest</p>
@@ -507,7 +507,7 @@ export default function ProfilePage() {
             {isEditing && (
               <button
                 onClick={handleSaveProfile}
-                className="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                className="mt-4 w-full py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-semibold transition-colors"
               >
                 Save Preferences
               </button>
@@ -522,10 +522,10 @@ export default function ProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-600/10 dark:from-blue-500/5 dark:to-purple-600/5 rounded-xl border border-blue-500/20 dark:border-blue-700/20"
+            className="p-6 bg-gradient-to-br from-brand-500/10 to-purple-600/10 dark:from-brand-500/5 dark:to-purple-600/5 rounded-xl border border-brand-500/20 dark:border-brand-600/20"
           >
             <div className="flex items-center gap-3 mb-4">
-              <Package size={24} className="text-blue-600 dark:text-blue-400" />
+              <Package size={24} className="text-brand-500 dark:text-brand-400" />
               <h3 className="font-bold text-lg">App Version</h3>
             </div>
             {loading ? (
@@ -649,7 +649,7 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordData.current}
                   onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="Enter current password"
                 />
               </div>
@@ -661,7 +661,7 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordData.new}
                   onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="Enter new password"
                 />
               </div>
@@ -673,7 +673,7 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordData.confirm}
                   onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="Confirm new password"
                 />
               </div>
@@ -700,7 +700,7 @@ export default function ProfilePage() {
               </button>
               <button
                 onClick={handleChangePassword}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg font-semibold hover:bg-brand-600 transition-colors"
               >
                 Change
               </button>

@@ -84,7 +84,7 @@ export default function PodcastPage() {
     <main className="flex-1 overflow-y-auto pb-20 px-4 md:px-8">
       <div className="space-y-8">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-8 rounded-lg">
+        <div className="bg-gradient-to-r from-brand-500 to-brand-500 text-white p-8 rounded-lg">
           <h1 className="text-4xl font-bold mb-2">Podcasts</h1>
           <p className="text-lg opacity-90">Explore our latest podcast episodes and series</p>
         </div>
@@ -103,7 +103,7 @@ export default function PodcastPage() {
               placeholder="Search podcasts by title or creator..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 transition-all"
+              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/50 transition-all"
             />
           </motion.div>
 
@@ -121,7 +121,7 @@ export default function PodcastPage() {
                     onClick={() => setViewType(type as any)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm ${
                       viewType === type
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-brand-500 text-white'
                         : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
                     }`}
                   >
@@ -144,7 +144,7 @@ export default function PodcastPage() {
                   onClick={() => setSelectedCategory('')}
                   className={`px-3 py-2 rounded-lg font-medium transition-all text-sm ${
                     selectedCategory === ''
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-brand-500 text-white'
                       : 'bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -158,7 +158,7 @@ export default function PodcastPage() {
                     onClick={() => setSelectedCategory(category)}
                     className={`px-3 py-2 rounded-lg font-medium transition-all text-sm ${
                       selectedCategory === category
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-brand-500 text-white'
                         : 'bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
                     }`}
                   >
@@ -176,7 +176,7 @@ export default function PodcastPage() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full"
+                  className="w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full"
             />
           </div>
         )}
@@ -202,7 +202,7 @@ export default function PodcastPage() {
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center">
                       <motion.div
                         whileHover={{ scale: 1.1 }}
-                        className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <div className="w-4 h-6 bg-white rounded-sm" />
                       </motion.div>
@@ -212,7 +212,7 @@ export default function PodcastPage() {
                     <h3 className="font-bold text-gray-950 dark:text-white line-clamp-2">{podcast.title}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{podcast.creator}</p>
                     <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                      <span className="bg-brand-100 dark:bg-brand-800/50 text-brand-600 dark:text-brand-300 px-2 py-1 rounded">
                         {podcast.category}
                       </span>
                       <span>{podcast.duration}</span>
@@ -234,7 +234,7 @@ export default function PodcastPage() {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                   disabled={currentPage === 0}
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-lg bg-brand-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </motion.button>
@@ -246,7 +246,7 @@ export default function PodcastPage() {
                       onClick={() => setCurrentPage(i)}
                       className={`w-10 h-10 rounded-lg font-medium transition-all ${
                         currentPage === i
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-brand-500 text-white'
                           : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                       }`}
                     >
@@ -259,7 +259,7 @@ export default function PodcastPage() {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
                   disabled={currentPage === totalPages - 1}
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-lg bg-brand-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </motion.button>

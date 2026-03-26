@@ -48,7 +48,7 @@ function SettingToggle({
         whileTap={{ scale: 0.95 }}
         onClick={() => setEnabled(!enabled)}
         className={`relative w-12 h-6 rounded-full transition-colors ${
-          enabled ? 'bg-blue-500' : 'bg-gray-400 dark:bg-gray-700'
+          enabled ? 'bg-brand-500' : 'bg-gray-400 dark:bg-gray-700'
         }`}
       >
         <motion.div
@@ -120,7 +120,7 @@ export default function SettingsPage() {
           <label className="block text-sm font-medium mb-2">
             Default playback quality
           </label>
-          <select className="w-full md:w-48 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:border-blue-500 outline-none transition-colors">
+          <select className="w-full md:w-48 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:border-brand-500 outline-none transition-colors">
             <option>Auto (recommended)</option>
             <option>1080p</option>
             <option>720p</option>
@@ -188,7 +188,7 @@ export default function SettingsPage() {
 
         <div className="pt-2 border-t border-gray-700">
           <label className="block text-sm font-medium mb-2">Font size</label>
-          <select className="w-full md:w-48 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:border-blue-500 outline-none transition-colors">
+          <select className="w-full md:w-48 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:border-brand-500 outline-none transition-colors">
             <option>Small</option>
             <option>Normal (default)</option>
             <option>Large</option>
@@ -295,7 +295,7 @@ export default function SettingsPage() {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleSaveSettings}
-        className="w-full md:w-48 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+        className="w-full md:w-48 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-semibold transition-colors"
       >
         Save Changes
       </motion.button>

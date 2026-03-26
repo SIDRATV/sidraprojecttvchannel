@@ -86,7 +86,7 @@ export function PaidSurveys() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-gradient-to-br from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-xl p-6"
+          className="bg-gradient-to-br from-brand-500/20 to-brand-500/10 border border-brand-500/30 rounded-xl p-6"
         >
           <h3 className="text-gray-700 dark:text-gray-400 text-sm font-medium mb-2">Rewards Earned</h3>
           <p className="text-4xl font-bold text-gray-950 dark:text-white">{totalRewards}</p>
@@ -119,7 +119,7 @@ export function PaidSurveys() {
               className={`border rounded-lg p-6 space-y-4 transition-all ${
                 survey.completed
                   ? 'bg-gray-700/30 border-gray-600/30'
-                  : 'bg-gray-800/40 border-gray-700/50 hover:border-blue-500/30'
+                  : 'bg-gray-800/40 border-gray-700/50 hover:border-brand-500/30'
               }`}
             >
               {/* Header */}
@@ -164,7 +164,7 @@ export function PaidSurveys() {
                 className={`w-full py-2 rounded-lg font-semibold transition-all ${
                   survey.completed
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:shadow-lg'
+                    : 'bg-gradient-to-r from-brand-500 to-brand-500 text-white hover:shadow-lg'
                 }`}
               >
                 {survey.completed ? 'Completed ✓' : 'Start Survey'}

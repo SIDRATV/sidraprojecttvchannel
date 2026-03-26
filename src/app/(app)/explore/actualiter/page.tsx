@@ -448,7 +448,7 @@ export default function ActualiterPage() {
                           e.stopPropagation();
                           setSelectedArticle(article);
                         }}
-                        className="flex items-center gap-1 px-3 py-1 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all"
+                        className="flex items-center gap-1 px-3 py-1 text-gray-600 dark:text-gray-400 hover:text-brand-500 dark:hover:text-brand-400 rounded-lg transition-all"
                       >
                         <MessageCircle size={16} />
                         {article.comments + (articleComments[article.id]?.length || 0)}
@@ -628,24 +628,24 @@ export default function ActualiterPage() {
                 <span className="text-xs font-semibold text-gray-950 dark:text-white">Share:</span>
                 <button
                   onClick={() => shareArticle('facebook')}
-                  className="p-1.5 sm:p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 hover:bg-brand-100 dark:hover:bg-brand-800 rounded-lg transition-colors"
                   title="Share on Facebook"
                 >
-                  <Facebook size={18} className="sm:w-5 sm:h-5 text-blue-600" />
+                  <Facebook size={18} className="sm:w-5 sm:h-5 text-brand-500" />
                 </button>
                 <button
                   onClick={() => shareArticle('twitter')}
-                  className="p-1.5 sm:p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 hover:bg-brand-100 dark:hover:bg-brand-800 rounded-lg transition-colors"
                   title="Share on Twitter"
                 >
-                  <Twitter size={18} className="sm:w-5 sm:h-5 text-blue-400" />
+                  <Twitter size={18} className="sm:w-5 sm:h-5 text-brand-400" />
                 </button>
                 <button
                   onClick={() => shareArticle('linkedin')}
-                  className="p-1.5 sm:p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 hover:bg-brand-100 dark:hover:bg-brand-800 rounded-lg transition-colors"
                   title="Share on LinkedIn"
                 >
-                  <Linkedin size={18} className="sm:w-5 sm:h-5 text-blue-700" />
+                  <Linkedin size={18} className="sm:w-5 sm:h-5 text-brand-600" />
                 </button>
               </div>
 

@@ -89,7 +89,7 @@ export default function WalletPage() {
   if (!authToken) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#060918]">
-        <RefreshCw className="h-7 w-7 animate-spin text-blue-400" />
+        <RefreshCw className="h-7 w-7 animate-spin text-brand-400" />
       </div>
     );
   }
@@ -103,7 +103,7 @@ export default function WalletPage() {
     >
       {/* Animated Background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/4 h-[500px] w-[500px] rounded-full bg-blue-600/[0.07] blur-[120px]" />
+        <div className="absolute -top-40 left-1/4 h-[500px] w-[500px] rounded-full bg-brand-500/[0.07] blur-[120px]" />
         <div className="absolute top-1/3 -right-40 h-[500px] w-[500px] rounded-full bg-purple-600/[0.07] blur-[120px]" />
         <div className="absolute bottom-0 left-0 h-[400px] w-[400px] rounded-full bg-emerald-600/[0.05] blur-[120px]" />
         <div
@@ -123,17 +123,17 @@ export default function WalletPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 backdrop-blur-sm"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1.5 backdrop-blur-sm"
           >
-            <Zap className="h-3.5 w-3.5 text-blue-400" />
-            <span className="text-xs font-semibold tracking-wide text-blue-300">
+            <Zap className="h-3.5 w-3.5 text-brand-400" />
+            <span className="text-xs font-semibold tracking-wide text-brand-300">
               Secure &amp; Instant
             </span>
           </motion.div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight">
             <span className="text-white">Digital </span>
-            <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-brand-400 via-violet-400 to-purple-500 bg-clip-text text-transparent">
               Wallet
             </span>
           </h1>
@@ -157,7 +157,7 @@ export default function WalletPage() {
               }`}
               style={{ width: 'calc(50% - 6px)' }}
             >
-              <div className="h-full w-full rounded-xl bg-gradient-to-r from-blue-600/80 to-violet-600/80 shadow-lg shadow-blue-500/20" />
+              <div className="h-full w-full rounded-xl bg-gradient-to-r from-brand-500/80 to-violet-600/80 shadow-lg shadow-brand-500/20" />
             </motion.div>
 
             <button

@@ -84,7 +84,7 @@ export function SimpleVideoPlayerModal({ videoId, title, isOpen, onClose }: Simp
             <div className="bg-gray-800 p-4 flex items-center justify-between gap-4">
               <button
                 onClick={handlePlay}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition"
+                className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg flex items-center gap-2 transition"
               >
                 <Play size={18} fill="currentColor" />
                 Play

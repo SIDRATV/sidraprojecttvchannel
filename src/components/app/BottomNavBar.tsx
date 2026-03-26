@@ -49,10 +49,10 @@ export function BottomNavBar() {
                     className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all ${
                       isPremium
                         ? isActive
-                          ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 shadow-lg'
-                          : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-lg'
+                          ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-gray-900 shadow-lg shadow-gold-500/30'
+                          : 'bg-gradient-to-r from-gold-500 to-gold-300 text-gray-900 hover:shadow-lg hover:shadow-gold-500/30'
                         : isActive
-                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-white'
+                        ? 'bg-brand-500/10 dark:bg-brand-400/15 text-brand-500 dark:text-white'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white'
                     }`}
                   >

@@ -409,7 +409,7 @@ export default function PartenariatPage() {
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                       partner.status === 'featured' ? 'bg-yellow-500 text-white' :
                       partner.status === 'active' ? 'bg-green-500 text-white' :
-                      'bg-blue-500 text-white'
+                      'bg-brand-500 text-white'
                     }`}>
                       {partner.status.toUpperCase()}
                     </span>
@@ -800,11 +800,11 @@ export default function PartenariatPage() {
                   {/* Advertising Partnership - Simple Verification */}
                   {partnershipType === 'advertising' && (
                     <div className="space-y-6">
-                      <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-700 rounded-xl p-6">
-                        <h4 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-3">
+                      <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-600 rounded-xl p-6">
+                        <h4 className="text-lg font-bold text-brand-800 dark:text-brand-100 mb-3">
                           📢 Advertising Partnership Agreement
                         </h4>
-                        <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
+                        <p className="text-sm text-brand-700 dark:text-brand-200 mb-4">
                           By submitting this application, you confirm your commitment to promoting your brand on our platform following our guidelines and terms of service.
                         </p>
                         <div className="space-y-3">
@@ -813,9 +813,9 @@ export default function PartenariatPage() {
                               type="checkbox"
                               checked={formData.policyAgreed}
                               onChange={(e) => setFormData({ ...formData, policyAgreed: e.target.checked })}
-                              className="w-4 h-4 rounded accent-blue-600"
+                              className="w-4 h-4 rounded accent-brand-500"
                             />
-                            <label className="text-sm text-blue-800 dark:text-blue-200">
+                            <label className="text-sm text-brand-700 dark:text-brand-200">
                               I have read and agree to the advertising guidelines and partnership terms *
                             </label>
                           </div>
@@ -1042,9 +1042,9 @@ export default function PartenariatPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-700 rounded-xl p-4"
+                className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-600 rounded-xl p-4"
               >
-                <p className="text-xs text-blue-800 dark:text-blue-200">
+                <p className="text-xs text-brand-700 dark:text-brand-200">
                   <span className="font-semibold">💡 Conseil:</span> Vous pouvez consulter le statut de votre demande dans l'onglet "My Applications"
                 </p>
               </motion.div>

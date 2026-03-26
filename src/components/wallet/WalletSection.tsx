@@ -35,9 +35,9 @@ export function WalletSection({
         {Icon && (
           <motion.div
             whileHover={{ scale: 1.1, rotate: 5 }}
-            className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30"
+            className="p-2 rounded-lg bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-brand-500/30"
           >
-            <Icon className="w-6 h-6 text-blue-400" />
+            <Icon className="w-6 h-6 text-brand-400" />
           </motion.div>
         )}
         <div>

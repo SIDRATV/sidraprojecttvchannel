@@ -27,7 +27,7 @@ export default function TryPremiumPage() {
         'Early access (24h)',
         '100 SPTC / month',
       ],
-      color: 'from-blue-600 to-blue-500',
+      color: 'from-brand-500 to-brand-500',
     },
     {
       id: 'premium',
@@ -93,7 +93,7 @@ export default function TryPremiumPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-blue-900/20 to-gray-950 py-20 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-brand-800/20 to-gray-950 py-20 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -105,7 +105,7 @@ export default function TryPremiumPage() {
           <h1 className="text-5xl md:text-6xl font-bold text-white">
             Try Premium
             <br />
-            <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
               For Free
             </span>
           </h1>
@@ -129,8 +129,8 @@ export default function TryPremiumPage() {
                 onClick={() => setSelectedPlan(plan.id as 'pro' | 'premium' | 'vip')}
                 className={`relative rounded-2xl border-2 transition-all cursor-pointer overflow-hidden ${
                   isSelected
-                    ? 'border-blue-500 bg-gradient-to-br from-gray-800/80 to-gray-900/80 shadow-xl shadow-blue-500/20'
-                    : 'border-gray-700 bg-gray-800/40 hover:border-blue-500/50'
+                    ? 'border-brand-500 bg-gradient-to-br from-gray-800/80 to-gray-900/80 shadow-xl shadow-brand-500/20'
+                    : 'border-gray-700 bg-gray-800/40 hover:border-brand-500/50'
                 }`}
               >
                 {plan.isPopular && (
@@ -177,7 +177,7 @@ export default function TryPremiumPage() {
                         transition={{ delay: i * 0.05 }}
                         className="flex items-start gap-3"
                       >
-                        <Check size={18} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                        <Check size={18} className="text-brand-400 flex-shrink-0 mt-0.5" />
                         <span className="text-sm text-gray-300">{feature}</span>
                       </motion.div>
                     ))}
@@ -207,7 +207,7 @@ export default function TryPremiumPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-16 bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/20 rounded-xl p-8 text-center space-y-4"
+          className="mt-16 bg-gradient-to-r from-brand-800/30 to-purple-900/30 border border-brand-500/20 rounded-xl p-8 text-center space-y-4"
         >
           <h3 className="text-2xl font-bold text-white">No Strings Attached</h3>
           <ul className="flex flex-wrap justify-center gap-8 text-gray-300">
@@ -297,16 +297,16 @@ export default function TryPremiumPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       disabled
-                      className="p-6 bg-gradient-to-r from-blue-600/50 to-indigo-600/50 border-2 border-dashed border-blue-500/50 rounded-xl text-left transition-all opacity-75 cursor-not-allowed"
+                      className="p-6 bg-gradient-to-r from-brand-500/50 to-indigo-600/50 border-2 border-dashed border-brand-500/50 rounded-xl text-left transition-all opacity-75 cursor-not-allowed"
                     >
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <CreditCard size={18} className="text-blue-300" />
+                            <CreditCard size={18} className="text-brand-300" />
                             <h4 className="text-lg font-bold text-white">Credit Card</h4>
-                            <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs font-bold rounded-full">Coming Soon</span>
+                            <span className="ml-2 px-2 py-0.5 bg-brand-500 text-white text-xs font-bold rounded-full">Coming Soon</span>
                           </div>
-                          <p className="text-sm text-blue-100">Visa, Mastercard, and other payment methods</p>
+                          <p className="text-sm text-brand-100">Visa, Mastercard, and other payment methods</p>
                         </div>
                         <Lock size={24} className="text-gray-500" />
                       </div>

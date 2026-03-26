@@ -79,7 +79,7 @@ export function AdminDashboard() {
               animate={{ opacity: 1, scale: 1 }}
               className="flex items-center gap-4"
             >
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/30">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-500 via-brand-500 to-cyan-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/30">
                 <Video size={24} />
               </div>
               <div>
@@ -101,7 +101,7 @@ export function AdminDashboard() {
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium text-sm ${
                   activeTab === id
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
+                    ? 'bg-gradient-to-r from-brand-500 to-cyan-500 text-white shadow-lg shadow-brand-500/25'
                     : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
                 }`}
               >
@@ -134,7 +134,7 @@ export function AdminDashboard() {
       {/* Mobile Menu */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center text-white">
+          <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-cyan-600 rounded-lg flex items-center justify-center text-white">
             <Video size={18} />
           </div>
           <span className="font-bold text-white text-sm">Sidra Admin</span>
@@ -164,7 +164,7 @@ export function AdminDashboard() {
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 activeTab === id
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
+                  ? 'bg-gradient-to-r from-brand-500 to-cyan-500 text-white'
                   : 'text-slate-300 hover:bg-slate-800'
               }`}
             >
@@ -185,14 +185,14 @@ export function AdminDashboard() {
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
           >
             <div className="space-y-1">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-brand-100 to-white bg-clip-text text-transparent">
                 Tableau de Bord
               </h1>
               <p className="text-slate-400">Gérez votre plateforme de streaming</p>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm w-fit"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-medium text-sm w-fit"
             >
               <Download size={16} />
               Exporter
@@ -228,7 +228,7 @@ function OverviewTab() {
       change: '+12.5%',
       trend: 'up',
       icon: Video,
-      color: 'from-blue-500 to-cyan-500',
+      color: 'from-brand-500 to-cyan-500',
     },
     {
       label: 'Vues Totales',
@@ -280,7 +280,7 @@ function OverviewTab() {
       user: 'Chaîne Tech',
       time: 'Il y a 2h',
       icon: Video,
-      color: 'text-blue-500',
+      color: 'text-brand-500',
     },
     {
       action: 'Utilisateur enregistré',
@@ -319,8 +319,8 @@ function OverviewTab() {
               transition={{ delay: idx * 0.1 }}
               className="group"
             >
-              <Card className="relative p-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 hover:border-blue-500/30 transition-all overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-5 from-blue-500 to-cyan-500 transition-opacity" />
+              <Card className="relative p-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 hover:border-brand-500/30 transition-all overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-5 from-brand-500 to-cyan-500 transition-opacity" />
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4">
                     <div
@@ -354,7 +354,7 @@ function OverviewTab() {
           <Card className="p-6 bg-slate-800/30 border border-slate-700/50">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <TrendingUp size={20} className="text-blue-500" />
+                <TrendingUp size={20} className="text-brand-500" />
                 Vues par Type de Contenu
               </h3>
               <button className="p-2 hover:bg-slate-700/50 rounded-lg transition-all">
@@ -428,7 +428,7 @@ function OverviewTab() {
                     />
                     <span className="text-slate-300">{region.name}</span>
                   </div>
-                  <span className="font-semibold text-blue-400">{region.percentage}%</span>
+                  <span className="font-semibold text-brand-400">{region.percentage}%</span>
                 </div>
               ))}
             </div>
@@ -543,12 +543,12 @@ function ContentTab() {
             placeholder="Rechercher du contenu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 transition-all"
           />
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm w-full md:w-fit"
+          className="flex items-center gap-2 px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-medium text-sm w-full md:w-fit"
         >
           <Plus size={18} />
           Ajouter Contenu
@@ -590,7 +590,7 @@ function ContentTab() {
                         item.status === 'Publié'
                           ? 'bg-green-500/20 text-green-400'
                           : item.status === 'En cours'
-                          ? 'bg-blue-500/20 text-blue-400'
+                          ? 'bg-brand-500/20 text-brand-400'
                           : 'bg-yellow-500/20 text-yellow-400'
                       }`}
                     >
@@ -608,7 +608,7 @@ function ContentTab() {
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-center gap-2">
                       <button className="p-2 hover:bg-slate-700/50 rounded-lg transition-all">
-                        <Edit size={14} className="text-blue-400" />
+                        <Edit size={14} className="text-brand-400" />
                       </button>
                       <button className="p-2 hover:bg-slate-700/50 rounded-lg transition-all">
                         <Trash2 size={14} className="text-red-400" />
@@ -673,7 +673,7 @@ function UsersTab() {
   ];
 
   const statsUser = [
-    { label: 'Utilisateurs Totaux', value: '12,432', icon: Users, color: 'text-blue-500' },
+    { label: 'Utilisateurs Totaux', value: '12,432', icon: Users, color: 'text-brand-500' },
     { label: 'Actifs Aujourd\'hui', value: '3,456', icon: Activity, color: 'text-green-500' },
     { label: 'Premium', value: '8,234', icon: Award, color: 'text-purple-500' },
     { label: 'Nouveaux (30j)', value: '456', icon: Plus, color: 'text-orange-500' },
@@ -715,7 +715,7 @@ function UsersTab() {
             placeholder="Rechercher des utilisateurs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 transition-all"
           />
         </div>
 
@@ -738,7 +738,7 @@ function UsersTab() {
                   <tr key={user.id} className="hover:bg-slate-700/20 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                        <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
                           {user.name.charAt(0)}
                         </div>
                         <p className="text-white font-medium">{user.name}</p>
@@ -746,7 +746,7 @@ function UsersTab() {
                     </td>
                     <td className="px-6 py-4 text-slate-400 text-sm">{user.email}</td>
                     <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs font-medium">
+                      <span className="px-2 py-1 bg-brand-500/20 text-brand-400 rounded text-xs font-medium">
                         {user.role}
                       </span>
                     </td>
@@ -766,7 +766,7 @@ function UsersTab() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button className="p-2 hover:bg-slate-700/50 rounded-lg transition-all">
-                          <Edit size={14} className="text-blue-400" />
+                          <Edit size={14} className="text-brand-400" />
                         </button>
                         <button className="p-2 hover:bg-slate-700/50 rounded-lg transition-all">
                           <Trash2 size={14} className="text-red-400" />
@@ -793,7 +793,7 @@ function CategoriesTab() {
       videos: 234,
       views: 45000,
       status: 'Actif',
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-brand-500 to-brand-500',
     },
     {
       id: 2,
@@ -826,7 +826,7 @@ function CategoriesTab() {
       <div className="flex justify-end">
         <motion.button
           whileHover={{ scale: 1.05 }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-medium text-sm"
         >
           <Plus size={18} />
           Ajouter Catégorie
@@ -841,7 +841,7 @@ function CategoriesTab() {
             animate={{ opacity: 1, y: 0 }}
             className="group"
           >
-            <Card className="p-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 hover:border-blue-500/30 transition-all overflow-hidden">
+            <Card className="p-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 hover:border-brand-500/30 transition-all overflow-hidden">
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-5 transition-opacity`}
               />
@@ -865,7 +865,7 @@ function CategoriesTab() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-xs transition-all">
+                  <button className="flex-1 px-3 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-medium text-xs transition-all">
                     Éditer
                   </button>
                   <button className="flex-1 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg font-medium text-xs transition-all">
@@ -919,7 +919,7 @@ function AnalyticsTab() {
       >
         <Card className="p-6 bg-slate-800/30 border border-slate-700/50">
           <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-            <TrendingUp size={20} className="text-blue-500" />
+            <TrendingUp size={20} className="text-brand-500" />
             Vues sur 7 jours
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -997,14 +997,14 @@ function AnalyticsTab() {
                 <div key={idx} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300 font-medium">{item.name}</span>
-                    <span className="text-blue-400 font-bold">{item.value}%</span>
+                    <span className="text-brand-400 font-bold">{item.value}%</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2.5">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${item.value}%` }}
                       transition={{ delay: idx * 0.1, duration: 0.8 }}
-                      className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                      className="h-2.5 rounded-full bg-gradient-to-r from-brand-500 to-cyan-500"
                     />
                   </div>
                 </div>
@@ -1031,7 +1031,7 @@ function AnalyticsTab() {
                 <div key={idx} className="p-3 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-all">
                   <div className="flex items-center justify-between">
                     <p className="text-white font-medium text-sm">{item.title}</p>
-                    <div className="flex items-center gap-1 text-blue-400">
+                    <div className="flex items-center gap-1 text-brand-400">
                       <Eye size={14} />
                       <span className="text-xs font-semibold">{item.views.toLocaleString()}</span>
                     </div>

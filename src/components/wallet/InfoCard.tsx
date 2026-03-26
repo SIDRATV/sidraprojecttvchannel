@@ -21,10 +21,10 @@ const iconMap: Record<InfoCardType, LucideIcon> = {
 
 const styleConfig = {
   info: {
-    bg: 'from-blue-900/40 to-blue-800/30',
-    border: 'border-blue-600/40',
-    badge: 'bg-blue-600/30 text-blue-300',
-    icon: 'text-blue-400',
+    bg: 'from-brand-800/40 to-brand-700/30',
+    border: 'border-brand-500/40',
+    badge: 'bg-brand-500/30 text-brand-300',
+    icon: 'text-brand-400',
   },
   tip: {
     bg: 'from-amber-900/40 to-amber-800/30',

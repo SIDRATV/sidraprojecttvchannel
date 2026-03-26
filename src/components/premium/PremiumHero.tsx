@@ -11,18 +11,18 @@ interface PremiumHeroProps {
 
 export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroProps) {
   return (
-    <div className="relative w-full overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900/50 to-gray-900 py-20 lg:py-32">
+    <div className="relative w-full overflow-hidden bg-gradient-to-br from-gray-900 via-brand-800/50 to-gray-900 py-20 lg:py-32">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
           animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.1, 1] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
+          className="absolute -top-40 -right-40 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl"
         />
         <motion.div
           animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.1, 1] }}
           transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-          className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"
+          className="absolute -bottom-40 -left-40 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl"
         />
       </div>
 
@@ -39,9 +39,9 @@ export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroP
             transition={{ duration: 2, repeat: Infinity }}
             className="flex justify-center"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 border border-blue-500/50 rounded-full">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/20 border border-brand-500/50 rounded-full">
               <Crown size={20} className="text-yellow-400" />
-              <span className="text-sm font-bold text-blue-300">Premium Access</span>
+              <span className="text-sm font-bold text-brand-300">Premium Access</span>
               <Zap size={20} className="text-yellow-400" />
             </div>
           </motion.div>
@@ -54,7 +54,7 @@ export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroP
             className="text-5xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight"
           >
             Unlock the Full{' '}
-            <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
               Sidra Experience
             </span>
           </motion.h1>
@@ -80,7 +80,7 @@ export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroP
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onUnlockClick}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all text-lg"
+              className="px-8 py-4 bg-gradient-to-r from-brand-500 to-brand-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all text-lg"
             >
               🔓 Unlock Premium
             </motion.button>
@@ -88,7 +88,7 @@ export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroP
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onLearnMore}
-              className="px-8 py-4 bg-gray-800/50 border border-blue-500/50 text-white font-bold rounded-lg hover:bg-gray-700/50 transition-all text-lg"
+              className="px-8 py-4 bg-gray-800/50 border border-brand-500/50 text-white font-bold rounded-lg hover:bg-gray-700/50 transition-all text-lg"
             >
               Learn More
             </motion.button>

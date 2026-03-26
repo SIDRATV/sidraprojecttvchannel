@@ -21,8 +21,8 @@ export function Button({
   const baseStyles = 'font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2';
 
   const variants = {
-    primary: 'bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 shadow-lg shadow-blue-500/50',
-    secondary: 'bg-blue-500/10 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30 dark:border-blue-500/30 hover:bg-blue-500/20 dark:hover:bg-blue-500/20',
+    primary: 'bg-gradient-to-r from-brand-500 to-brand-400 text-white hover:shadow-glow hover:brightness-110 active:scale-[0.98]',
+    secondary: 'bg-brand-400/10 dark:bg-brand-400/10 text-brand-500 dark:text-brand-400 border border-brand-400/30 dark:border-brand-400/30 hover:bg-brand-400/20 dark:hover:bg-brand-400/20',
     ghost: 'text-gray-700 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5',
   };
 

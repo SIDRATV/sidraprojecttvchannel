@@ -47,7 +47,7 @@ export function ReferralProgram() {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/20 rounded-xl p-8 space-y-6"
+        className="bg-gradient-to-r from-brand-800/30 to-purple-900/30 border border-brand-500/20 rounded-xl p-8 space-y-6"
       >
         <h3 className="text-2xl font-bold text-gray-950 dark:text-white">How Referral Program Works</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -57,7 +57,7 @@ export function ReferralProgram() {
             { num: '3', title: 'Earn Rewards', desc: 'Get SPTC when they activate premium' },
           ].map((step, idx) => (
             <div key={idx} className="space-y-3">
-              <div className="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-full text-lg font-bold text-white">
+              <div className="flex items-center justify-center w-12 h-12 bg-brand-500 rounded-full text-lg font-bold text-white">
                 {step.num}
               </div>
               <h4 className="font-semibold text-gray-950 dark:text-white">{step.title}</h4>
@@ -110,7 +110,7 @@ export function ReferralProgram() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gradient-to-br from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-xl p-6"
+          className="bg-gradient-to-br from-brand-500/20 to-brand-500/10 border border-brand-500/30 rounded-xl p-6"
         >
           <h3 className="text-gray-700 dark:text-gray-400 text-sm font-medium mb-2">Active Referrals</h3>
           <p className="text-4xl font-bold text-gray-950 dark:text-white">{activeReferrals}</p>
@@ -172,7 +172,7 @@ export function ReferralProgram() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-semibold rounded-full capitalize">
+                      <span className="inline-block px-3 py-1 bg-brand-500/20 text-brand-400 text-xs font-semibold rounded-full capitalize">
                         {referral.plan}
                       </span>
                     </td>

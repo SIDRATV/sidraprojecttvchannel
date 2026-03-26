@@ -38,10 +38,12 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
+      // Delete ALL old caches — fresh start on every deploy
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName.startsWith('sidra-tv-v') && cacheName !== CACHE_NAME) {
+            if (cacheName !== CACHE_NAME) {
+              console.log('[SW] Purging old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  generateBuildId: async () => `build-${Date.now().toString(36)}`,
   reactStrictMode: false, // Disabled to prevent double API calls in development
   staticPageGenerationTimeout: 120,
   onDemandEntries: {

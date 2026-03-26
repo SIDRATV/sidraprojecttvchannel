@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, TrendingUp, Star } from 'lucide-react';
 import { VideoCard } from './VideoCard';
 import { videoService } from '@/services/videos';
 import type { Video } from '@/types';
@@ -48,7 +48,7 @@ export function VideoGrid({ title, featured = false, limit = 12, category }: Vid
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
+        staggerChildren: 0.08,
       },
     },
   };
@@ -58,17 +58,26 @@ export function VideoGrid({ title, featured = false, limit = 12, category }: Vid
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.4 },
+      transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
     },
   };
 
+  const Icon = featured ? Star : TrendingUp;
+
   if (loading) {
     return (
-      <section className="py-12 bg-white dark:bg-gray-950 transition-colors">
+      <section className="py-14 bg-white dark:bg-gray-950 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {title && <h2 className="text-3xl font-bold text-gray-950 dark:text-white mb-8">{title}</h2>}
+          {title && (
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-brand-500 to-brand-400">
+                <Icon size={18} className="text-white" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-950 dark:text-white">{title}</h2>
+            </div>
+          )}
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-500/30 border-t-brand-500" />
           </div>
         </div>
       </section>
@@ -76,22 +85,27 @@ export function VideoGrid({ title, featured = false, limit = 12, category }: Vid
   }
 
   return (
-    <section className="py-12 bg-white dark:bg-gray-950 transition-colors">
+    <section id={featured ? 'trending' : undefined} className="py-14 bg-white dark:bg-gray-950 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {title && (
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="mb-8"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-950 dark:text-white mb-2">{title}</h2>
-            <div className="h-1 w-20 bg-gradient-to-r from-brand-500 to-islamic-teal rounded-full" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`p-2 rounded-xl bg-gradient-to-br ${featured ? 'from-gold-500 to-gold-400 shadow-lg shadow-gold-500/20' : 'from-brand-500 to-brand-400 shadow-lg shadow-brand-500/20'}`}>
+                <Icon size={18} className="text-white" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-950 dark:text-white">{title}</h2>
+            </div>
+            <div className={`h-1 w-20 rounded-full ml-[52px] ${featured ? 'bg-gradient-to-r from-gold-500 to-gold-400' : 'bg-gradient-to-r from-brand-500 to-brand-400'}`} />
           </motion.div>
         )}
 
         {featured ? (
-          // Featured slider layout
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -106,7 +120,6 @@ export function VideoGrid({ title, featured = false, limit = 12, category }: Vid
             ))}
           </motion.div>
         ) : (
-          // Regular grid layout
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -124,7 +137,7 @@ export function VideoGrid({ title, featured = false, limit = 12, category }: Vid
 
         {videos.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400 text-lg">No videos found</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No videos found</p>
           </div>
         )}
       </div>

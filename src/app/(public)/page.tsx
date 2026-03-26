@@ -6,39 +6,59 @@ import { CategoryBrowser } from '@/components/CategoryBrowser';
 import { VideoGrid } from '@/components/VideoGrid';
 import { InspirationSection } from '@/components/InspirationSection';
 import { NewsletterSection } from '@/components/NewsletterSection';
+import { Sparkles } from 'lucide-react';
+
+const sectionFade = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+};
 
 export default function HomePage() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      suppressHydrationWarning
-    >
+    <div className="bg-white dark:bg-gray-950 transition-colors" suppressHydrationWarning>
       {/* Hero Section */}
       <Hero />
 
       {/* Categories Section */}
-      <CategoryBrowser />
+      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
+        <CategoryBrowser />
+      </motion.div>
 
       {/* Featured Videos */}
-      <VideoGrid
-        title="Featured Content"
-        featured
-        limit={6}
-      />
+      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
+        <VideoGrid
+          title="Featured Content"
+          featured
+          limit={6}
+        />
+      </motion.div>
+
+      {/* Divider */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold-500/20 to-transparent" />
+          <Sparkles size={14} className="text-gold-500/40" />
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold-500/20 to-transparent" />
+        </div>
+      </div>
 
       {/* Inspiration Section */}
-      <InspirationSection />
+      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
+        <InspirationSection />
+      </motion.div>
 
       {/* Popular Videos */}
-      <VideoGrid
-        title="Popular Now"
-        limit={12}
-      />
+      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
+        <VideoGrid
+          title="Popular Now"
+          limit={12}
+        />
+      </motion.div>
 
       {/* Newsletter */}
-      <NewsletterSection />
-    </motion.div>
+      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
+        <NewsletterSection />
+      </motion.div>
+    </div>
   );
 }

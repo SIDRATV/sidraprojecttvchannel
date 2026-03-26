@@ -66,19 +66,24 @@ export function CategoryBrowser() {
   }
 
   return (
-    <section id="categories" className="py-16 bg-gray-50 dark:bg-gray-900/50 transition-colors">
+    <section id="categories" className="py-16 sm:py-20 bg-gray-50/80 dark:bg-gray-900/50 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           viewport={{ once: true }}
-          className="mb-8 sm:mb-12"
+          className="mb-10 sm:mb-14"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-950 dark:text-white mb-2 sm:mb-3">Browse Categories</h2>
-          <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-400 shadow-lg shadow-gold-500/20">
+              <Icons.Layers size={18} className="text-white" />
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-950 dark:text-white">Browse Categories</h2>
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg ml-[52px]">
             Explore our diverse collection of Islamic content and innovations
           </p>
-          <div className="h-1 w-20 sm:w-32 bg-gradient-to-r from-brand-500 to-islamic-teal rounded-full mt-3 sm:mt-4" />
         </motion.div>
 
         <motion.div

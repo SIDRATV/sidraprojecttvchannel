@@ -67,7 +67,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3 }}
-      className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 transition-colors"
+      className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 transition-colors"
     >
       <div className="flex items-center justify-between px-4 lg:px-8 py-4">
         {/* Logo */}

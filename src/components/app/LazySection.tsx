@@ -4,16 +4,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 interface LazySectionProps {
   children: ReactNode;
-  /** Skeleton shown before the section enters the viewport */
   fallback?: ReactNode;
-  /** IntersectionObserver rootMargin – how early to trigger (default: 200px) */
   rootMargin?: string;
 }
 
-/**
- * Renders children only once the section scrolls into (or near) the viewport.
- * Prevents off-screen YouTube sections from making API calls on mount.
- */
 export function LazySection({
   children,
   fallback,
@@ -45,8 +39,24 @@ export function LazySection({
   return (
     <div ref={ref}>
       {fallback ?? (
-        <div className="h-48 flex items-center justify-center">
-          <div className="h-8 w-8 animate-pulse rounded-full bg-gray-800" />
+        <div className="space-y-4">
+          {/* Skeleton header */}
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-5 w-48 rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse" />
+              <div className="h-3 w-64 rounded-lg bg-gray-100 dark:bg-gray-800/60 animate-pulse" />
+            </div>
+          </div>
+          {/* Skeleton cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2 animate-pulse" style={{ animationDelay: `${i * 100}ms` }}>
+                <div className="aspect-[2/3] rounded-xl bg-gray-200 dark:bg-gray-800" />
+                <div className="h-3 w-3/4 rounded bg-gray-200 dark:bg-gray-800" />
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

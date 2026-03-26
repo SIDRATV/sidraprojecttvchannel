@@ -57,15 +57,15 @@ export function YouTubeFeaturedCarousel({ query, maxResults = 5 }: YouTubeFeatur
 
   if (loading) {
     return (
-      <div className="h-96 bg-gray-900 rounded-xl flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
+      <div className="h-96 bg-gray-100 dark:bg-gray-900 rounded-2xl flex items-center justify-center border border-gray-200/50 dark:border-gray-800/50">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-brand-500/30 border-t-brand-500" />
       </div>
     );
   }
 
   if (error || videos.length === 0) {
     return (
-      <div className="h-96 bg-gray-900 rounded-xl flex items-center justify-center">
+      <div className="h-96 bg-gray-100 dark:bg-gray-900 rounded-2xl flex items-center justify-center border border-gray-200/50 dark:border-gray-800/50">
         <p className="text-gray-400">No videos available</p>
       </div>
     );
@@ -80,7 +80,7 @@ export function YouTubeFeaturedCarousel({ query, maxResults = 5 }: YouTubeFeatur
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="relative h-96 rounded-xl overflow-hidden bg-black group"
+        className="relative h-96 rounded-2xl overflow-hidden bg-black group shadow-xl shadow-black/20 border border-white/5"
       >
         {/* Background Image */}
         <img

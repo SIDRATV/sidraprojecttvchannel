@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Play } from 'lucide-react';
+import { Lock, Play, Sparkles } from 'lucide-react';
 
 interface ContentItem {
   id: string;
@@ -30,19 +30,20 @@ export default function PremiumContentPreview({ content }: PremiumContentPreview
         {content.map((item, idx) => (
           <motion.div
             key={item.id}
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.1, duration: 0.6 }}
+            transition={{ delay: idx * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             viewport={{ once: true }}
+            whileHover={{ y: -4, scale: 1.02 }}
             onHoverStart={() => setHoveredId(item.id)}
             onHoverEnd={() => setHoveredId(null)}
-            className="relative flex-shrink-0 w-80 h-48 rounded-xl overflow-hidden group cursor-pointer"
+            className="relative flex-shrink-0 w-80 h-52 rounded-2xl overflow-hidden group cursor-pointer border border-gold-500/20 hover:border-gold-400/40 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-gold-500/10"
           >
             {/* Image */}
             <img
               src={item.image}
               alt={item.title}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             />
 
             {/* Blur Overlay - Premium Lock */}
@@ -53,21 +54,27 @@ export default function PremiumContentPreview({ content }: PremiumContentPreview
             >
               <div className="text-center space-y-3">
                 <motion.div
-                  animate={{ scale: hoveredId === item.id ? 1.1 : 1 }}
-                  transition={{ duration: 0.3 }}
+                  animate={{ 
+                    scale: hoveredId === item.id ? 1.15 : 1,
+                    rotate: hoveredId === item.id ? [0, -5, 5, 0] : 0
+                  }}
+                  transition={{ duration: 0.4 }}
                 >
-                  <Lock className="w-12 h-12 text-yellow-400 mx-auto" />
+                  <div className="relative inline-block">
+                    <Lock className="w-10 h-10 text-gold-400 mx-auto drop-shadow-lg" />
+                    <Sparkles size={14} className="absolute -top-1 -right-1 text-gold-300 animate-pulse" />
+                  </div>
                 </motion.div>
                 <div>
                   <p className="text-white font-bold text-sm">Premium Content</p>
-                  <p className="text-white/80 text-xs">Unlock access</p>
+                  <p className="text-gold-300/80 text-xs">Unlock to watch</p>
                 </div>
               </div>
             </motion.div>
 
             {/* Info */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/50 to-transparent">
-              <p className="text-xs text-brand-400 font-semibold mb-1">{item.category}</p>
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/60 to-transparent">
+              <p className="text-xs text-gold-400 font-semibold mb-1">{item.category}</p>
               <h3 className="text-white font-bold text-sm line-clamp-2">{item.title}</h3>
             </div>
           </motion.div>
@@ -78,7 +85,7 @@ export default function PremiumContentPreview({ content }: PremiumContentPreview
       <motion.div
         animate={{ x: [0, 10, 0] }}
         transition={{ duration: 2, repeat: Infinity }}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-400 opacity-70"
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-gold-400/70"
       >
         →
       </motion.div>

@@ -3,6 +3,16 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ContentCard } from './ContentCard';
+import { BookOpen, Briefcase, TrendingUp, Cpu, Users, Tv } from 'lucide-react';
+
+const iconMap: Record<string, React.ElementType> = {
+  book: BookOpen,
+  briefcase: Briefcase,
+  trending: TrendingUp,
+  cpu: Cpu,
+  users: Users,
+  default: Tv,
+};
 
 interface YouTubeVideo {
   id: string;
@@ -20,6 +30,7 @@ interface YouTubeSectionProps {
   query: string;
   maxResults?: number;
   type?: 'vertical' | 'horizontal';
+  icon?: string;
 }
 
 export function YouTubeSection({
@@ -28,10 +39,12 @@ export function YouTubeSection({
   query,
   maxResults = 12,
   type = 'vertical',
+  icon,
 }: YouTubeSectionProps) {
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const Icon = icon ? iconMap[icon] || iconMap.default : null;
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -62,15 +75,26 @@ export function YouTubeSection({
     fetchVideos();
   }, [query, maxResults]);
 
+  const SectionHeader = () => (
+    <div className="flex items-start gap-3">
+      {Icon && (
+        <div className="mt-0.5 p-2 rounded-xl bg-gradient-to-br from-brand-500 to-brand-400 shadow-lg shadow-brand-500/20">
+          <Icon size={18} className="text-white" />
+        </div>
+      )}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-950 dark:text-white mb-0.5">{title}</h2>
+        {description && <p className="text-gray-500 dark:text-gray-400 text-sm">{description}</p>}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <section className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-950 dark:text-white mb-1">{title}</h2>
-          {description && <p className="text-gray-600 dark:text-gray-400 text-sm">{description}</p>}
-        </div>
+        <SectionHeader />
         <div className="flex items-center justify-center h-48">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-500/30 border-t-brand-500" />
         </div>
       </section>
     );
@@ -79,11 +103,8 @@ export function YouTubeSection({
   if (error) {
     return (
       <section className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-950 dark:text-white mb-1">{title}</h2>
-          {description && <p className="text-gray-600 dark:text-gray-400 text-sm">{description}</p>}
-        </div>
-        <div className="p-4 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-lg">
+        <SectionHeader />
+        <div className="p-4 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl">
           <p className="font-semibold mb-2">Error loading videos:</p>
           <code className="block text-xs bg-black/20 p-2 rounded mb-2 overflow-auto">{error}</code>
           <p className="text-sm">
@@ -97,10 +118,7 @@ export function YouTubeSection({
   if (videos.length === 0) {
     return (
       <section className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-950 dark:text-white mb-1">{title}</h2>
-          {description && <p className="text-gray-600 dark:text-gray-400 text-sm">{description}</p>}
-        </div>
+        <SectionHeader />
         <div className="p-4 text-gray-600 dark:text-gray-400 rounded-lg">
           No videos found for &quot;{query}&quot;
         </div>
@@ -112,13 +130,10 @@ export function YouTubeSection({
     <motion.section
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-4"
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-5"
     >
-      <div>
-        <h2 className="text-2xl font-bold text-gray-950 dark:text-white mb-1">{title}</h2>
-        {description && <p className="text-gray-600 dark:text-gray-400 text-sm">{description}</p>}
-      </div>
+      <SectionHeader />
 
       <div
         className={`grid gap-4 ${
@@ -132,7 +147,7 @@ export function YouTubeSection({
             key={video.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
+            transition={{ delay: index * 0.04, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <ContentCard
               id={video.id}

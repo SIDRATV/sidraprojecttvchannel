@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
-import { getThumbnailPublicUrl } from '@/lib/r2';
+import { getSignedThumbnailUrl } from '@/lib/r2';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,13 +44,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Map thumbnail keys to public URLs
-    const videos = (data || []).map((video: any) => ({
-      ...video,
-      thumbnail_url: video.thumbnail_key
-        ? getThumbnailPublicUrl(video.thumbnail_key)
-        : null,
-    }));
+    // Map thumbnail keys to signed URLs (24h expiry)
+    const videos = await Promise.all(
+      (data || []).map(async (video: any) => ({
+        ...video,
+        thumbnail_url: video.thumbnail_key
+          ? await getSignedThumbnailUrl(video.thumbnail_key)
+          : null,
+      })),
+    );
 
     return NextResponse.json({ videos, count: videos.length });
   } catch (err) {

@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { Film, Search, Sparkles, Crown, Filter } from 'lucide-react';
 import { PremiumVideoCard } from '@/components/premium/PremiumVideoCard';
 import { premiumVideoService } from '@/services/premiumVideos';
-import { premiumService } from '@/services/premium';
 import { categoryService } from '@/services/categories';
+import { useAuth } from '@/hooks/useAuth';
 import type { PremiumVideoWithRelations } from '@/types/premium';
 import type { Category } from '@/types';
 import Link from 'next/link';
@@ -22,17 +22,17 @@ const fadeUp = {
 };
 
 export default function PremiumVideosPage() {
+  const { user } = useAuth();
   const [videos, setVideos] = useState<PremiumVideoWithRelations[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isPremiumUser, setIsPremiumUser] = useState(false);
+
+  // Premium: user must be logged in and have a premium_plan set
+  const isPremiumUser = !!(user && (user as any).premium_plan);
 
   useEffect(() => {
-    const status = premiumService.getPremiumStatus();
-    setIsPremiumUser(status.isActive);
-
     categoryService.getCategories().then(setCategories).catch(() => {});
 
     premiumVideoService.getVideos(50, 0, selectedCategory || undefined).then((data) => {

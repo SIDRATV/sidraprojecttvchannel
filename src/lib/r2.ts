@@ -65,12 +65,33 @@ export async function getSignedVideoUrl(
 }
 
 /**
- * Generate a public URL for thumbnails via R2 public access
- * Thumbnails are stored with public-read in the Sidra Miniature folder
+ * Generate a signed URL for thumbnail access (expires in 24 hours by default)
+ */
+export async function getSignedThumbnailUrl(
+  key: string,
+  expiresIn = 86400,
+): Promise<string> {
+  const publicDomain = process.env.CLOUDFLARE_R2_PUBLIC_URL;
+  if (publicDomain) {
+    // If a public custom domain is configured, use it directly (no expiry)
+    return `${publicDomain}/${key}`;
+  }
+  // Fall back to a signed URL (24h expiry)
+  const command = new GetObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+  });
+  return getSignedUrl(r2Client, command, { expiresIn });
+}
+
+/**
+ * @deprecated Use getSignedThumbnailUrl instead
  */
 export function getThumbnailPublicUrl(key: string): string {
-  // R2 public bucket URL. If custom domain is set, use that instead.
-  return `${ENDPOINT}/${R2_BUCKET}/${encodeURIComponent(key)}`;
+  const publicDomain = process.env.CLOUDFLARE_R2_PUBLIC_URL;
+  if (publicDomain) return `${publicDomain}/${key}`;
+  // Return storage endpoint as fallback (may not be accessible without auth)
+  return `${ENDPOINT}/${R2_BUCKET}/${key}`;
 }
 
 /**

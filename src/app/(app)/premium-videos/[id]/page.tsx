@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { PremiumVideoPlayer } from '@/components/premium/PremiumVideoPlayer';
 import { premiumVideoService } from '@/services/premiumVideos';
-import { premiumService } from '@/services/premium';
+import { useAuth } from '@/hooks/useAuth';
 import type { PremiumVideoWithRelations } from '@/types/premium';
 import Link from 'next/link';
 
@@ -28,6 +28,7 @@ const fadeUp = {
 export default function WatchPremiumVideoPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const id = params.id as string;
 
   const [video, setVideo] = useState<PremiumVideoWithRelations | null>(null);
@@ -36,7 +37,9 @@ export default function WatchPremiumVideoPage() {
   const [availableQualities, setAvailableQualities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isPremiumUser, setIsPremiumUser] = useState(false);
+
+  // Premium: user must be logged in and have a premium_plan set
+  const isPremiumUser = !!(user && (user as any).premium_plan);
 
   const fetchVideo = useCallback(
     async (q: string) => {
@@ -56,15 +59,13 @@ export default function WatchPremiumVideoPage() {
   );
 
   useEffect(() => {
-    const status = premiumService.getPremiumStatus();
-    setIsPremiumUser(status.isActive);
-    if (!status.isActive) {
+    if (!isPremiumUser) {
       setLoading(false);
       return;
     }
     fetchVideo(quality);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, isPremiumUser]);
 
   const handleQualityChange = (newQuality: string) => {
     setLoading(true);
@@ -72,7 +73,7 @@ export default function WatchPremiumVideoPage() {
   };
 
   const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    new Date(dateStr).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' });
 
   // Non-premium gating
   if (!loading && !isPremiumUser) {

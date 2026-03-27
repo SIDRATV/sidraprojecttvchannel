@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
-import { getSignedVideoUrl, getThumbnailPublicUrl } from '@/lib/r2';
+import { getSignedVideoUrl, getSignedThumbnailUrl } from '@/lib/r2';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,9 +36,9 @@ export async function GET(
     // Increment views
     await (supabase as any).rpc('increment_premium_video_views', { vid: videoId }).catch(() => {});
 
-    // Build thumbnail URL (public)
+    // Build thumbnail URL (signed, 24h expiry)
     const thumbnailUrl = video.thumbnail_key
-      ? getThumbnailPublicUrl(video.thumbnail_key)
+      ? await getSignedThumbnailUrl(video.thumbnail_key)
       : null;
 
     // Determine the video key for the requested quality

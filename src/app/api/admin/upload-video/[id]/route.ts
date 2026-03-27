@@ -4,9 +4,10 @@ import { deleteFromR2 } from '@/lib/r2';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createServerClient();
 
     // Auth check
@@ -35,7 +36,7 @@ export async function DELETE(
     const { data: video, error: fetchError } = await (supabase as any)
       .from('premium_videos')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (fetchError || !video) {
@@ -55,7 +56,7 @@ export async function DELETE(
     const { error: deleteError } = await (supabase as any)
       .from('premium_videos')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (deleteError) {
       return NextResponse.json({ error: deleteError.message }, { status: 500 });

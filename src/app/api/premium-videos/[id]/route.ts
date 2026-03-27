@@ -6,10 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const videoId = params.id;
+    const { id: videoId } = await params;
     const url = new URL(request.url);
     const quality = url.searchParams.get('quality') || '720p';
 

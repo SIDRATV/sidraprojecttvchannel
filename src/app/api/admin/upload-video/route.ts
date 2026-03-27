@@ -165,9 +165,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Increase Next.js body size limit for video uploads
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+

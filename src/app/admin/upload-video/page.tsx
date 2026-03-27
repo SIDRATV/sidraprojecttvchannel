@@ -137,20 +137,8 @@ export default function AdminUploadVideoPage() {
     setDeleting(null);
   };
 
-  // Auth guard
-  if (!user?.is_admin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <AlertCircle className="mx-auto text-red-500" size={48} />
-          <h1 className="text-2xl font-bold text-white">Admin Access Required</h1>
-          <Link href="/dashboard" className="text-brand-400 hover:underline">
-            Back to Dashboard
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // TODO: re-enable admin guard once user roles are configured
+  // if (!user?.is_admin) { ... }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">

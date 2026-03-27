@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Sparkles,
+  Film,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -18,6 +19,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/premium', label: 'Premium', icon: Sparkles },
+  { href: '/premium-videos', label: 'Videos', icon: Film },
   { href: '/podcast', label: 'Podcast', icon: Mic2 },
   { href: '/live', label: 'Live', icon: Radio },
 ];
@@ -39,7 +41,7 @@ export function BottomNavBar() {
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               const Icon = item.icon;
-              const isPremium = item.href === '/premium';
+              const isPremium = item.href === '/premium' || item.href === '/premium-videos';
 
               return (
                 <Link key={item.href} href={item.href} className="flex-1">

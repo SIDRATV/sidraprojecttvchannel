@@ -142,3 +142,34 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     availableIn: ['vip'],
   },
 ];
+
+// Premium Video types (R2-stored content)
+export interface PremiumVideo {
+  id: string;
+  title: string;
+  description: string;
+  category_id: string | null;
+  thumbnail_key: string | null;
+  thumbnail_url?: string | null;
+  video_key_480p: string | null;
+  video_key_720p: string | null;
+  video_key_1080p: string | null;
+  quality_options: string[];
+  duration: number | null;
+  file_size: number | null;
+  is_premium: boolean;
+  min_plan: 'pro' | 'premium' | 'vip';
+  views: number;
+  likes: number;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PremiumVideoWithRelations extends PremiumVideo {
+  categories?: {
+    name: string;
+    icon: string;
+    color: string;
+  } | null;
+}

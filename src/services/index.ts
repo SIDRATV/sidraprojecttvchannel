@@ -5,3 +5,4 @@ export * from './categories';
 export * from './podcasts';
 export * from './live';
 export { premiumService } from './premium';
+export { premiumVideoService } from './premiumVideos';

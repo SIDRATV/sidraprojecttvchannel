@@ -11,3 +11,5 @@ export { PaidSurveys } from './PaidSurveys';
 export { ReferralProgram } from './ReferralProgram';
 export { PremiumStatus } from './PremiumStatus';
 export { PremiumGated } from './PremiumGated';
+export { PremiumVideoCard } from './PremiumVideoCard';
+export { PremiumVideoPlayer } from './PremiumVideoPlayer';

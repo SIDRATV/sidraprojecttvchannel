@@ -61,6 +61,7 @@ import {
 } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { categoryService } from '@/services/categories';
+import { GasFeeManager } from '@/components/admin/GasFeeManager';
 import type { Category } from '@/types';
 
 type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security';
@@ -1110,6 +1111,11 @@ function FinancesTab() {
 
   return (
     <div className="space-y-6">
+      {/* Gas Fee Manager — admin can change gas fee in real time */}
+      {session?.access_token && (
+        <GasFeeManager token={session.access_token} />
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Revenus Actifs (USD)', value: loading ? '…' : `$${parseFloat(finances?.totalActiveRevenue ?? '0').toFixed(2)}`, icon: DollarSign, color: 'from-green-500 to-emerald-400' },

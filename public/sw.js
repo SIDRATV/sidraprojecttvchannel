@@ -1,4 +1,4 @@
-const CACHE_VERSION = '3.0.0';
+const CACHE_VERSION = 'mna8dtb1';
 const CACHE_NAME = `sidra-tv-v${CACHE_VERSION}`;
 const PRECACHE_URLS = ['/manifest.json', '/sidra-logo.webp'];
 

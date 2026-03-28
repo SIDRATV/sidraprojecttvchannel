@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowUpRight,
@@ -9,6 +9,8 @@ import {
   Loader,
   Shield,
   Globe,
+  Zap,
+  Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { SDALogo } from './SDALogo';
@@ -16,6 +18,15 @@ import { SDALogo } from './SDALogo';
 interface WithdrawFormProps {
   authToken: string;
   onSuccess?: () => void;
+}
+
+interface GasFeeEstimate {
+  amount: number;
+  gas_fee: number;
+  gas_fee_percent: number;
+  total_deducted: number;
+  currency: string;
+  note: string;
 }
 
 const networks = [
@@ -43,8 +54,39 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [gasFeeEstimate, setGasFeeEstimate] = useState<GasFeeEstimate | null>(null);
+  const [loadingFee, setLoadingFee] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeNetwork = networks.find((n) => n.id === selectedNetwork)!;
+
+  // Fetch gas fee estimate whenever amount changes (debounced 500ms)
+  useEffect(() => {
+    const parsed = parseFloat(amount);
+    if (!parsed || parsed <= 0) {
+      setGasFeeEstimate(null);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setLoadingFee(true);
+      try {
+        const res = await fetch('/api/wallet/estimate-gas-fee', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: parsed }),
+        });
+        if (res.ok) {
+          const data: GasFeeEstimate = await res.json();
+          setGasFeeEstimate(data);
+        }
+      } catch {}
+      setLoadingFee(false);
+    }, 500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [amount]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +133,7 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
       setToAddress('');
       setAmount('');
       setDescription('');
+      setGasFeeEstimate(null);
       onSuccess?.();
 
       setTimeout(() => setSuccess(null), 8000);
@@ -186,12 +229,72 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
               step="0.0001"
               min="0"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => { setAmount(e.target.value); setGasFeeEstimate(null); }}
               placeholder="0.00"
               disabled={isLoading}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
             />
           </div>
+
+          {/* Gas Fee Preview — shown before user confirms */}
+          <AnimatePresence>
+            {(loadingFee || gasFeeEstimate) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2.5">
+                  <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold uppercase tracking-wide">
+                    <Zap size={13} />
+                    Gas Fee Breakdown
+                  </div>
+                  {loadingFee ? (
+                    <div className="flex items-center gap-2 text-slate-400 text-xs">
+                      <Loader size={12} className="animate-spin" />
+                      Calculating gas fee…
+                    </div>
+                  ) : gasFeeEstimate ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between col-span-2">
+                          <span className="text-slate-400">Withdrawal amount</span>
+                          <span className="text-white font-mono font-semibold">
+                            {gasFeeEstimate.amount.toFixed(6)} {gasFeeEstimate.currency}
+                          </span>
+                        </div>
+                        <div className="flex justify-between col-span-2">
+                          <span className="text-slate-400">
+                            Gas fee ({gasFeeEstimate.gas_fee_percent.toFixed(2)}%)
+                          </span>
+                          <span
+                            className={`font-mono font-semibold ${
+                              gasFeeEstimate.gas_fee === 0 ? 'text-green-400' : 'text-amber-400'
+                            }`}
+                          >
+                            {gasFeeEstimate.gas_fee === 0
+                              ? 'FREE'
+                              : `${gasFeeEstimate.gas_fee.toFixed(6)} ${gasFeeEstimate.currency}`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="border-t border-amber-500/20 pt-2 flex justify-between items-center">
+                        <span className="text-slate-300 text-xs font-semibold">Total deducted</span>
+                        <span className="text-white font-bold font-mono text-sm">
+                          {gasFeeEstimate.total_deducted.toFixed(6)} {gasFeeEstimate.currency}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <Info size={11} className="text-slate-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-slate-500 text-[11px] leading-relaxed">{gasFeeEstimate.note}</p>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Description (optional) */}
           <div>
@@ -245,7 +348,7 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
             )}
           </AnimatePresence>
 
-          {/* Submit */}
+          {/* Submit — button label changes to confirm gas fee when applicable */}
           <Button
             type="submit"
             variant="primary"
@@ -256,6 +359,11 @@ export function WithdrawForm({ authToken, onSuccess }: WithdrawFormProps) {
               <>
                 <Loader className="h-4 w-4 animate-spin" />
                 Processing…
+              </>
+            ) : gasFeeEstimate && gasFeeEstimate.gas_fee > 0 ? (
+              <>
+                <ArrowUpRight className="h-4 w-4" />
+                Confirm & Withdraw — fee: {gasFeeEstimate.gas_fee.toFixed(4)} {gasFeeEstimate.currency}
               </>
             ) : (
               <>

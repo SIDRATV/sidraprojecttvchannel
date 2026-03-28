@@ -53,6 +53,64 @@ const writeAuditLog = async (input: {
   }
 };
 
+/**
+ * Fetch the current withdrawal gas fee from the DB (admin-configurable).
+ * Falls back to calcFee(amount) using config if DB value is not set.
+ */
+const getWithdrawalGasFee = async (amount: number): Promise<number> => {
+  try {
+    const supabase = createServerClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = await (supabase as any)
+      .from('wallet_settings')
+      .select('value')
+      .eq('key', 'withdrawal_gas_fee_bps')
+      .maybeSingle();
+    const row = result?.data as { value: string } | null;
+    if (row?.value !== undefined && row.value !== null) {
+      const bps = Number(row.value);
+      if (Number.isFinite(bps) && bps >= 0) {
+        return Number(((amount * bps) / 10000).toFixed(8));
+      }
+    }
+  } catch {
+    // fall through to default
+  }
+  // Default: use config-based fee
+  return calcFee(amount);
+};
+
+/**
+ * Read the current gas fee BPS from DB (used by admin API).
+ */
+export const getGasFeeBps = async (): Promise<number> => {
+  try {
+    const supabase = createServerClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = await (supabase as any)
+      .from('wallet_settings')
+      .select('value')
+      .eq('key', 'withdrawal_gas_fee_bps')
+      .maybeSingle();
+    const row = result?.data as { value: string } | null;
+    if (row?.value !== undefined && row.value !== null) {
+      const bps = Number(row.value);
+      if (Number.isFinite(bps) && bps >= 0) return bps;
+    }
+  } catch {}
+  return walletConfig.feeBps; // fall back to env-configured BPS
+};
+
+/**
+ * Update the gas fee BPS in DB (used by admin API).
+ */
+export const setGasFeeBps = async (bps: number): Promise<void> => {
+  const supabase = createServerClient();
+  await (supabase as any)
+    .from('wallet_settings')
+    .upsert({ key: 'withdrawal_gas_fee_bps', value: String(bps), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+};
+
 const getProvider = (network: WalletNetwork): ethers.JsonRpcProvider => {
   const rpcUrl = walletConfig.rpcUrls[network] || (network === 'sidra' ? walletConfig.rpcUrl : '');
   if (!rpcUrl) {
@@ -235,12 +293,12 @@ const getUserByUsername = async (username: string) => {
 };
 
 export const estimateInternalFee = (amount: number) => {
-  const fee = calcFee(amount);
+  // Internal transfers between users are always free (zero fee)
   return {
     amount: roundAmount(amount),
-    fee,
-    total: roundAmount(amount + fee),
-    feeBps: walletConfig.feeBps,
+    fee: 0,
+    total: roundAmount(amount),
+    feeBps: 0,
   };
 };
 
@@ -364,7 +422,8 @@ export const internalTransfer = async (input: InternalTransferInput) => {
     throw new Error('Self transfer is not allowed');
   }
 
-  const fee = calcFee(amount);
+  // Internal transfers between users are free — no fee charged
+  const fee = 0;
   const referenceId = `itf_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
   const supabase = createServerClient();
 
@@ -503,7 +562,8 @@ export const requestWithdrawal = async (input: WithdrawalInput) => {
 
   console.log(`[withdrawal] User ${userId} requesting ${amount} ${walletConfig.currency} to ${normalizedToAddress} on ${network}`);
 
-  const fee = calcFee(amount);
+  // Gas fee for blockchain withdrawals — loaded dynamically from DB (admin-configurable)
+  const fee = await getWithdrawalGasFee(amount);
   const encryptedAddress = encryptText(normalizedToAddress);
   const supabase = createServerClient();
   const referenceId = `wdr_${Date.now()}_${Math.floor(Math.random() * 100000)}`;

@@ -115,10 +115,12 @@ ALTER TABLE premium_discount_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE premium_fraud_alerts ENABLE ROW LEVEL SECURITY;
 
 -- Users can read plans
-CREATE POLICY IF NOT EXISTS "Anyone can read plans" ON premium_plans FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anyone can read plans" ON premium_plans;
+CREATE POLICY "Anyone can read plans" ON premium_plans FOR SELECT USING (true);
 
 -- Users can read their own subscriptions
-CREATE POLICY IF NOT EXISTS "Users read own subs" ON premium_subscriptions FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users read own subs" ON premium_subscriptions;
+CREATE POLICY "Users read own subs" ON premium_subscriptions FOR SELECT USING (auth.uid() = user_id);
 
 -- 8. Function: subscribe to premium (atomic — deducts balance + creates subscription)
 CREATE OR REPLACE FUNCTION premium_subscribe(

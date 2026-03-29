@@ -175,9 +175,9 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2 p-1 pl-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
             >
-              {profile?.profilePhoto ? (
+              {(profile?.profilePhoto || user?.avatar_url) ? (
                 <img
-                  src={profile.profilePhoto}
+                  src={profile?.profilePhoto || user?.avatar_url || ''}
                   alt="Profile"
                   className="w-9 h-9 rounded-full object-cover flex-shrink-0"
                 />
@@ -205,9 +205,9 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                   {/* User Info */}
                   <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                     <div className="flex items-center gap-3">
-                      {profile?.profilePhoto ? (
+                      {(profile?.profilePhoto || user?.avatar_url) ? (
                         <img
-                          src={profile.profilePhoto}
+                          src={profile?.profilePhoto || user?.avatar_url || ''}
                           alt="Profile"
                           className="w-12 h-12 rounded-full object-cover"
                         />

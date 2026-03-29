@@ -12,7 +12,6 @@ import {
   Menu,
   X,
   Sparkles,
-  Film,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -20,7 +19,6 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/premium', label: 'Premium', icon: Sparkles },
-  { href: '/premium-videos', label: 'Videos', icon: Film },
   { href: '/podcast', label: 'Podcast', icon: Mic2 },
   { href: '/live', label: 'Live', icon: Radio },
 ];

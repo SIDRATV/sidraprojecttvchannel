@@ -9,8 +9,9 @@ import { YouTubeFeaturedCarousel } from '@/components/app/YouTubeFeaturedCarouse
 import { YouTubeSection } from '@/components/app/YouTubeSection';
 import { LazySection } from '@/components/app/LazySection';
 import { PremiumBanner, PremiumContentPreview } from '@/components/premium';
-import { Heart, MessageCircle, Play, Sparkles, TrendingUp, BookOpen, Briefcase, Cpu, Users } from 'lucide-react';
+import { Heart, MessageCircle, Play, Sparkles, TrendingUp, BookOpen, Briefcase, Cpu, Users, ArrowRight } from 'lucide-react';
 import { videoService } from '@/services/videos';
+import { premiumVideoService } from '@/services/premiumVideos';
 import type { VideoWithRelations } from '@/types';
 
 const staggerContainer = {
@@ -45,18 +46,27 @@ function SectionHeader({ icon: Icon, title, description, gold = false }: { icon:
 export default function DashboardPage() {
   const [recentVideos, setRecentVideos] = useState<VideoWithRelations[]>([]);
   const [featuredVideos, setFeaturedVideos] = useState<VideoWithRelations[]>([]);
+  const [premiumVideos, setPremiumVideos] = useState<any[]>([]);
 
   useEffect(() => {
     videoService.getVideos(6).then(setRecentVideos).catch(() => {});
     videoService.getFeaturedVideos(5).then(setFeaturedVideos).catch(() => {});
+    premiumVideoService.getVideos(8).then(setPremiumVideos).catch(() => {});
   }, []);
 
-  const premiumContent = featuredVideos.map(v => ({
-    id: v.id,
-    title: v.title,
-    image: v.thumbnail_url || 'https://images.unsplash.com/photo-1618761490192-04901461159e?w=500&h=300&fit=crop',
-    category: (v as any).categories?.name || 'Premium',
-  }));
+  const premiumContent = premiumVideos.length > 0
+    ? premiumVideos.map((v: any) => ({
+        id: v.id,
+        title: v.title,
+        image: v.thumbnail_url || 'https://images.unsplash.com/photo-1618761490192-04901461159e?w=500&h=300&fit=crop',
+        category: v.categories?.name || 'Premium',
+      }))
+    : featuredVideos.map(v => ({
+        id: v.id,
+        title: v.title,
+        image: v.thumbnail_url || 'https://images.unsplash.com/photo-1618761490192-04901461159e?w=500&h=300&fit=crop',
+        category: (v as any).categories?.name || 'Premium',
+      }));
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-gray-950 transition-colors overflow-hidden">
@@ -154,7 +164,16 @@ export default function DashboardPage() {
 
         {/* Exclusive / Premium Content */}
         <motion.section variants={fadeInUp} className="space-y-5">
-          <SectionHeader icon={Sparkles} title="Exclusive Content" description="Premium documentaries and masterclasses" gold />
+          <div className="flex items-end justify-between gap-4">
+            <SectionHeader icon={Sparkles} title="Exclusive Content" description="Premium documentaries and masterclasses" gold />
+            <Link
+              href="/premium-videos"
+              className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-400 text-gray-900 text-sm font-semibold shadow hover:shadow-gold-500/30 hover:brightness-105 transition-all duration-200 mb-1"
+            >
+              View All
+              <ArrowRight size={15} />
+            </Link>
+          </div>
           <PremiumContentPreview content={premiumContent} />
         </motion.section>
 

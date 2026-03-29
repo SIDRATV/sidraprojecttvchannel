@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -25,12 +25,24 @@ import {
   PremiumFAQ,
 } from '@/components/premium';
 
+import { useAuth } from '@/hooks/useAuth';
 import { usePremium } from '@/hooks/usePremium';
 
 export default function PremiumPage() {
   const router = useRouter();
+  const { session } = useAuth();
   const { status } = usePremium();
   const isPremiumUser = status.isActive;
+
+  // Fetch real plan prices from backend
+  const [dbPlans, setDbPlans] = useState<any[]>([]);
+  useEffect(() => {
+    if (!session?.access_token) return;
+    fetch('/api/premium/subscribe', { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.plans) setDbPlans(d.plans); })
+      .catch(() => {});
+  }, [session]);
 
   const premiumFeatures = [
     {
@@ -141,24 +153,36 @@ export default function PremiumPage() {
     },
   ];
 
-  const pricingPlans = [
+  const pricingPlans = dbPlans.length > 0
+    ? dbPlans.map(p => ({
+        name: p.name,
+        price: Number(p.price_monthly),
+        currency: p.currency || 'SIDRA',
+        billingPeriod: 'month',
+        description: p.id === 'pro' ? 'Idéal pour commencer' : p.id === 'premium' ? 'Le plus populaire' : 'Expérience ultime',
+        features: (p.features || []).slice(0, 7),
+        buttonText: `Choisir ${p.name}`,
+        isPopular: p.id === 'premium',
+        onSelect: () => router.push('/subscribe'),
+      }))
+    : [
     {
       name: 'Pro',
       price: 9.99,
-      currency: '$',
+      currency: 'SIDRA',
       billingPeriod: 'month',
-      description: 'Great for getting started',
+      description: 'Idéal pour commencer',
       features: ['Up to 1080p streaming', 'Download 5 videos', 'Early access (24h)', '100 SPTC / month'],
-      buttonText: 'Choose Pro',
+      buttonText: 'Choisir Pro',
       isPopular: false,
-      onSelect: () => router.push('/try-premium'),
+      onSelect: () => router.push('/subscribe'),
     },
     {
       name: 'Premium',
       price: 19.99,
-      currency: '$',
+      currency: 'SIDRA',
       billingPeriod: 'month',
-      description: 'Most popular choice',
+      description: 'Le plus populaire',
       features: [
         '4K Ultra HD streaming',
         'Download unlimited videos',
@@ -167,16 +191,16 @@ export default function PremiumPage() {
         'Ad-free experience',
         'VIP Creator access',
       ],
-      buttonText: 'Choose Premium',
+      buttonText: 'Choisir Premium',
       isPopular: true,
-      onSelect: () => router.push('/try-premium'),
+      onSelect: () => router.push('/subscribe'),
     },
     {
       name: 'VIP',
       price: 29.99,
-      currency: '$',
+      currency: 'SIDRA',
       billingPeriod: 'month',
-      description: 'Ultimate experience',
+      description: 'Expérience ultime',
       features: [
         'All Premium features',
         '4K + Lossless audio',
@@ -186,42 +210,42 @@ export default function PremiumPage() {
         'Investor insights dashboard',
         'Premium support 24/7',
       ],
-      buttonText: 'Choose VIP',
+      buttonText: 'Choisir VIP',
       isPopular: false,
-      onSelect: () => router.push('/try-premium'),
+      onSelect: () => router.push('/subscribe'),
     },
   ];
 
   const faqs = [
     {
-      question: 'What is SPTC Premium?',
+      question: 'Qu\'est-ce que Sidra Premium ?',
       answer:
-        'SPTC Premium is our exclusive membership that gives you access to high-quality, exclusive content including documentaries, founder interviews, and masterclasses. You can pay for your subscription using SPTC tokens or traditional payment methods.',
+        'Sidra Premium est notre abonnement exclusif qui vous donne accès à du contenu de haute qualité : documentaires, interviews de fondateurs et masterclasses. Vous payez avec votre solde wallet SIDRA.',
     },
     {
-      question: 'How do I pay with SPTC tokens?',
+      question: 'Comment payer mon abonnement ?',
       answer:
-        'When you select your premium plan, you can choose to pay with SPTC tokens instead of fiat currency. Your wallet will be connected securely, and the transaction will be processed instantly on the blockchain.',
+        'Vous payez directement avec le solde SIDRA de votre wallet intégré. Bientôt, le paiement avec les tokens SPTC et les cartes Visa sera aussi disponible.',
     },
     {
-      question: 'What happens if my subscription expires?',
+      question: 'Que se passe-t-il quand mon abonnement expire ?',
       answer:
-        'When your subscription is about to expire, we will send you a notification. You can easily renew your subscription with one click. If it expires, your account reverts to free tier but you keep all your favorites and watch history.',
+        'Quand votre abonnement arrive à échéance, votre compte revient au niveau gratuit mais vous conservez vos favoris et historique. Vous pouvez renouveler à tout moment.',
     },
     {
-      question: 'Can I cancel anytime?',
+      question: 'Puis-je annuler à tout moment ?',
       answer:
-        'Yes! You can cancel your subscription anytime from your account settings. Your access continues until the end of your billing period. No hidden fees or long-term contracts.',
+        'Votre abonnement reste actif jusqu\'à la fin de la période payée. Pas de frais cachés ni de contrat long terme.',
     },
     {
-      question: 'What is the 7-day free trial?',
+      question: 'Comment utiliser un code de réduction ?',
       answer:
-        'New users get a 7-day free trial of any premium plan. You can try all premium features without any payment. You will be reminded before the trial ends so you can cancel if you want.',
+        'Lors du processus d\'abonnement, entrez votre code promo dans le champ dédié. La réduction sera appliquée automatiquement au prix affiché.',
     },
     {
-      question: 'Are there refunds?',
+      question: 'Y a-t-il des remboursements ?',
       answer:
-        'We offer a 30-day money-back guarantee if you are not satisfied with your premium membership. Contact our support team for hassle-free refunds.',
+        'Contactez notre support pour toute demande de remboursement dans les 7 jours suivant votre abonnement.',
     },
   ];
 
@@ -229,7 +253,7 @@ export default function PremiumPage() {
     <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
       {/* Hero Section */}
       <PremiumHero
-        onUnlockClick={() => router.push('/try-premium')}
+        onUnlockClick={() => router.push('/subscribe')}
         onLearnMore={() => {
           document.getElementById('benefits')?.scrollIntoView({ behavior: 'smooth' });
         }}
@@ -397,17 +421,17 @@ export default function PremiumPage() {
               </span>
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Start your 7-day free trial today. No credit card required.
+              Rejoignez la communauté Premium et accédez à tout le contenu exclusif.
             </p>
           </motion.div>
 
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/try-premium')}
+            onClick={() => router.push('/subscribe')}
             className="px-8 py-4 bg-gradient-to-r from-brand-500 to-brand-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all text-lg"
           >
-            🚀 Activate Premium
+            🚀 S'abonner maintenant
           </motion.button>
         </div>
       </section>

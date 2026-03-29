@@ -17,7 +17,7 @@ export default function PremiumDashboardPage() {
   useEffect(() => {
     // Redirect to try-premium if not premium user
     if (!isLoading && !status.isActive) {
-      router.push('/try-premium');
+      router.push('/subscribe');
     }
   }, [status.isActive, isLoading, router]);
 

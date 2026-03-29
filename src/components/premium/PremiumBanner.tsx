@@ -4,16 +4,43 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Crown, Zap, Star, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/hooks';
 
 export function PremiumBanner() {
+  const { session } = useAuth();
   const [activePlan, setActivePlan] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const plan = localStorage.getItem('activePremiumPlan');
-    setActivePlan(plan);
-    setIsLoading(false);
-  }, []);
+    // First check localStorage for immediate display
+    const localPlan = localStorage.getItem('activePremiumPlan');
+    if (localPlan) {
+      setActivePlan(localPlan);
+      setIsLoading(false);
+    }
+
+    // Then verify with DB if user is logged in
+    if (session?.access_token) {
+      fetch('/api/premium/subscribe', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.activeSubscription) {
+            const planName = data.activeSubscription.plan_name?.toLowerCase() || localPlan;
+            setActivePlan(planName);
+            if (planName) localStorage.setItem('activePremiumPlan', planName);
+          } else {
+            setActivePlan(null);
+            localStorage.removeItem('activePremiumPlan');
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
+  }, [session?.access_token]);
 
   if (isLoading || !activePlan) return null;
 

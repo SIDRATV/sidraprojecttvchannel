@@ -62,9 +62,10 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { categoryService } from '@/services/categories';
 import { GasFeeManager } from '@/components/admin/GasFeeManager';
+import { AdminPremiumManager } from '@/components/admin/AdminPremiumManager';
 import type { Category } from '@/types';
 
-type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security';
+type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium';
 
 const COLORS = ['#0F7A5C', '#19C37D', '#D4AF37', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -101,6 +102,7 @@ export function AdminDashboard() {
   const tabs = [
     { id: 'overview', label: 'Aperçu', icon: Grid3x3 },
     { id: 'content', label: 'Vidéos Premium', icon: Film },
+    { id: 'premium', label: 'Abonnements', icon: Crown },
     { id: 'users', label: 'Utilisateurs', icon: Users },
     { id: 'categories', label: 'Catégories', icon: Tag },
     { id: 'analytics', label: 'Analytiques', icon: TrendingUp },
@@ -131,12 +133,15 @@ export function AdminDashboard() {
             const isDanger = id === 'security';
             const isFinance = id === 'finances';
             const isAdminTab = id === 'admins';
+            const isPremiumTab = id === 'premium';
             const accent = isDanger
               ? isActive ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-slate-400 hover:bg-red-500/10 hover:text-red-300'
               : isFinance
               ? isActive ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30' : 'text-slate-400 hover:bg-gold-500/10 hover:text-gold-300'
               : isAdminTab
               ? isActive ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-slate-400 hover:bg-purple-500/10 hover:text-purple-300'
+              : isPremiumTab
+              ? isActive ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30' : 'text-slate-400 hover:bg-gold-500/10 hover:text-gold-300'
               : isActive
               ? 'bg-gradient-to-r from-brand-500 to-brand-400 text-white shadow-lg shadow-brand-500/25'
               : 'text-slate-300 hover:bg-slate-800/50 hover:text-white';
@@ -257,6 +262,7 @@ export function AdminDashboard() {
           >
             {activeTab === 'overview' && <OverviewTab />}
             {activeTab === 'content' && <ContentTab />}
+            {activeTab === 'premium' && <PremiumTab />}
             {activeTab === 'users' && <UsersTab />}
             {activeTab === 'categories' && <CategoriesTab />}
             {activeTab === 'analytics' && <AnalyticsTab />}
@@ -268,6 +274,13 @@ export function AdminDashboard() {
       </div>
     </div>
   );
+}
+
+// ==================== PREMIUM TAB ====================
+function PremiumTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return <AdminPremiumManager token={session.access_token} />;
 }
 
 // ==================== OVERVIEW TAB ====================

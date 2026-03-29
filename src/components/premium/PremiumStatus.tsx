@@ -31,7 +31,7 @@ export function PremiumStatus() {
   const handleDeactivate = () => {
     if (confirm('Are you sure you want to cancel your premium subscription?')) {
       deactivatePremium();
-      router.push('/try-premium');
+      router.push('/subscribe');
     }
   };
 

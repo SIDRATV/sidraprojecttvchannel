@@ -16,7 +16,7 @@ interface ProfileData {
   fullName: string;
   bio: string;
   profilePhoto: string | null;
-  accountTier: 'free' | 'premium' | 'pro';
+  accountTier: 'free' | 'premium' | 'pro' | 'vip';
   emailNotifications: boolean;
   contentNotifications: boolean;
   weeklyDigest: boolean;
@@ -24,7 +24,7 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { buildInfo, loading } = useBuildInfo();
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
@@ -50,11 +50,13 @@ export default function ProfilePage() {
   // Sync profile data when user loads
   useEffect(() => {
     if (user) {
+      // Check localStorage first for immediate display
+      const localPlan = localStorage.getItem('activePremiumPlan') as ProfileData['accountTier'] | null;
       const data: ProfileData = {
         fullName: user.full_name || 'User',
         bio: user.bio || '',
         profilePhoto: user.avatar_url || null,
-        accountTier: 'free',
+        accountTier: localPlan || 'free',
         emailNotifications: true,
         contentNotifications: true,
         weeklyDigest: false,
@@ -62,8 +64,31 @@ export default function ProfilePage() {
       };
       setProfileData(data);
       setEditData(data);
+
+      // Then verify premium status from DB
+      if (session?.access_token) {
+        fetch('/api/premium/subscribe', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+          .then((r) => r.json())
+          .then((res) => {
+            const dbPlan = res.activeSubscription?.plan_name?.toLowerCase() as ProfileData['accountTier'] | undefined;
+            const tier = dbPlan || 'free';
+            if (tier !== data.accountTier) {
+              const updated = { ...data, accountTier: tier };
+              setProfileData(updated);
+              setEditData(updated);
+              if (tier !== 'free') {
+                localStorage.setItem('activePremiumPlan', tier);
+              } else {
+                localStorage.removeItem('activePremiumPlan');
+              }
+            }
+          })
+          .catch(() => {});
+      }
     }
-  }, [user]);
+  }, [user, session?.access_token]);
 
   // Save profile to Supabase
   const handleSaveProfile = async () => {
@@ -105,6 +130,8 @@ export default function ProfilePage() {
         return 'bg-yellow-500/20 border-yellow-500/30 text-yellow-700 dark:text-yellow-400';
       case 'pro':
         return 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30 text-purple-700 dark:text-purple-400';
+      case 'vip':
+        return 'bg-gradient-to-r from-brand-500/20 to-gold-500/20 border-brand-500/30 text-brand-600 dark:text-brand-400';
       default:
         return 'bg-brand-500/20 border-brand-500/30 text-brand-600 dark:text-brand-400';
     }

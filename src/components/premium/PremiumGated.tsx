@@ -56,7 +56,7 @@ export function PremiumGated({
             </p>
           </div>
 
-          <Link href={status.isActive ? '/premium-dashboard' : '/try-premium'}>
+          <Link href={status.isActive ? '/premium-dashboard' : '/subscribe'}>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

@@ -66,7 +66,7 @@ export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroP
             transition={{ delay: 0.4, duration: 0.8 }}
             className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
           >
-            Access exclusive documentaries, founder interviews, masterclasses, and early insights into the world of innovation. Join thousands of members discovering the future today.
+            Access exclusive documentaries, founder interviews, masterclasses, and early insights into the world of innovation. Payez avec votre solde wallet SIDRA.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -82,7 +82,7 @@ export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroP
               onClick={onUnlockClick}
               className="px-8 py-4 bg-gradient-to-r from-brand-500 to-brand-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all text-lg"
             >
-              🔓 Unlock Premium
+              🔓 S'abonner maintenant
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -90,7 +90,7 @@ export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroP
               onClick={onLearnMore}
               className="px-8 py-4 bg-gray-800/50 border border-brand-500/50 text-white font-bold rounded-lg hover:bg-gray-700/50 transition-all text-lg"
             >
-              Learn More
+              En savoir plus
             </motion.button>
           </motion.div>
 
@@ -105,19 +105,19 @@ export default function PremiumHero({ onUnlockClick, onLearnMore }: PremiumHeroP
               <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
                 <span className="text-green-400">✓</span>
               </div>
-              <span>7-Day Free Trial</span>
+              <span>Paiement Wallet Sécurisé</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
                 <span className="text-green-400">✓</span>
               </div>
-              <span>Cancel Anytime</span>
+              <span>Sans engagement</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
                 <span className="text-green-400">✓</span>
               </div>
-              <span>Secure SPTC Payment</span>
+              <span>Codes promo disponibles</span>
             </div>
           </motion.div>
         </motion.div>

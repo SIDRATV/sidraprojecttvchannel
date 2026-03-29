@@ -1,13 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHmac, timingSafeEqual } from 'crypto';
 
 const ADMIN_COOKIE = 'sidra_admin_session';
 
-function verifyAdminCookie(token: string): boolean {
+async function hmacSha256(key: string, message: string): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(key),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+  return result === 0;
+}
+
+async function verifyAdminCookie(token: string): Promise<boolean> {
   try {
     const signingKey = process.env.ADMIN_SESSION_SIGNING_KEY || process.env.ADMIN_SECRET_KEY || '';
     if (!signingKey) return false;
-    const decoded = Buffer.from(token, 'base64url').toString('utf8');
+    const decoded = atob(token.replace(/-/g, '+').replace(/_/g, '/'));
     const parts = decoded.split(':');
     if (parts.length !== 3) return false;
     const [prefix, expiresAtStr, sig] = parts;
@@ -15,17 +44,16 @@ function verifyAdminCookie(token: string): boolean {
     const expiresAt = parseInt(expiresAtStr, 10);
     if (isNaN(expiresAt) || Date.now() > expiresAt) return false;
     const payload = `${prefix}:${expiresAtStr}`;
-    const expected = createHmac('sha256', signingKey).update(payload).digest('hex');
-    const sigBuf = Buffer.from(sig, 'hex');
-    const expectedBuf = Buffer.from(expected, 'hex');
-    if (sigBuf.length !== expectedBuf.length) return false;
-    return timingSafeEqual(sigBuf, expectedBuf);
+    const expected = await hmacSha256(signingKey, payload);
+    const sigBytes = hexToBytes(sig);
+    const expectedBytes = hexToBytes(expected);
+    return constantTimeEqual(sigBytes, expectedBytes);
   } catch {
     return false;
   }
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Protected routes that require authentication
@@ -42,7 +70,7 @@ export function middleware(request: NextRequest) {
   const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/api/admin/verify-key');
   if (isAdminRoute) {
     const adminToken = request.cookies.get(ADMIN_COOKIE)?.value;
-    if (!adminToken || !verifyAdminCookie(adminToken)) {
+    if (!adminToken || !(await verifyAdminCookie(adminToken))) {
       // For API routes under /admin, return 401 JSON
       if (pathname.startsWith('/admin/api') || request.headers.get('accept')?.includes('application/json')) {
         return NextResponse.json({ error: 'Admin session required' }, { status: 401 });

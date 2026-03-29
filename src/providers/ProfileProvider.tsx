@@ -6,7 +6,7 @@ interface ProfileData {
   fullName: string;
   bio: string;
   profilePhoto: string | null;
-  accountTier: 'free' | 'premium' | 'pro';
+  accountTier: 'free' | 'premium' | 'pro' | 'vip';
   emailNotifications: boolean;
   contentNotifications: boolean;
   weeklyDigest: boolean;

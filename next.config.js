@@ -77,6 +77,7 @@ const nextConfig = {
   experimental: {
     esmExternals: true,
     serverMinification: true,
+    serverBodySizeLimit: '500mb',
   },
 };
 

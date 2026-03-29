@@ -121,6 +121,22 @@ export async function listR2Objects(prefix: string, maxKeys = 100) {
 }
 
 /**
+ * Generate a presigned PUT URL for direct browser-to-R2 upload (avoids server body limit)
+ */
+export async function getPresignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresIn = 3600,
+): Promise<string> {
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+    ContentType: contentType,
+  });
+  return getSignedUrl(r2Client, command, { expiresIn });
+}
+
+/**
  * Build the R2 key for a video file
  */
 export function buildVideoKey(

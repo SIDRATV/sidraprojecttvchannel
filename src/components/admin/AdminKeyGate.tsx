@@ -82,8 +82,8 @@ export function AdminKeyGate({ children }: AdminKeyGateProps) {
   if (status === 'unlocked') {
     return (
       <div className="relative">
-        {/* Sign-out button overlay */}
-        <div className="fixed top-4 right-4 z-[100]">
+        {/* Sign-out button — below mobile header on small screens, top-right on desktop */}
+        <div className="fixed top-[68px] right-4 z-[100] lg:top-4">
           <button
             onClick={handleSignOut}
             title="Sign out of admin"

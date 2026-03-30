@@ -28,7 +28,7 @@ const fadeUp = {
 export default function WatchPremiumVideoPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const id = params.id as string;
 
   const [video, setVideo] = useState<PremiumVideoWithRelations | null>(null);
@@ -37,6 +37,9 @@ export default function WatchPremiumVideoPage() {
   const [availableQualities, setAvailableQualities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [liking, setLiking] = useState(false);
 
   // Premium: user must be logged in and have a premium_plan set
   const isPremiumUser = !!(user && user.premium_plan);
@@ -64,12 +67,41 @@ export default function WatchPremiumVideoPage() {
       return;
     }
     fetchVideo(quality);
+    // Fetch like status
+    if (session?.access_token) {
+      fetch(`/api/premium-videos/${id}/like`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+        .then(r => r.json())
+        .then(d => setLiked(!!d.liked))
+        .catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isPremiumUser]);
 
   const handleQualityChange = (newQuality: string) => {
     setLoading(true);
     fetchVideo(newQuality);
+  };
+
+  const handleLike = async () => {
+    if (!session?.access_token || liking) return;
+    setLiking(true);
+    try {
+      const res = await fetch(`/api/premium-videos/${id}/like`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLiked(data.liked);
+        setLikeCount(data.likes);
+        if (video) {
+          setVideo({ ...video, likes: data.likes });
+        }
+      }
+    } catch {}
+    setLiking(false);
   };
 
   const formatDate = (dateStr: string) =>
@@ -213,8 +245,16 @@ export default function WatchPremiumVideoPage() {
 
         {/* Actions */}
         <motion.div variants={fadeUp} className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm transition-all">
-            <ThumbsUp size={15} />
+          <button
+            onClick={handleLike}
+            disabled={liking}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all ${
+              liked
+                ? 'bg-brand-500/20 text-brand-500 border border-brand-500/30'
+                : 'bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            <ThumbsUp size={15} className={liked ? 'fill-current' : ''} />
             {(video.likes || 0).toLocaleString()}
           </button>
           <button

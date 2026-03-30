@@ -27,13 +27,24 @@ async function requireAdmin(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     await requireAdmin(request);
+    const supabase = createServerClient();
+
     const [plans, discountCodes, stats, unresolvedAlerts] = await Promise.all([
       getPlans(),
       getDiscountCodes(),
       getPremiumStats(),
       getFraudAlerts(false),
     ]);
-    return NextResponse.json({ plans, discountCodes, stats, fraudAlerts: unresolvedAlerts });
+
+    // Fetch active subscribers for admin management
+    const { data: subscribers } = await (supabase as any)
+      .from('premium_subscriptions')
+      .select('id, user_id, plan_id, duration, status, amount_paid, starts_at, expires_at, cancelled_at, users:user_id(full_name, email)')
+      .in('status', ['active'])
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    return NextResponse.json({ plans, discountCodes, stats, fraudAlerts: unresolvedAlerts, subscribers: subscribers || [] });
   } catch (err: any) {
     const status = err.message === 'Unauthorized' || err.message === 'Invalid token' ? 401 : err.message === 'Admin required' ? 403 : 500;
     return NextResponse.json({ error: err.message }, { status });
@@ -85,6 +96,40 @@ export async function POST(request: NextRequest) {
         const { alertId, note } = body;
         if (!alertId) return NextResponse.json({ error: 'alertId required' }, { status: 400 });
         await resolveFraudAlert(alertId, admin.id, note || '');
+        return NextResponse.json({ success: true });
+      }
+
+      case 'cancel_subscription': {
+        const { subscriptionId } = body;
+        if (!subscriptionId) return NextResponse.json({ error: 'subscriptionId required' }, { status: 400 });
+        const supabase = createServerClient();
+
+        // Get the subscription to find the user
+        const { data: sub, error: subErr } = await (supabase as any)
+          .from('premium_subscriptions')
+          .select('id, user_id, status')
+          .eq('id', subscriptionId)
+          .single();
+
+        if (subErr || !sub) return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
+        if (sub.status === 'cancelled') return NextResponse.json({ error: 'Already cancelled' }, { status: 400 });
+
+        // Cancel the subscription
+        const { error: cancelErr } = await (supabase as any)
+          .from('premium_subscriptions')
+          .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+          .eq('id', subscriptionId);
+
+        if (cancelErr) throw cancelErr;
+
+        // Clear user premium fields
+        const { error: userErr } = await (supabase as any)
+          .from('users')
+          .update({ premium_plan: null, premium_expires_at: null, premium_subscription_id: null })
+          .eq('id', sub.user_id);
+
+        if (userErr) throw userErr;
+
         return NextResponse.json({ success: true });
       }
 

@@ -30,9 +30,16 @@ import { usePremium } from '@/hooks/usePremium';
 
 export default function PremiumPage() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const { status } = usePremium();
-  const isPremiumUser = status.isActive;
+  const isPremiumUser = status.isActive || !!user?.premium_plan;
+
+  // Redirect premium users to their dashboard
+  useEffect(() => {
+    if (isPremiumUser) {
+      router.replace('/premium-dashboard');
+    }
+  }, [isPremiumUser, router]);
 
   // Fetch real plan prices from backend
   const [dbPlans, setDbPlans] = useState<any[]>([]);

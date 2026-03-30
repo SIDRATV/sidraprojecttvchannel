@@ -15,15 +15,17 @@ interface Plan { id: string; name: string; price_monthly: number; price_quarterl
 interface DiscountCode { id: string; code: string; discount_percent: number; max_uses: number; used_count: number; valid_until: string; plan_restriction: string | null; is_active: boolean; created_at: string; }
 interface FraudAlert { id: string; user_id: string; alert_type: string; severity: string; details: any; resolved: boolean; created_at: string; users?: { full_name: string; email: string }; }
 interface Stats { totalActive: number; totalRevenue: number; byPlan: Record<string, { count: number; revenue: number }>; recentSubs: any[]; }
+interface Subscriber { id: string; user_id: string; plan_id: string; duration: string; status: string; amount_paid: number; starts_at: string; expires_at: string; cancelled_at: string | null; users: { full_name: string; email: string } | null; }
 
 const glass = 'bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl';
 
 export function AdminPremiumManager({ token }: Props) {
-  const [tab, setTab] = useState<'plans' | 'codes' | 'fraud' | 'stats'>('plans');
+  const [tab, setTab] = useState<'plans' | 'codes' | 'fraud' | 'stats' | 'subscribers'>('plans');
   const [plans, setPlans] = useState<Plan[]>([]);
   const [codes, setCodes] = useState<DiscountCode[]>([]);
   const [alerts, setAlerts] = useState<FraudAlert[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -38,6 +40,7 @@ export function AdminPremiumManager({ token }: Props) {
         setCodes(d.discountCodes || []);
         setAlerts(d.fraudAlerts || []);
         setStats(d.stats || null);
+        setSubscribers(d.subscribers || []);
       }
     } catch {}
     setLoading(false);
@@ -68,6 +71,7 @@ export function AdminPremiumManager({ token }: Props) {
     { id: 'plans', label: 'Plans & Prix', icon: Crown },
     { id: 'codes', label: 'Codes Promo', icon: Gift },
     { id: 'fraud', label: 'Alertes Fraude', icon: ShieldAlert, badge: alerts.length },
+    { id: 'subscribers', label: 'Abonnés', icon: Users, badge: subscribers.length },
     { id: 'stats', label: 'Statistiques', icon: TrendingUp },
   ] as const;
 
@@ -112,6 +116,7 @@ export function AdminPremiumManager({ token }: Props) {
           {tab === 'plans' && <PlansSection plans={plans} onSave={apiPost} saving={saving} />}
           {tab === 'codes' && <CodesSection codes={codes} onAction={apiPost} saving={saving} />}
           {tab === 'fraud' && <FraudSection alerts={alerts} onResolve={apiPost} saving={saving} />}
+          {tab === 'subscribers' && <SubscribersSection subscribers={subscribers} onAction={apiPost} saving={saving} />}
           {tab === 'stats' && <StatsSection stats={stats} />}
         </>
       )}
@@ -396,6 +401,106 @@ function FraudSection({ alerts, onResolve, saving }: { alerts: FraudAlert[]; onR
               ) : (
                 <button onClick={() => setResolvingId(a.id)} className="text-sm text-green-400 hover:underline">Résoudre</button>
               )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SUBSCRIBERS ────────────────────────────────
+function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Subscriber[]; onAction: (b: any) => void; saving: boolean }) {
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancel = (subId: string) => {
+    onAction({ action: 'cancel_subscription', subscriptionId: subId });
+    setCancellingId(null);
+  };
+
+  const planColors: Record<string, string> = {
+    pro: 'bg-blue-500/20 text-blue-400',
+    premium: 'bg-gold-500/20 text-gold-400',
+    vip: 'bg-purple-500/20 text-purple-400',
+  };
+
+  const durationLabels: Record<string, string> = {
+    monthly: '1 Mois',
+    quarterly: '3 Mois',
+    yearly: '1 An',
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-white font-bold flex items-center gap-2">
+        <Users size={18} className="text-gold-400" /> Abonnés Actifs
+        {subscribers.length > 0 && <span className="px-2 py-0.5 bg-gold-500/20 text-gold-400 text-xs rounded-full">{subscribers.length}</span>}
+      </h3>
+
+      {subscribers.length === 0 ? (
+        <div className={`${glass} p-8 text-center`}>
+          <Users size={32} className="text-slate-500 mx-auto mb-2" />
+          <p className="text-slate-400">Aucun abonné actif</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {subscribers.map(s => (
+            <motion.div key={s.id} layout className={`${glass} p-4`}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-lg bg-gold-500/20">
+                    <Crown size={16} className="text-gold-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white font-medium text-sm truncate">
+                      {s.users?.full_name || s.users?.email || s.user_id}
+                    </p>
+                    {s.users?.email && s.users?.full_name && (
+                      <p className="text-xs text-slate-500 truncate">{s.users.email}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium capitalize ${planColors[s.plan_id] || 'bg-slate-500/20 text-slate-400'}`}>
+                        {s.plan_id}
+                      </span>
+                      <span>{durationLabels[s.duration] || s.duration}</span>
+                      <span>{Number(s.amount_paid).toFixed(2)} SIDRA</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar size={10} />
+                        expire {new Date(s.expires_at).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0">
+                  {cancellingId === s.id ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-red-400">Confirmer ?</span>
+                      <button
+                        disabled={saving}
+                        onClick={() => handleCancel(s.id)}
+                        className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/30 disabled:opacity-50"
+                      >
+                        {saving ? <Loader2 size={12} className="animate-spin" /> : 'Oui, annuler'}
+                      </button>
+                      <button
+                        onClick={() => setCancellingId(null)}
+                        className="px-3 py-1.5 bg-white/5 text-slate-400 rounded-lg text-xs hover:bg-white/10"
+                      >
+                        Non
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setCancellingId(s.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-all"
+                    >
+                      <X size={12} />
+                      Annuler
+                    </button>
+                  )}
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>

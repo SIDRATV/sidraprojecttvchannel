@@ -81,12 +81,10 @@ export default function DashboardPage() {
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
-        className="relative z-10 space-y-10 p-4 md:p-8 lg:p-10"
+        className="relative z-10 space-y-8 px-4 md:px-8 lg:px-10 pt-4 md:pt-6 pb-4 md:pb-8"
       >
         {/* Premium Banner */}
-        <motion.div variants={fadeInUp}>
-          <PremiumBanner />
-        </motion.div>
+        <PremiumBanner />
 
         {/* Featured Carousel */}
         <motion.div variants={fadeInUp}>

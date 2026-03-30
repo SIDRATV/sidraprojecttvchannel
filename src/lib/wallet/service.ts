@@ -307,6 +307,37 @@ export const verifyUsernameExists = async (username: string) => {
   return Boolean(user);
 };
 
+export const verifyRecipient = async (input: string) => {
+  const supabase = createServerClient();
+  const normalized = input.trim().toLowerCase();
+
+  // Try username first
+  const { data: byUsername } = await supabase
+    .from('users')
+    .select('id, username, full_name, email')
+    .ilike('username', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (byUsername) {
+    return { ...byUsername, matchedBy: 'username' as const };
+  }
+
+  // Fall back to email
+  const { data: byEmail } = await supabase
+    .from('users')
+    .select('id, username, full_name, email')
+    .ilike('email', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (byEmail) {
+    return { ...byEmail, matchedBy: 'email' as const };
+  }
+
+  return null;
+};
+
 export const getInternalBalance = async (userId: string): Promise<WalletBalanceResult> => {
   const supabase = createServerClient();
 

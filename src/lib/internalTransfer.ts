@@ -174,26 +174,43 @@ export const getInternalTransactionDetails = async (
   }
 };
 
+export interface VerifyRecipientResult {
+  exists: boolean;
+  username?: string;
+  displayName?: string;
+  matchedBy?: 'username' | 'email';
+  maskedEmail?: string;
+  error?: string;
+}
+
 /**
- * Verify Username Exists
+ * Verify Username or Email Exists and get recipient info
  */
-export const verifyUsername = async (username: string, authToken?: string): Promise<boolean> => {
+export const verifyRecipient = async (input: string, authToken?: string): Promise<VerifyRecipientResult> => {
   try {
-    const response = await fetch(`/api/wallet/verify-username/${encodeURIComponent(username)}`, {
+    const response = await fetch(`/api/wallet/verify-username/${encodeURIComponent(input)}`, {
       method: 'GET',
       headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
     });
 
     if (!response.ok) {
-      return false;
+      const data = await response.json().catch(() => ({}));
+      return { exists: false, error: data.error };
     }
 
-    const data = await response.json();
-    return data.exists === true;
+    return await response.json();
   } catch (error) {
-    console.error('Error verifying username:', error);
-    return false;
+    console.error('Error verifying recipient:', error);
+    return { exists: false };
   }
+};
+
+/**
+ * Verify Username Exists (legacy, returns boolean)
+ */
+export const verifyUsername = async (username: string, authToken?: string): Promise<boolean> => {
+  const result = await verifyRecipient(username, authToken);
+  return result.exists === true;
 };
 
 /**

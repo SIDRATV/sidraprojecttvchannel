@@ -8,6 +8,9 @@ export interface User {
   created_at: string;
   updated_at: string;
   is_admin: boolean;
+  premium_plan?: string | null;
+  premium_expires_at?: string | null;
+  premium_subscription_id?: string | null;
 }
 
 export interface Video {

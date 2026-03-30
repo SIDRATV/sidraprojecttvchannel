@@ -39,7 +39,7 @@ export default function WatchPremiumVideoPage() {
   const [error, setError] = useState('');
 
   // Premium: user must be logged in and have a premium_plan set
-  const isPremiumUser = !!(user && (user as any).premium_plan);
+  const isPremiumUser = !!(user && user.premium_plan);
 
   const fetchVideo = useCallback(
     async (q: string) => {

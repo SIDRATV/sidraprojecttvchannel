@@ -63,9 +63,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { categoryService } from '@/services/categories';
 import { GasFeeManager } from '@/components/admin/GasFeeManager';
 import { AdminPremiumManager } from '@/components/admin/AdminPremiumManager';
+import { AdminSurveyManager } from '@/components/admin/AdminSurveyManager';
 import type { Category } from '@/types';
 
-type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium';
+type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys';
 
 const COLORS = ['#0F7A5C', '#19C37D', '#D4AF37', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -109,6 +110,7 @@ export function AdminDashboard() {
     { id: 'admins', label: 'Gestion Admins', icon: UserCog },
     { id: 'finances', label: 'Finances', icon: DollarSign },
     { id: 'security', label: 'Sécurité', icon: Shield },
+    { id: 'surveys', label: 'Sondages', icon: Send },
   ] as const;
 
   return (
@@ -269,6 +271,7 @@ export function AdminDashboard() {
             {activeTab === 'admins' && <AdminsTab />}
             {activeTab === 'finances' && <FinancesTab />}
             {activeTab === 'security' && <SecurityTab />}
+            {activeTab === 'surveys' && <SurveysTab />}
           </motion.div>
         </div>
       </div>
@@ -1495,4 +1498,11 @@ function SecurityTab() {
       </AnimatePresence>
     </div>
   );
+}
+
+// ==================== SURVEYS TAB ====================
+function SurveysTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return <AdminSurveyManager token={session.access_token} />;
 }

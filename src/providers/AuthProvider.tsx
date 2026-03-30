@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useEffect, useState, useRef, useMemo } from 'react';
+import React, { createContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@/types';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
@@ -11,6 +11,7 @@ export interface AuthContextValue {
   session: Session | null;
   loading: boolean;       // true while first getSession() is in flight
   initialized: boolean;   // true once first getSession() has resolved
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue>({
@@ -18,6 +19,7 @@ export const AuthContext = createContext<AuthContextValue>({
   session: null,
   loading: true,
   initialized: false,
+  refreshUser: async () => {},
 });
 
 // ─── Helpers (module-level, shared across renders) ─────────────────
@@ -80,6 +82,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const lastUserIdRef = useRef<string | null>(null);
   const requestIdRef = useRef(0);
+
+  // Refresh user profile from DB (clears cache)
+  const refreshUser = useCallback(async () => {
+    const currentSession = session;
+    if (!currentSession?.user) return;
+    profileCache.delete(currentSession.user.id);
+    const profile = await fetchUserProfile(currentSession.user);
+    const authUser = toAppUser(currentSession.user);
+    setUser(mergeProfile(authUser, profile));
+  }, [session]);
 
   useEffect(() => {
     let cancelled = false;
@@ -180,8 +192,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Stable context value — only changes when state changes
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, loading, initialized }),
-    [user, session, loading, initialized],
+    () => ({ user, session, loading, initialized, refreshUser }),
+    [user, session, loading, initialized, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

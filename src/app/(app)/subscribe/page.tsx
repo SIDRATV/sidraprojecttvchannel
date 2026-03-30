@@ -50,7 +50,7 @@ const durationSavings: Record<Duration, string> = {
 
 export default function SubscribePage() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, refreshUser } = useAuth();
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -133,6 +133,8 @@ export default function SubscribePage() {
       const d = await res.json();
       if (res.ok && d.success) {
         setResult({ success: true, message: `Abonnement ${plan?.name} activé ! Expire le ${new Date(d.expiresAt).toLocaleDateString('fr-FR')}` });
+        // Refresh user profile so premium_plan is immediately available
+        await refreshUser();
         // Update local premium storage for immediate UI response
         if (typeof window !== 'undefined') {
           localStorage.setItem('activePremiumPlan', selectedPlan);

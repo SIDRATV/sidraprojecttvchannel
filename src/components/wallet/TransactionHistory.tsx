@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ExternalLink, Loader } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ExternalLink, Loader, Crown } from 'lucide-react';
 import { getTransaction } from '@/lib/web3-provider';
 import { getInternalTransactionHistory, InternalTransaction } from '@/lib/internalTransfer';
 import { Button } from '@/components/ui/Button';
@@ -199,7 +199,7 @@ interface TransactionRowProps {
 
 function TransactionRow({ tx, type }: TransactionRowProps) {
   const isBlockchain = type === 'onchain';
-  const isSent = isBlockchain ? true : (tx as InternalTransaction).direction === 'debit';
+  const isSent = isBlockchain ? true : ((tx as InternalTransaction).direction === 'debit' || (tx as InternalTransaction).direction === 'out');
 
   const getStatusIcon = () => {
     if (isBlockchain) {
@@ -209,7 +209,7 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
       return <Clock className="w-5 h-5 text-yellow-500" />;
     } else {
       const iTx = tx as InternalTransaction;
-      if (iTx.status === 'success') return <CheckCircle className="w-5 h-5 text-green-500" />;
+      if (iTx.status === 'success' || iTx.status === 'completed') return <CheckCircle className="w-5 h-5 text-green-500" />;
       if (iTx.status === 'failed') return <XCircle className="w-5 h-5 text-red-500" />;
       return <Clock className="w-5 h-5 text-yellow-500" />;
     }
@@ -239,12 +239,23 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
       return shortenAddress(bcTx.to);
     } else {
       const iTx = tx as InternalTransaction;
+
+      // Subscription transactions — show description
+      if (iTx.type === 'subscription' && iTx.description) {
+        return iTx.description;
+      }
+
       if (iTx.to_address) {
         return shortenAddress(iTx.to_address);
       }
 
       if (iTx.counterparty_user_id) {
           return `User ${String(iTx.counterparty_user_id).slice(0, 8)}`;
+      }
+
+      // Fallback to description if available
+      if (iTx.description) {
+        return iTx.description;
       }
 
       return 'Internal wallet';
@@ -288,8 +299,14 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
     >
       <div className="flex items-center gap-4 flex-1">
         {/* Direction Icon */}
-        <div className="p-2 bg-brand-100 dark:bg-brand-900/20 rounded-full">
-          {isSent ? (
+        <div className={`p-2 rounded-full ${
+          !isBlockchain && (tx as InternalTransaction).type === 'subscription'
+            ? 'bg-gold-100 dark:bg-gold-900/20'
+            : 'bg-brand-100 dark:bg-brand-900/20'
+        }`}>
+          {!isBlockchain && (tx as InternalTransaction).type === 'subscription' ? (
+            <Crown className="w-5 h-5 text-gold-600 dark:text-gold-400" />
+          ) : isSent ? (
             <ArrowUpRight className="w-5 h-5 text-brand-600 dark:text-brand-400" />
           ) : (
             <ArrowDownLeft className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -300,7 +317,9 @@ function TransactionRow({ tx, type }: TransactionRowProps) {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <p className="font-medium text-gray-950 dark:text-white">
-              {isSent ? 'Sent to' : 'Received from'} {getRecipient()}
+              {!isBlockchain && (tx as InternalTransaction).type === 'subscription'
+                ? getRecipient()
+                : isSent ? `Sent to ${getRecipient()}` : `Received from ${getRecipient()}`}
             </p>
             {getStatusIcon()}
           </div>

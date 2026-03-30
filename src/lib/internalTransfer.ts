@@ -15,12 +15,12 @@ export interface InternalTransferResponse {
 
 export interface InternalTransaction {
   id: string;
-  type: 'internal_transfer' | 'withdrawal' | 'deposit' | 'fee' | 'adjustment';
-  direction: 'credit' | 'debit';
+  type: 'internal_transfer' | 'withdrawal' | 'deposit' | 'fee' | 'adjustment' | 'subscription';
+  direction: 'credit' | 'debit' | 'in' | 'out';
   counterparty_user_id?: string | null;
   amount: number;
   fee?: number;
-  status: 'pending' | 'success' | 'failed';
+  status: 'pending' | 'success' | 'failed' | 'completed';
   tx_hash?: string | null;
   to_address?: string | null;
   from_address?: string | null;

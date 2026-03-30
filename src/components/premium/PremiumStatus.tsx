@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, Zap, Star, LogOut, ArrowUp } from 'lucide-react';
+import { Crown, Zap, Star, ArrowUp } from 'lucide-react';
 import { PREMIUM_PLANS } from '@/types/premium';
 import { usePremium } from '@/hooks/usePremium';
 import { useRouter } from 'next/navigation';
 
 export function PremiumStatus() {
-  const { status, deactivatePremium, upgradePlan } = usePremium();
+  const { status } = usePremium();
   const router = useRouter();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -23,16 +23,8 @@ export function PremiumStatus() {
     .map(([key, plan]) => plan);
 
   const handleUpgrade = (newPlan: 'pro' | 'premium' | 'vip') => {
-    upgradePlan(newPlan);
     setShowUpgradeModal(false);
-    alert(`✅ Upgraded to ${PREMIUM_PLANS[newPlan].name}!`);
-  };
-
-  const handleDeactivate = () => {
-    if (confirm('Are you sure you want to cancel your premium subscription?')) {
-      deactivatePremium();
-      router.push('/subscribe');
-    }
+    router.push(`/subscribe?upgrade=${newPlan}`);
   };
 
   const iconMap: Record<string, React.ComponentType<any>> = {
@@ -96,15 +88,6 @@ export function PremiumStatus() {
                 Upgrade Plan
               </motion.button>
             )}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleDeactivate}
-              className="px-6 py-3 bg-red-600/30 hover:bg-red-600/50 text-red-200 font-semibold rounded-lg transition-all flex items-center gap-2 border border-red-500/30"
-            >
-              <LogOut size={18} />
-              Cancel Subscription
-            </motion.button>
           </div>
         </div>
       </motion.div>

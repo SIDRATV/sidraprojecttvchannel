@@ -34,7 +34,7 @@ export async function GET(
     }
 
     // Increment views
-    await (supabase as any).rpc('increment_premium_video_views', { vid: videoId }).catch(() => {});
+    try { await (supabase as any).rpc('increment_premium_video_views', { vid: videoId }); } catch {}
 
     // Build thumbnail URL (signed, 24h expiry)
     let thumbnailUrl: string | null = null;

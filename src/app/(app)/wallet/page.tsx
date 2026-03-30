@@ -309,12 +309,14 @@ export default function WalletPage() {
                     <h3 className="text-xl font-bold text-white">Transfer History</h3>
                   </div>
                   <WalletErrorBoundary title="Transaction History">
-                    <TransactionHistory
-                      walletAddress={null}
-                      transactionType="internal"
-                      authToken={authToken}
-                      limit={10}
-                    />
+                    <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+                      <TransactionHistory
+                        walletAddress={null}
+                        transactionType="internal"
+                        authToken={authToken}
+                        limit={3}
+                      />
+                    </div>
                   </WalletErrorBoundary>
                 </motion.div>
 
@@ -403,12 +405,14 @@ export default function WalletPage() {
                     <h3 className="text-xl font-bold text-white">On-Chain Activity</h3>
                   </div>
                   <WalletErrorBoundary title="On-Chain Activity">
-                    <TransactionHistory
-                      walletAddress={null}
-                      transactionType="internal"
-                      authToken={authToken}
-                      limit={10}
-                    />
+                    <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+                      <TransactionHistory
+                        walletAddress={null}
+                        transactionType="internal"
+                        authToken={authToken}
+                        limit={3}
+                      />
+                    </div>
                   </WalletErrorBoundary>
                 </motion.div>
 

@@ -2,14 +2,25 @@
 
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/providers/ProfileProvider';
 import { authService } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  icon: string;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+}
 
 interface AppHeaderProps {
   onSearch?: (query: string) => void;
@@ -21,15 +32,74 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { profile } = useProfile();
   const router = useRouter();
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // Notifications (populated when notification table is available)
-  const [notifications] = useState<{ id: number; title: string; message: string; time: string; read: boolean }[]>([]);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // Real notifications from DB
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!session?.access_token) return;
+    try {
+      const res = await fetch('/api/notifications?limit=10', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch {}
+  }, [session?.access_token]);
+
+  // Fetch on mount + poll every 30s
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const markAllRead = async () => {
+    if (!session?.access_token || unreadCount === 0) return;
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ markAll: true }),
+      });
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch {}
+  };
+
+  const getNotifIcon = (icon: string) => {
+    switch (icon) {
+      case 'video': return <Video size={14} className="text-brand-400" />;
+      case 'wallet': return <Wallet size={14} className="text-emerald-400" />;
+      case 'crown': return <Crown size={14} className="text-yellow-400" />;
+      case 'gift': return <Gift size={14} className="text-pink-400" />;
+      case 'tag': return <Tag size={14} className="text-orange-400" />;
+      default: return <Bell size={14} className="text-brand-400" />;
+    }
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'à l\'instant';
+    if (mins < 60) return `il y a ${mins}min`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `il y a ${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    return `il y a ${days}j`;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -118,35 +188,62 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                   transition={{ duration: 0.2 }}
                   className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden z-50"
                 >
-                  <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-900/50">
+                  <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between">
                     <h3 className="font-bold text-gray-950 dark:text-white">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        className="flex items-center gap-1 text-xs text-brand-500 hover:text-brand-400 font-medium transition-colors"
+                      >
+                        <CheckCheck size={14} />
+                        Tout lire
+                      </button>
+                    )}
                   </div>
 
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.map((notif) => (
-                      <motion.div
-                        key={notif.id}
-                        whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
-                        className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-colors ${
-                          !notif.read ? 'bg-brand-50/50 dark:bg-brand-400/5' : ''
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          <div className="w-2 h-2 rounded-full bg-brand-400 mt-2 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{notif.title}</h4>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{notif.message}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{notif.time}</p>
+                  <div className="max-h-80 overflow-y-auto scrollbar-thin">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <Bell size={24} className="mx-auto text-gray-500 mb-2" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Aucune notification</p>
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <motion.div
+                          key={notif.id}
+                          whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
+                          onClick={() => {
+                            if (notif.link) router.push(notif.link);
+                            setNotificationsOpen(false);
+                          }}
+                          className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-colors ${
+                            !notif.read ? 'bg-brand-50/50 dark:bg-brand-400/5' : ''
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            <div className="mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                              {getNotifIcon(notif.icon)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-semibold text-gray-950 dark:text-white truncate">{notif.title}</h4>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2">{notif.message}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{timeAgo(notif.created_at)}</p>
+                            </div>
+                            {!notif.read && (
+                              <div className="w-2 h-2 rounded-full bg-brand-500 mt-2 flex-shrink-0" />
+                            )}
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ))
+                    )}
                   </div>
 
                   <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2 bg-gray-50 dark:bg-gray-900/50">
-                    <button className="w-full text-center text-sm text-brand-500 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 font-medium py-1 transition-colors">
-                      View All
-                    </button>
+                    <Link href="/notifications" onClick={() => setNotificationsOpen(false)}>
+                      <button className="w-full text-center text-sm text-brand-500 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 font-medium py-1 transition-colors">
+                        Voir tout
+                      </button>
+                    </Link>
                   </div>
                 </motion.div>
               )}

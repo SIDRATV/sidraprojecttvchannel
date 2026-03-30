@@ -1,9 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, Lock, Volume2, Eye, Moon, AlertCircle, LogOut, Trash2 } from 'lucide-react';
 import { authService } from '@/services/auth';
+import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
 interface SettingsSectionProps {
@@ -30,12 +31,30 @@ function SettingToggle({
   label,
   description,
   defaultValue = false,
+  storageKey,
+  onChange,
 }: {
   label: string;
   description?: string;
   defaultValue?: boolean;
+  storageKey?: string;
+  onChange?: (val: boolean) => void;
 }) {
   const [enabled, setEnabled] = useState(defaultValue);
+
+  useEffect(() => {
+    if (storageKey) {
+      const saved = localStorage.getItem(storageKey);
+      if (saved !== null) setEnabled(saved === 'true');
+    }
+  }, [storageKey]);
+
+  const toggle = () => {
+    const next = !enabled;
+    setEnabled(next);
+    if (storageKey) localStorage.setItem(storageKey, String(next));
+    if (onChange) onChange(next);
+  };
 
   return (
     <div className="flex items-center justify-between py-2">
@@ -46,7 +65,7 @@ function SettingToggle({
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setEnabled(!enabled)}
+        onClick={() => toggle()}
         className={`relative w-12 h-6 rounded-full transition-colors ${
           enabled ? 'bg-brand-500' : 'bg-gray-400 dark:bg-gray-700'
         }`}
@@ -62,7 +81,22 @@ function SettingToggle({
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { session } = useAuth();
   const [successMessage, setSuccessMessage] = useState('');
+
+  const updateNotificationsEnabled = useCallback(async (val: boolean) => {
+    if (!session?.access_token) return;
+    try {
+      await fetch('/api/notifications/settings', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled: val }),
+      });
+    } catch {}
+  }, [session?.access_token]);
 
   const handleLogout = async () => {
     try {
@@ -138,16 +172,20 @@ export default function SettingsPage() {
           label="Push notifications"
           description="Receive notifications on your device"
           defaultValue={true}
+          storageKey="settings_push_notifications"
+          onChange={updateNotificationsEnabled}
         />
         <SettingToggle
           label="Email notifications"
           description="Receive email updates about new content"
           defaultValue={true}
+          storageKey="settings_email_notifications"
         />
         <SettingToggle
           label="New video alerts"
           description="Get notified when channels you follow post new videos"
           defaultValue={true}
+          storageKey="settings_new_video_alerts"
         />
       </SettingsSection>
 

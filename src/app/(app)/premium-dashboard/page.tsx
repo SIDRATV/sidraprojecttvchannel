@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { usePremium } from '@/hooks/usePremium';
+import { useAuth } from '@/hooks/useAuth';
 import { PremiumStatus } from '@/components/premium/PremiumStatus';
 import { PremiumAnalytics } from '@/components/premium/PremiumAnalytics';
 import { PaidSurveys } from '@/components/premium/PaidSurveys';
@@ -12,14 +13,18 @@ import { AlertCircle } from 'lucide-react';
 
 export default function PremiumDashboardPage() {
   const { status, isLoading } = usePremium();
+  const { user } = useAuth();
   const router = useRouter();
 
+  // Check BOTH localStorage status AND server user data
+  const isPremium = status.isActive || !!user?.premium_plan;
+
   useEffect(() => {
-    // Redirect to try-premium if not premium user
-    if (!isLoading && !status.isActive) {
+    // Redirect to subscribe if not premium user (check both sources)
+    if (!isLoading && !isPremium) {
       router.push('/subscribe');
     }
-  }, [status.isActive, isLoading, router]);
+  }, [isPremium, isLoading, router]);
 
   if (isLoading) {
     return (
@@ -32,7 +37,7 @@ export default function PremiumDashboardPage() {
     );
   }
 
-  if (!status.isActive) {
+  if (!isPremium) {
     return null;
   }
 

@@ -81,8 +81,8 @@ export const sendInternalTransfer = async (
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to send internal transfer');
+      const data = await response.json();
+      throw new Error(data.error || data.message || 'Failed to send internal transfer');
     }
 
     return await response.json();

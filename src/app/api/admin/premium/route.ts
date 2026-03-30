@@ -37,14 +37,30 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Fetch active subscribers for admin management
-    const { data: subscribers } = await (supabase as any)
+    const { data: rawSubs } = await (supabase as any)
       .from('premium_subscriptions')
-      .select('id, user_id, plan_id, duration, status, amount_paid, starts_at, expires_at, cancelled_at, users:user_id(full_name, email)')
+      .select('id, user_id, plan_id, duration, status, amount_paid, starts_at, expires_at, cancelled_at')
       .in('status', ['active'])
       .order('created_at', { ascending: false })
       .limit(100);
 
-    return NextResponse.json({ plans, discountCodes, stats, fraudAlerts: unresolvedAlerts, subscribers: subscribers || [] });
+    // Enrich with user data from public.users (FK is on auth.users so join doesn't work)
+    let subscribers: any[] = [];
+    if (rawSubs && rawSubs.length > 0) {
+      const userIds = [...new Set(rawSubs.map((s: any) => s.user_id))];
+      const { data: users } = await (supabase as any)
+        .from('users')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      const userMap = new Map((users || []).map((u: any) => [u.id, u]));
+      subscribers = rawSubs.map((s: any) => ({
+        ...s,
+        users: userMap.get(s.user_id) || null,
+      }));
+    }
+
+    return NextResponse.json({ plans, discountCodes, stats, fraudAlerts: unresolvedAlerts, subscribers });
   } catch (err: any) {
     const status = err.message === 'Unauthorized' || err.message === 'Invalid token' ? 401 : err.message === 'Admin required' ? 403 : 500;
     return NextResponse.json({ error: err.message }, { status });

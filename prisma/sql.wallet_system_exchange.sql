@@ -138,12 +138,10 @@ BEGIN
       ADD CONSTRAINT wallet_balances_network_check CHECK (network IN ('sidra', 'bsc', 'bsk'));
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'wallet_transactions_network_check'
-  ) THEN
-    ALTER TABLE wallet_transactions
-      ADD CONSTRAINT wallet_transactions_network_check CHECK (network IN ('sidra', 'bsc', 'bsk'));
-  END IF;
+  -- Drop old constraint if it exists (may have narrower definition)
+  ALTER TABLE wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_network_check;
+  ALTER TABLE wallet_transactions
+    ADD CONSTRAINT wallet_transactions_network_check CHECK (network IN ('sidra', 'bsc', 'bsk', 'internal'));
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'wallet_deposits_network_check'

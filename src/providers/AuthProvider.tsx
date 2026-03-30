@@ -154,8 +154,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (cancelled) return;
 
-      // Ignore background maintenance
-      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
+      // Update session on token refresh without re-fetching the profile
+      if (event === 'TOKEN_REFRESHED') {
+        if (s) setSession(s);
+        return;
+      }
+      if (event === 'USER_UPDATED') return;
 
       // Skip if same user already loaded
       if (s?.user && s.user.id === lastUserIdRef.current) return;

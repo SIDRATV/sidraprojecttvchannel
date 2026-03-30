@@ -47,5 +47,11 @@ export const createServerClient = () => {
     );
   }
 
-  return createClient<Database>(serverSupabaseUrl, supabaseServiceKey);
+  return createClient<Database>(serverSupabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
 };

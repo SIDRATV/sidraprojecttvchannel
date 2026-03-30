@@ -2,6 +2,13 @@
 -- NOTIFICATIONS SYSTEM + ENUM FIX — Run in Supabase SQL Editor
 -- ============================================================
 
+-- 0. Fix wallet_transactions_network_check constraint to allow 'internal'
+-- (previous constraint only allowed 'sidra','bsc','bsk' — blocks internal/subscription inserts)
+ALTER TABLE wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_network_check;
+ALTER TABLE wallet_transactions
+  ADD CONSTRAINT wallet_transactions_network_check
+  CHECK (network IN ('sidra', 'bsc', 'bsk', 'internal'));
+
 -- 1. Fix wallet_transaction_type enum: add 'subscription' value
 ALTER TYPE wallet_transaction_type ADD VALUE IF NOT EXISTS 'subscription';
 

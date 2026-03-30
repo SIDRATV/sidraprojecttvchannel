@@ -102,6 +102,7 @@ async function refundFailedWithdrawal(withdrawal: any, reason: string) {
     amount: refundAmount,
     fee: 0,
     status: 'success',
+    network: 'internal',
     description: 'Automatic refund for failed withdrawal',
     metadata: {
       source_withdrawal_id: withdrawal.id,

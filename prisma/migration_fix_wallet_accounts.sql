@@ -282,16 +282,16 @@ BEGIN
   UPDATE wallet_accounts SET balance = balance - (p_amount + COALESCE(p_fee, 0)) WHERE user_id = p_sender_id;
   UPDATE wallet_accounts SET balance = balance + p_amount WHERE user_id = p_recipient_id;
 
-  INSERT INTO wallet_transactions (user_id, counterparty_user_id, type, direction, amount, fee, status, reference_id, description, metadata)
-  VALUES (p_sender_id, p_recipient_id, 'internal_transfer', 'debit', p_amount, COALESCE(p_fee, 0), 'success', p_reference_id, p_description, '{"side":"sender"}'::jsonb)
+  INSERT INTO wallet_transactions (user_id, counterparty_user_id, type, direction, amount, fee, status, network, reference_id, description, metadata)
+  VALUES (p_sender_id, p_recipient_id, 'internal_transfer', 'debit', p_amount, COALESCE(p_fee, 0), 'success', 'internal', p_reference_id, p_description, '{"side":"sender"}'::jsonb)
   RETURNING id INTO transaction_ref;
 
-  INSERT INTO wallet_transactions (user_id, counterparty_user_id, type, direction, amount, fee, status, reference_id, description, metadata)
-  VALUES (p_recipient_id, p_sender_id, 'internal_transfer', 'credit', p_amount, 0, 'success', p_reference_id, p_description, '{"side":"recipient"}'::jsonb);
+  INSERT INTO wallet_transactions (user_id, counterparty_user_id, type, direction, amount, fee, status, network, reference_id, description, metadata)
+  VALUES (p_recipient_id, p_sender_id, 'internal_transfer', 'credit', p_amount, 0, 'success', 'internal', p_reference_id, p_description, '{"side":"recipient"}'::jsonb);
 
   IF COALESCE(p_fee, 0) > 0 THEN
-    INSERT INTO wallet_transactions (user_id, type, direction, amount, fee, status, reference_id, description, metadata)
-    VALUES (p_sender_id, 'fee', 'debit', p_fee, 0, 'success', p_reference_id, 'Internal transfer fee', '{"fee_for":"internal_transfer"}'::jsonb);
+    INSERT INTO wallet_transactions (user_id, type, direction, amount, fee, status, network, reference_id, description, metadata)
+    VALUES (p_sender_id, 'fee', 'debit', p_fee, 0, 'success', 'internal', p_reference_id, 'Internal transfer fee', '{"fee_for":"internal_transfer"}'::jsonb);
   END IF;
 
   RETURN transaction_ref;

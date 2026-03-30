@@ -700,6 +700,7 @@ const refundFailedWithdrawal = async (withdrawal: any, reason: string) => {
     amount: Number(withdrawal.amount || 0) + Number(withdrawal.fee || 0),
     fee: 0,
     status: 'success',
+    network: 'internal',
     description: 'Automatic refund for failed withdrawal',
     metadata: {
       source_withdrawal_id: withdrawal.id,

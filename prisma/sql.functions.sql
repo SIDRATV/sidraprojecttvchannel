@@ -110,6 +110,7 @@ BEGIN
     amount,
     fee,
     status,
+    network,
     reference_id,
     description,
     metadata
@@ -121,6 +122,7 @@ BEGIN
     p_amount,
     COALESCE(p_fee, 0),
     'success',
+    'internal',
     p_reference_id,
     p_description,
     jsonb_build_object('side', 'sender')
@@ -134,6 +136,7 @@ BEGIN
     amount,
     fee,
     status,
+    network,
     reference_id,
     description,
     metadata
@@ -145,6 +148,7 @@ BEGIN
     p_amount,
     0,
     'success',
+    'internal',
     p_reference_id,
     p_description,
     jsonb_build_object('side', 'recipient')
@@ -158,6 +162,7 @@ BEGIN
       amount,
       fee,
       status,
+      network,
       reference_id,
       description,
       metadata
@@ -168,6 +173,7 @@ BEGIN
       p_fee,
       0,
       'success',
+      'internal',
       p_reference_id,
       'Internal transfer fee',
       jsonb_build_object('fee_for', 'internal_transfer')
@@ -425,6 +431,7 @@ BEGIN
     amount,
     fee,
     status,
+    network,
     description,
     metadata
   ) VALUES (
@@ -434,6 +441,7 @@ BEGIN
     refund_amount,
     0,
     'success',
+    'internal',
     'Automatic refund for failed withdrawal',
     jsonb_build_object(
       'source_withdrawal_id', p_withdrawal_id,

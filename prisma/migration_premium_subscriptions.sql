@@ -175,8 +175,8 @@ BEGIN
   RETURNING id INTO v_sub_id;
 
   -- Record wallet transaction
-  INSERT INTO wallet_transactions (user_id, type, direction, amount, fee, status, description, reference_id)
-  VALUES (p_user_id, 'subscription', 'out', p_amount, 0, 'completed',
+  INSERT INTO wallet_transactions (user_id, type, direction, amount, fee, status, network, description, reference_id)
+  VALUES (p_user_id, 'subscription', 'out', p_amount, 0, 'completed', 'internal',
           'Premium subscription: ' || p_plan_id || ' (' || p_duration || ')',
           'sub_' || v_sub_id::TEXT);
 

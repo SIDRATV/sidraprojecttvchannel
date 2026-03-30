@@ -1,8 +1,8 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, Lock, Volume2, Eye, Moon, AlertCircle, LogOut, Trash2 } from 'lucide-react';
+import { Bell, Lock, Volume2, Eye, Moon, AlertCircle, LogOut, Trash2, ShieldAlert, Clock, X } from 'lucide-react';
 import { authService } from '@/services/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -81,8 +81,16 @@ function SettingToggle({
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const [successMessage, setSuccessMessage] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteConfirm1, setDeleteConfirm1] = useState(false);
+  const [deleteConfirm2, setDeleteConfirm2] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deletionStatus, setDeletionStatus] = useState<any>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const updateNotificationsEnabled = useCallback(async (val: boolean) => {
     if (!session?.access_token) return;
@@ -98,6 +106,17 @@ export default function SettingsPage() {
     } catch {}
   }, [session?.access_token]);
 
+  // Fetch deletion status on mount
+  useEffect(() => {
+    if (!session?.access_token) return;
+    fetch('/api/account/delete', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then(res => res.json())
+      .then(data => { if (data.pending) setDeletionStatus(data); })
+      .catch(() => {});
+  }, [session?.access_token]);
+
   const handleLogout = async () => {
     try {
       await authService.signOut();
@@ -111,6 +130,62 @@ export default function SettingsPage() {
   const handleSaveSettings = () => {
     setSuccessMessage('Settings saved successfully!');
     setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const handleRequestDeletion = async () => {
+    if (!deleteConfirm1 || !deleteConfirm2) return;
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'request', reason: deleteReason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la demande');
+      setDeletionStatus({
+        pending: true,
+        scheduledAt: data.scheduled_at,
+        daysRemaining: 7,
+        canCancel: true,
+        cancelDeadline: data.cancel_deadline,
+      });
+      setShowDeleteModal(false);
+      setDeleteConfirm1(false);
+      setDeleteConfirm2(false);
+      setDeleteReason('');
+    } catch (err: any) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    setCancelLoading(true);
+    try {
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'cancel' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'annulation');
+      setDeletionStatus(null);
+      setSuccessMessage('Demande de suppression annulée avec succès');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setDeleteError(err.message);
+    } finally {
+      setCancelLoading(false);
+    }
   };
 
   return (
@@ -291,25 +366,66 @@ export default function SettingsPage() {
 
       {/* Danger Zone */}
       <SettingsSection
-        title="Danger Zone"
-        description="Irreversible actions - handle with care"
+        title="Zone Dangereuse"
+        description="Actions irréversibles - à manipuler avec précaution"
       >
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full flex items-center justify-between p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-colors text-left text-red-400"
-        >
-          <div className="flex items-center space-x-3">
-            <Trash2 size={18} />
-            <div>
-              <p className="font-medium text-sm">Delete account</p>
-              <p className="text-xs text-red-400/70">
-                Permanently delete your account and all data
-              </p>
+        {/* Deletion pending banner */}
+        {deletionStatus && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Clock size={18} className="text-red-400" />
+              <p className="font-bold text-red-400">Suppression programmée</p>
             </div>
-          </div>
-          <span>→</span>
-        </motion.button>
+            <p className="text-sm text-red-300 mb-1">
+              Votre compte sera supprimé le{' '}
+              <span className="font-bold">
+                {new Date(deletionStatus.scheduledAt).toLocaleDateString('fr-FR', {
+                  day: 'numeric', month: 'long', year: 'numeric',
+                })}
+              </span>
+            </p>
+            <p className="text-xs text-gray-400 mb-3">
+              {deletionStatus.canCancel
+                ? 'Vous pouvez encore annuler cette demande.'
+                : 'Le délai d\'annulation est dépassé. Contactez le support pour annuler.'}
+            </p>
+            {deletionStatus.canCancel && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleCancelDeletion}
+                disabled={cancelLoading}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+              >
+                {cancelLoading ? 'Annulation...' : 'Annuler la suppression'}
+              </motion.button>
+            )}
+          </motion.div>
+        )}
+
+        {!deletionStatus && (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowDeleteModal(true)}
+            className="w-full flex items-center justify-between p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-colors text-left text-red-400"
+          >
+            <div className="flex items-center space-x-3">
+              <Trash2 size={18} />
+              <div>
+                <p className="font-medium text-sm">Supprimer le compte</p>
+                <p className="text-xs text-red-400/70">
+                  Suppression définitive de votre compte et de toutes vos données
+                </p>
+              </div>
+            </div>
+            <span>→</span>
+          </motion.button>
+        )}
 
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -320,13 +436,110 @@ export default function SettingsPage() {
           <div className="flex items-center space-x-3">
             <LogOut size={18} />
             <div>
-              <p className="font-medium text-sm">Logout from this device</p>
-              <p className="text-xs text-orange-400/70">Sign out of your current session</p>
+              <p className="font-medium text-sm">Se déconnecter</p>
+              <p className="text-xs text-orange-400/70">Déconnexion de la session actuelle</p>
             </div>
           </div>
           <span>→</span>
         </motion.button>
       </SettingsSection>
+
+      {/* Delete Account Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-gray-900 border border-red-500/30 rounded-xl p-6 w-full max-w-md space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert size={22} className="text-red-500" />
+                  <h3 className="text-lg font-bold text-white">Supprimer votre compte</h3>
+                </div>
+                <button onClick={() => setShowDeleteModal(false)} className="text-gray-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="text-sm text-gray-300 space-y-2">
+                <p className="text-red-400 font-medium">⚠️ Cette action est irréversible après 5 jours.</p>
+                <ul className="list-disc pl-5 space-y-1 text-gray-400">
+                  <li>Toutes vos vidéos, commentaires et likes seront supprimés</li>
+                  <li>Votre portefeuille et vos transactions seront effacés</li>
+                  <li>Votre abonnement premium sera annulé</li>
+                  <li>Un délai de 7 jours avant suppression définitive</li>
+                  <li>Annulation possible dans les 5 premiers jours</li>
+                </ul>
+              </div>
+
+              <div className="space-y-3">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={deleteConfirm1}
+                    onChange={e => setDeleteConfirm1(e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-red-500"
+                  />
+                  <span className="text-sm text-gray-300">
+                    Je comprends que cette action supprimera définitivement mon compte et toutes mes données
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={deleteConfirm2}
+                    onChange={e => setDeleteConfirm2(e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-red-500"
+                  />
+                  <span className="text-sm text-gray-300">
+                    Je confirme vouloir supprimer mon compte et j&apos;accepte les conditions ci-dessus
+                  </span>
+                </label>
+              </div>
+
+              <textarea
+                value={deleteReason}
+                onChange={e => setDeleteReason(e.target.value)}
+                placeholder="Raison de la suppression (optionnel)"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:border-red-500 outline-none resize-none"
+                rows={2}
+              />
+
+              {deleteError && (
+                <p className="text-sm text-red-400">{deleteError}</p>
+              )}
+
+              <div className="flex gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm"
+                >
+                  Annuler
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleRequestDeletion}
+                  disabled={!deleteConfirm1 || !deleteConfirm2 || deleteLoading}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleteLoading ? 'Traitement...' : 'Confirmer la suppression'}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Save Button */}
       <motion.button

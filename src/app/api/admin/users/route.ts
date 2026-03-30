@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('users')
-    .select('id, username, email, full_name, avatar_url, is_admin, premium_plan, created_at')
+    .select('id, username, email, full_name, avatar_url, is_admin, premium_plan, premium_expires_at, created_at, is_blocked, block_reason, blocked_at, warning_count, last_warning_at, last_warning_reason, deleted_at, deletion_requested_at, deletion_scheduled_at, deletion_reason')
     .order('created_at', { ascending: false })
     .limit(limit);
 

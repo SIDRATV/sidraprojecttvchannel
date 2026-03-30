@@ -3,12 +3,21 @@
 import { BottomNavBar } from '@/components/app/BottomNavBar';
 import { AppHeader } from '@/components/app/AppHeader';
 import { ProtectedRoute } from '@/components/app/ProtectedRoute';
+import { BlockedUserScreen } from '@/components/app/BlockedUserScreen';
 import { usePathname } from 'next/navigation';
 import { ProfileProvider } from '@/providers/ProfileProvider';
+import { useAuth } from '@/hooks/useAuth';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const showSearch = pathname === '/dashboard';
+  const { user } = useAuth();
+
+  // Block banned users from accessing any page
+  if (user?.is_blocked) {
+    return <BlockedUserScreen reason={user.block_reason} />;
+  }
+
   return (
     <ProfileProvider>
       <ProtectedRoute>

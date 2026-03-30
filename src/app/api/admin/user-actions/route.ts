@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'user_id et action sont requis' }, { status: 400 });
   }
 
-  const validActions = ['block', 'unblock', 'warn', 'delete', 'make_premium', 'revoke_premium', 'restore'];
+  const validActions = ['block', 'unblock', 'warn', 'delete', 'cancel_deletion', 'make_premium', 'revoke_premium', 'restore'];
   if (!validActions.includes(action)) {
     return NextResponse.json({ error: `Action invalide. Actions valides: ${validActions.join(', ')}` }, { status: 400 });
   }
@@ -115,14 +115,29 @@ export async function POST(request: NextRequest) {
       logReason = reason ?? 'Avertissement émis';
       break;
 
-    case 'delete':
-      // Soft delete
+    case 'delete': {
+      // 7-day scheduled deletion
+      const scheduledAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
       updateData = {
-        deleted_at: new Date().toISOString(),
+        deletion_requested_at: new Date().toISOString(),
+        deletion_scheduled_at: scheduledAt,
+        deletion_reason: reason ?? 'Supprimé par l\'administrateur',
         is_blocked: true,
-        block_reason: 'Compte supprimé',
+        block_reason: 'Compte en cours de suppression',
       };
-      logReason = reason ?? 'Suppression du compte';
+      logReason = reason ?? 'Suppression du compte programmée (7 jours)';
+      break;
+    }
+
+    case 'cancel_deletion':
+      updateData = {
+        deletion_requested_at: null,
+        deletion_scheduled_at: null,
+        deletion_reason: null,
+        is_blocked: false,
+        block_reason: null,
+      };
+      logReason = reason ?? 'Suppression annulée par l\'administrateur';
       break;
 
     case 'restore':
@@ -174,13 +189,13 @@ export async function POST(request: NextRequest) {
   } catch {}
 
   // Log as security event for severe actions
-  if (action === 'delete' || action === 'block') {
+  if (action === 'delete' || action === 'block' || action === 'cancel_deletion') {
     try {
       await (supabase as any).from('security_events').insert([{
         type: 'account_takeover_attempt',
         severity: action === 'delete' ? 'high' : 'medium',
-        title: action === 'delete' ? 'Compte supprimé par admin' : 'Compte bloqué par admin',
-        description: `Admin ${admin.email} a ${action === 'delete' ? 'supprimé' : 'bloqué'} le compte de ${targetUser.email}. Raison: ${logReason}`,
+        title: action === 'delete' ? 'Suppression programmée par admin' : action === 'cancel_deletion' ? 'Suppression annulée par admin' : 'Compte bloqué par admin',
+        description: `Admin ${admin.email} a ${action === 'delete' ? 'programmé la suppression de' : action === 'cancel_deletion' ? 'annulé la suppression de' : 'bloqué'} le compte de ${targetUser.email}. Raison: ${logReason}`,
         user_id,
         metadata: { admin_id: admin.id, admin_email: admin.email, reason: logReason },
       }]);

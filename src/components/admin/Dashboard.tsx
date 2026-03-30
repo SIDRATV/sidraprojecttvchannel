@@ -592,6 +592,9 @@ function UsersTab() {
   const [actionReason, setActionReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
+  const [deleteCheck1, setDeleteCheck1] = useState(false);
+  const [deleteCheck2, setDeleteCheck2] = useState(false);
+  const [viewFilter, setViewFilter] = useState<'all' | 'blocked' | 'deletion'>('all');
 
   const loadUsers = useCallback(async () => {
     if (!session?.access_token) return;
@@ -611,10 +614,13 @@ function UsersTab() {
     setActionModal({ userId, action, email });
     setActionReason('');
     setActionMsg('');
+    setDeleteCheck1(false);
+    setDeleteCheck2(false);
   };
 
   const confirmAction = async () => {
     if (!actionModal || !session?.access_token) return;
+    if (actionModal.action === 'delete' && (!deleteCheck1 || !deleteCheck2)) return;
     setActionLoading(true);
     const { ok, data } = await adminPost('/api/admin/user-actions', session.access_token, {
       user_id: actionModal.userId,
@@ -631,15 +637,23 @@ function UsersTab() {
     }
   };
 
-  const filtered = searchQuery
-    ? users.filter((u) => [(u.email || ''), (u.full_name || ''), (u.username || '')].some(f => f.toLowerCase().includes(searchQuery.toLowerCase())))
-    : users;
+  const filtered = users.filter((u) => {
+    if (viewFilter === 'blocked') return u.is_blocked;
+    if (viewFilter === 'deletion') return u.deletion_requested_at && !u.deleted_at;
+    return true;
+  }).filter((u) => {
+    if (!searchQuery) return true;
+    return [(u.email || ''), (u.full_name || ''), (u.username || '')].some(f => f.toLowerCase().includes(searchQuery.toLowerCase()));
+  });
+
+  const blockedCount = users.filter((u) => u.is_blocked).length;
+  const deletionCount = users.filter((u) => u.deletion_requested_at && !u.deleted_at).length;
 
   const statsCards = [
     { label: 'Utilisateurs Totaux', value: totals.totalUsers, icon: Users, color: 'text-brand-400' },
     { label: 'Nouveaux (7j)', value: totals.newUsersWeek, icon: Activity, color: 'text-green-400' },
-    { label: 'Affichés', value: filtered.length, icon: Eye, color: 'text-purple-400' },
-    { label: 'Admins', value: users.filter((u) => u.is_admin).length, icon: Award, color: 'text-red-400' },
+    { label: 'Bloqués', value: blockedCount, icon: Ban, color: 'text-red-400' },
+    { label: 'Suppression en attente', value: deletionCount, icon: Clock, color: 'text-orange-400' },
   ];
 
   const actionLabels: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -679,6 +693,27 @@ function UsersTab() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-brand-500/50 transition-all"
         />
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {([
+          { key: 'all', label: 'Tous', count: users.length },
+          { key: 'blocked', label: 'Bloqués', count: blockedCount },
+          { key: 'deletion', label: 'Suppression en attente', count: deletionCount },
+        ] as const).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setViewFilter(tab.key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              viewFilter === tab.key
+                ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30'
+                : 'bg-slate-800/50 text-slate-400 border border-slate-700 hover:border-slate-600'
+            }`}
+          >
+            {tab.label} ({tab.count})
+          </button>
+        ))}
       </div>
 
       <Card className="overflow-hidden border border-slate-700/50 bg-slate-800/30">
@@ -721,23 +756,55 @@ function UsersTab() {
                       )}
                     </td>
                     <td className="px-4 py-4">
-                      {u.is_admin && <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-medium mr-1">Admin</span>}
-                      {(u as any).is_blocked
-                        ? <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs font-medium">Bloqué</span>
-                        : <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs font-medium">Actif</span>
-                      }
+                      <div className="flex flex-wrap items-center gap-1">
+                        {u.is_admin && <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">Admin</span>}
+                        {u.is_blocked
+                          ? <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs font-medium">Bloqué</span>
+                          : <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs font-medium">Actif</span>
+                        }
+                        {u.warning_count > 0 && (
+                          <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs font-medium">
+                            {u.warning_count} avert.
+                          </span>
+                        )}
+                        {u.deletion_requested_at && !u.deleted_at && (
+                          <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">
+                            Suppr. {u.deletion_scheduled_at ? new Date(u.deletion_scheduled_at).toLocaleDateString('fr-FR') : ''}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-slate-400 text-xs">
                       {new Date(u.created_at).toLocaleDateString('fr-FR')}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1">
-                        {Object.entries(actionLabels).map(([act, { label, color, icon: ActionIcon }]) => (
-                          <button key={act} title={label} onClick={() => openAction(u.id, act, u.email)}
-                            className={`p-1.5 rounded-lg transition-all ${color}`}>
-                            <ActionIcon size={13} />
+                        {u.is_blocked ? (
+                          <button title="Débloquer" onClick={() => openAction(u.id, 'unblock', u.email)}
+                            className="p-1.5 rounded-lg transition-all text-green-400 hover:bg-green-500/10">
+                            <Unlock size={13} />
                           </button>
-                        ))}
+                        ) : (
+                          <button title="Bloquer" onClick={() => openAction(u.id, 'block', u.email)}
+                            className="p-1.5 rounded-lg transition-all text-orange-400 hover:bg-orange-500/10">
+                            <Ban size={13} />
+                          </button>
+                        )}
+                        <button title="Avertir" onClick={() => openAction(u.id, 'warn', u.email)}
+                          className="p-1.5 rounded-lg transition-all text-yellow-400 hover:bg-yellow-500/10">
+                          <AlertTriangle size={13} />
+                        </button>
+                        {u.deletion_requested_at && !u.deleted_at ? (
+                          <button title="Annuler la suppression" onClick={() => openAction(u.id, 'cancel_deletion', u.email)}
+                            className="p-1.5 rounded-lg transition-all text-blue-400 hover:bg-blue-500/10">
+                            <RefreshCw size={13} />
+                          </button>
+                        ) : (
+                          <button title="Supprimer" onClick={() => openAction(u.id, 'delete', u.email)}
+                            className="p-1.5 rounded-lg transition-all text-red-400 hover:bg-red-500/10">
+                            <UserX size={13} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -756,9 +823,39 @@ function UsersTab() {
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
               className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
               <h3 className="text-xl font-bold text-white mb-1">
-                {actionLabels[actionModal.action]?.label ?? actionModal.action}
+                {actionModal.action === 'cancel_deletion' ? 'Annuler la suppression' : (actionLabels[actionModal.action]?.label ?? actionModal.action)}
               </h3>
               <p className="text-slate-400 text-sm mb-4">{actionModal.email}</p>
+
+              {actionModal.action === 'delete' && (
+                <div className="space-y-3 mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-red-400 text-sm font-medium flex items-center gap-2">
+                    <ShieldAlert size={16} />
+                    Suppression avec décompte de 7 jours
+                  </p>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" checked={deleteCheck1} onChange={e => setDeleteCheck1(e.target.checked)}
+                      className="mt-1 w-4 h-4 accent-red-500" />
+                    <span className="text-sm text-slate-300">
+                      Je comprends que cette action est irréversible et supprimera toutes les données de l&apos;utilisateur après 7 jours
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" checked={deleteCheck2} onChange={e => setDeleteCheck2(e.target.checked)}
+                      className="mt-1 w-4 h-4 accent-red-500" />
+                    <span className="text-sm text-slate-300">
+                      Je confirme la suppression de cet utilisateur et reconnais que cette action ne peut pas être annulée
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {actionModal.action === 'cancel_deletion' && (
+                <p className="text-blue-400 text-sm mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  Cette action annulera la demande de suppression de l&apos;utilisateur. Son compte sera restauré à l&apos;état actif.
+                </p>
+              )}
+
               <label className="block text-sm font-medium text-slate-300 mb-1">Raison (optionnel)</label>
               <textarea value={actionReason} onChange={e => setActionReason(e.target.value)} rows={3}
                 placeholder="Expliquez la raison de cette action..."
@@ -771,10 +868,12 @@ function UsersTab() {
                   className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-all">
                   Annuler
                 </button>
-                <button onClick={confirmAction} disabled={actionLoading}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${
+                <button onClick={confirmAction}
+                  disabled={actionLoading || (actionModal.action === 'delete' && (!deleteCheck1 || !deleteCheck2))}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
                     actionModal.action === 'delete' ? 'bg-red-500 hover:bg-red-600 text-white' :
                     actionModal.action === 'block' ? 'bg-orange-500 hover:bg-orange-600 text-white' :
+                    actionModal.action === 'cancel_deletion' ? 'bg-blue-500 hover:bg-blue-600 text-white' :
                     'bg-brand-500 hover:bg-brand-400 text-white'
                   }`}>
                   {actionLoading ? <Loader2 size={16} className="animate-spin" /> : 'Confirmer'}

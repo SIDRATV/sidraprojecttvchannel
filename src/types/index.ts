@@ -11,6 +11,16 @@ export interface User {
   premium_plan?: string | null;
   premium_expires_at?: string | null;
   premium_subscription_id?: string | null;
+  is_blocked?: boolean;
+  block_reason?: string | null;
+  blocked_at?: string | null;
+  warning_count?: number;
+  last_warning_at?: string | null;
+  last_warning_reason?: string | null;
+  deleted_at?: string | null;
+  deletion_requested_at?: string | null;
+  deletion_scheduled_at?: string | null;
+  deletion_reason?: string | null;
 }
 
 export interface Video {

@@ -50,45 +50,22 @@ export default function ProfilePage() {
   // Sync profile data when user loads
   useEffect(() => {
     if (user) {
-      // Check localStorage first for immediate display
-      const localPlan = localStorage.getItem('activePremiumPlan') as ProfileData['accountTier'] | null;
+      // Use DB premium_plan as source of truth
+      const dbTier = (user.premium_plan as ProfileData['accountTier']) || 'free';
       const data: ProfileData = {
-        fullName: user.full_name || 'User',
+        fullName: user.full_name || user.username || user.email?.split('@')[0] || 'User',
         bio: user.bio || '',
         profilePhoto: user.avatar_url || null,
-        accountTier: localPlan || 'free',
+        accountTier: dbTier,
         emailNotifications: true,
         contentNotifications: true,
         weeklyDigest: false,
-        memberSince: user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
+        memberSince: user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
       };
       setProfileData(data);
       setEditData(data);
-
-      // Then verify premium status from DB
-      if (session?.access_token) {
-        fetch('/api/premium/subscribe', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
-          .then((r) => r.json())
-          .then((res) => {
-            const dbPlan = res.activeSubscription?.plan_name?.toLowerCase() as ProfileData['accountTier'] | undefined;
-            const tier = dbPlan || 'free';
-            if (tier !== data.accountTier) {
-              const updated = { ...data, accountTier: tier };
-              setProfileData(updated);
-              setEditData(updated);
-              if (tier !== 'free') {
-                localStorage.setItem('activePremiumPlan', tier);
-              } else {
-                localStorage.removeItem('activePremiumPlan');
-              }
-            }
-          })
-          .catch(() => {});
-      }
     }
-  }, [user, session?.access_token]);
+  }, [user]);
 
   // Save profile to Supabase
   const handleSaveProfile = async () => {

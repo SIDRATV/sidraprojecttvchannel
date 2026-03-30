@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const requestedNetwork = String(body?.network || '').toLowerCase();
-    const maxBlocks = Number(body?.maxBlocks) || 20; // Default to last 20 blocks
+    const maxBlocks = Number(body?.maxBlocks) || 500; // Default to last 500 blocks (~20+ min)
 
     const results: ScanResult[] = [];
 

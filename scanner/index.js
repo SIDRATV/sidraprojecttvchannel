@@ -42,7 +42,7 @@ const CHAINS = {
     rpcUrl: process.env.RPC_URL_SIDRA || 'https://node.sidrachain.com',
     explorerUrl: 'https://ledger.sidrachain.com',
     minConfirmations: 3,
-    maxBlocksPerScan: 250,
+    maxBlocksPerScan: 500,
   },
   bsc: {
     network: 'bsc',
@@ -465,9 +465,9 @@ async function confirmPendingDeposits(network, provider, chain) {
           .eq('id', ptx.id);
 
         // Credit user balance
-        // Ensure wallet_accounts exists
+        // Ensure wallet_accounts exists (include network to avoid NOT NULL violation)
         await supabase.from('wallet_accounts').upsert(
-          { user_id: ptx.user_id, balance: 0 },
+          { user_id: ptx.user_id, balance: 0, currency: 'SIDRA' },
           { onConflict: 'user_id', ignoreDuplicates: true }
         );
 

@@ -28,7 +28,7 @@ export const CHAIN_CONFIGS: Record<WalletNetwork, ChainConfig> = {
       || 'https://node.sidrachain.com',
     explorerUrl: 'https://ledger.sidrachain.com',
     minConfirmations: 3,
-    maxBlocksPerScan: 250,
+    maxBlocksPerScan: 500,
   },
   bsc: {
     network: 'bsc',

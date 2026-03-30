@@ -37,39 +37,40 @@ export async function GET(
     await (supabase as any).rpc('increment_premium_video_views', { vid: videoId }).catch(() => {});
 
     // Build thumbnail URL (signed, 24h expiry)
-    const thumbnailUrl = video.thumbnail_key
-      ? await getSignedThumbnailUrl(video.thumbnail_key)
-      : null;
+    let thumbnailUrl: string | null = null;
+    if (video.thumbnail_key) {
+      try {
+        thumbnailUrl = await getSignedThumbnailUrl(video.thumbnail_key);
+      } catch (e) {
+        console.error('Failed to sign thumbnail URL:', e);
+      }
+    }
 
     // Determine the video key for the requested quality
-    const qualityKeyMap: Record<string, string> = {
-      '480p': video.video_key_480p,
-      '720p': video.video_key_720p,
-      '1080p': video.video_key_1080p,
+    const qualityKeyMap: Record<string, string | null> = {
+      '480p': video.video_key_480p || null,
+      '720p': video.video_key_720p || null,
+      '1080p': video.video_key_1080p || null,
     };
 
     const videoKey = qualityKeyMap[quality];
+    const effectiveKey = videoKey || video.video_key_720p || video.video_key_480p || video.video_key_1080p;
 
-    if (!videoKey) {
-      // Try fallback quality
-      const fallbackKey = video.video_key_720p || video.video_key_480p || video.video_key_1080p;
-      if (!fallbackKey) {
-        return NextResponse.json({ error: 'No video file available' }, { status: 404 });
-      }
-      const signedUrl = await getSignedVideoUrl(fallbackKey, 7200);
-      return NextResponse.json({
-        video: {
-          ...video,
-          thumbnail_url: thumbnailUrl,
-        },
-        stream_url: signedUrl,
-        quality: Object.keys(qualityKeyMap).find(k => qualityKeyMap[k] === fallbackKey) || quality,
-        available_qualities: (video.quality_options || []),
-      });
+    if (!effectiveKey) {
+      return NextResponse.json({ error: 'No video file available' }, { status: 404 });
     }
 
-    // Generate signed URL (2 hours expiry)
-    const signedUrl = await getSignedVideoUrl(videoKey, 7200);
+    let signedUrl: string;
+    try {
+      signedUrl = await getSignedVideoUrl(effectiveKey, 7200);
+    } catch (e) {
+      console.error('Failed to sign video URL for key:', effectiveKey, e);
+      return NextResponse.json({ error: 'Failed to generate video stream URL' }, { status: 500 });
+    }
+
+    const effectiveQuality = videoKey
+      ? quality
+      : Object.entries(qualityKeyMap).find(([, v]) => v === effectiveKey)?.[0] || quality;
 
     return NextResponse.json({
       video: {
@@ -77,7 +78,7 @@ export async function GET(
         thumbnail_url: thumbnailUrl,
       },
       stream_url: signedUrl,
-      quality,
+      quality: effectiveQuality,
       available_qualities: (video.quality_options || []),
     });
   } catch (err) {

@@ -46,12 +46,17 @@ export async function GET(request: NextRequest) {
 
     // Map thumbnail keys to signed URLs (24h expiry)
     const videos = await Promise.all(
-      (data || []).map(async (video: any) => ({
-        ...video,
-        thumbnail_url: video.thumbnail_key
-          ? await getSignedThumbnailUrl(video.thumbnail_key)
-          : null,
-      })),
+      (data || []).map(async (video: any) => {
+        let thumbnail_url: string | null = null;
+        if (video.thumbnail_key) {
+          try {
+            thumbnail_url = await getSignedThumbnailUrl(video.thumbnail_key);
+          } catch {
+            console.error('Failed to sign thumbnail for video:', video.id);
+          }
+        }
+        return { ...video, thumbnail_url };
+      }),
     );
 
     return NextResponse.json({ videos, count: videos.length });

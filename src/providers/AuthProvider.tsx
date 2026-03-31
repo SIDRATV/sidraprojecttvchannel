@@ -168,7 +168,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Update session on token refresh without re-fetching the profile
       if (event === 'TOKEN_REFRESHED') {
-        if (s) setSession(s);
+        if (s) {
+          lastUserIdRef.current = s.user.id;
+          setSession(s);
+        }
         return;
       }
       if (event === 'USER_UPDATED') return;

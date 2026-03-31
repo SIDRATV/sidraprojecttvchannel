@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck } from 'lucide-react';
+import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck, Loader2 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +31,8 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const { user, session } = useAuth();
   const { profile } = useProfile();
@@ -116,12 +118,15 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   }, []);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await authService.signOut();
       localStorage.removeItem('user');
+      setShowLogoutConfirm(false);
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
+      setIsLoggingOut(false);
     }
   };
 
@@ -357,8 +362,8 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
-                        handleLogout();
                         setProfileOpen(false);
+                        setShowLogoutConfirm(true);
                       }}
                       className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors text-sm font-medium rounded-lg"
                     >
@@ -372,6 +377,58 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
+            onClick={() => { if (!isLoggingOut) setShowLogoutConfirm(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', bounce: 0.3 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full border border-gray-200 dark:border-gray-800 shadow-2xl"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                  <LogOut size={28} className="text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-950 dark:text-white mb-2">Déconnexion</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  Voulez-vous vraiment vous déconnecter ?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowLogoutConfirm(false)}
+                    disabled={isLoggingOut}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium text-sm disabled:opacity-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                  >
+                    {isLoggingOut ? (
+                      <><Loader2 size={16} className="animate-spin" /> En cours...</>
+                    ) : (
+                      <><LogOut size={16} /> Déconnecter</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Search Bar - Bottom Section */}
       {showSearch && (

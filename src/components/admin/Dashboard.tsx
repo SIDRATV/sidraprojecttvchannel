@@ -64,9 +64,10 @@ import { categoryService } from '@/services/categories';
 import { GasFeeManager } from '@/components/admin/GasFeeManager';
 import { AdminPremiumManager } from '@/components/admin/AdminPremiumManager';
 import { AdminSurveyManager } from '@/components/admin/AdminSurveyManager';
+import { AdminVotingManager } from '@/components/admin/AdminVotingManager';
 import type { Category } from '@/types';
 
-type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys';
+type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting';
 
 const COLORS = ['#0F7A5C', '#19C37D', '#D4AF37', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -111,6 +112,7 @@ export function AdminDashboard() {
     { id: 'finances', label: 'Finances', icon: DollarSign },
     { id: 'security', label: 'Sécurité', icon: Shield },
     { id: 'surveys', label: 'Sondages', icon: Send },
+    { id: 'voting', label: 'Projets de Vote', icon: Award },
   ] as const;
 
   return (
@@ -136,6 +138,7 @@ export function AdminDashboard() {
             const isFinance = id === 'finances';
             const isAdminTab = id === 'admins';
             const isPremiumTab = id === 'premium';
+            const isVotingTab = id === 'voting';
             const accent = isDanger
               ? isActive ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-slate-400 hover:bg-red-500/10 hover:text-red-300'
               : isFinance
@@ -144,6 +147,8 @@ export function AdminDashboard() {
               ? isActive ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-slate-400 hover:bg-purple-500/10 hover:text-purple-300'
               : isPremiumTab
               ? isActive ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30' : 'text-slate-400 hover:bg-gold-500/10 hover:text-gold-300'
+              : isVotingTab
+              ? isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-300'
               : isActive
               ? 'bg-gradient-to-r from-brand-500 to-brand-400 text-white shadow-lg shadow-brand-500/25'
               : 'text-slate-300 hover:bg-slate-800/50 hover:text-white';
@@ -272,6 +277,7 @@ export function AdminDashboard() {
             {activeTab === 'finances' && <FinancesTab />}
             {activeTab === 'security' && <SecurityTab />}
             {activeTab === 'surveys' && <SurveysTab />}
+            {activeTab === 'voting' && <VotingTab />}
           </motion.div>
         </div>
       </div>
@@ -1604,4 +1610,11 @@ function SurveysTab() {
   const { session } = useAuth();
   if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
   return <AdminSurveyManager token={session.access_token} />;
+}
+
+// ==================== VOTING TAB ====================
+function VotingTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return <AdminVotingManager token={session.access_token} />;
 }

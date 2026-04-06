@@ -2,1075 +2,892 @@
 
 export const dynamic = 'force-dynamic';
 
-import { motion } from 'framer-motion';
-import { useState } from 'react';
-import { Users, Star, TrendingUp, ArrowRight, Award, Check, AlertCircle, Clock, X, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Users,
+  Star,
+  TrendingUp,
+  ArrowRight,
+  Award,
+  Check,
+  AlertCircle,
+  Clock,
+  X,
+  Plus,
+  Search,
+  Globe,
+  ExternalLink,
+  Loader2,
+  Sparkles,
+  Building2,
+  FileText,
+  Send,
+  ChevronRight,
+  Eye,
+  Mail,
+  MapPin,
+  Coins,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+
+/* ── Types ─────────────────────────────────────────────── */
 
 interface Partner {
   id: string;
   name: string;
   description: string;
   category: string;
-  logo: string;
+  logo_emoji: string;
+  logo_url: string;
+  website_url: string;
   rating: number;
-  reviews: number;
-  followers: number;
-  status: 'active' | 'pending' | 'featured';
-  joinDate: string;
+  reviews_count: number;
+  followers_count: number;
+  status: string;
   benefits: string[];
+  join_date: string;
 }
 
-interface ApplicationRequest {
+interface Application {
   id: string;
-  projectName: string;
-  ownerName: string;
-  partnershipType: 'advertising' | 'project';
-  status: 'pending' | 'approved' | 'rejected';
-  submittedDate: string;
-  message?: string;
+  project_name: string;
+  owner_name: string;
+  owner_email: string;
+  partnership_type: string;
+  domain: string;
+  redirect_link: string;
+  benefits: string[];
+  countries: string[];
+  sda_amount: number;
+  has_team_in_5_countries: boolean;
+  has_sda_2000_plus: boolean;
+  status: string;
+  created_at: string;
 }
 
-const mockPartners: Partner[] = [
-  {
-    id: '1',
-    name: 'TechHub Innovation',
-    description: 'Leading technology development agency focusing on AI and blockchain solutions',
-    category: 'Technology',
-    logo: '🚀',
-    rating: 4.8,
-    reviews: 342,
-    followers: 15200,
-    status: 'featured',
-    joinDate: 'Jan 2024',
-    benefits: ['Revenue Sharing', 'Co-marketing', 'Technical Support'],
-  },
-  {
-    id: '2',
-    name: 'Islamic Learning Academy',
-    description: 'Premium Islamic education platform with certified instructors',
-    category: 'Education',
-    logo: '📚',
-    rating: 4.9,
-    reviews: 521,
-    followers: 28500,
-    status: 'featured',
-    joinDate: 'Dec 2023',
-    benefits: ['Credential Recognition', 'Student Access', 'API Integration'],
-  },
-  {
-    id: '3',
-    name: 'Green Energy Solutions',
-    description: 'Sustainable technology and renewable energy implementation',
-    category: 'Sustainability',
-    logo: '💚',
-    rating: 4.6,
-    reviews: 218,
-    followers: 9800,
-    status: 'active',
-    joinDate: 'Mar 2024',
-    benefits: ['Eco-Certification', 'Grant Access', 'Network Expansion'],
-  },
-  {
-    id: '4',
-    name: 'Global Healthcare Network',
-    description: 'International medical services and health information platform',
-    category: 'Healthcare',
-    logo: '⚕️',
-    rating: 4.7,
-    reviews: 456,
-    followers: 32100,
-    status: 'featured',
-    joinDate: 'Feb 2024',
-    benefits: ['Health Insurance', 'Research Data', 'Expert Network'],
-  },
-  {
-    id: '5',
-    name: 'Creative Studios Collective',
-    description: 'Network of content creators and digital artists',
-    category: 'Arts & Media',
-    logo: '🎨',
-    rating: 4.4,
-    reviews: 287,
-    followers: 11400,
-    status: 'active',
-    joinDate: 'Apr 2024',
-    benefits: ['Portfolio Showcase', 'Collaboration Tools', 'Revenue Streams'],
-  },
-  {
-    id: '6',
-    name: 'Financial Innovation Labs',
-    description: 'Fintech solutions for Islamic banking and finance',
-    category: 'Finance',
-    logo: '💰',
-    rating: 4.9,
-    reviews: 678,
-    followers: 45300,
-    status: 'featured',
-    joinDate: 'Jan 2024',
-    benefits: ['Payment Integration', 'Compliance Support', 'Business Tools'],
-  },
+/* ── Helpers ───────────────────────────────────────────── */
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `Il y a ${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Il y a ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `Il y a ${days}j`;
+  return new Date(dateStr).toLocaleDateString('fr-FR');
+}
+
+const CATEGORIES = [
+  'Technologie', 'Finance', 'Éducation', 'Média', 'E-commerce',
+  'Santé', 'Énergie', 'Gouvernement', 'ONG', 'Autre',
 ];
 
-export default function PartenariatPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedPartner, setSelectedPartner] = useState<string | null>(null);
-  const [currentTab, setCurrentTab] = useState<'explore' | 'applications'>('explore');
-  const [showApplicationForm, setShowApplicationForm] = useState(false);
-  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [partnershipType, setPartnershipType] = useState<'advertising' | 'project' | null>(null);
+const BENEFITS_OPTIONS = [
+  'Partage de revenus', 'Co-marketing', 'Support technique',
+  'Accès API', 'Formation', 'Visibilité médiatique',
+  'Accès communauté', 'Certification',
+];
 
-  // Form state
-  const [formData, setFormData] = useState({
-    projectName: '',
-    ownerName: '',
-    ownerEmail: '',
+const COUNTRIES_LIST = [
+  'France', 'Maroc', 'Algérie', 'Tunisie', 'Sénégal',
+  'Côte d\'Ivoire', 'Cameroun', 'Belgique', 'Canada', 'Suisse',
+  'Turquie', 'Arabie Saoudite', 'Émirats Arabes Unis', 'Mauritanie', 'Mali',
+];
+
+/* ── Main Page ─────────────────────────────────────────── */
+
+export default function PartenariatPage() {
+  const { session } = useAuth();
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [myApps, setMyApps] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'browse' | 'apply' | 'my-apps'>('browse');
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+
+  // Application form state
+  const [appStep, setAppStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [appForm, setAppForm] = useState({
+    project_name: '',
+    owner_name: '',
+    owner_email: '',
+    partnership_type: 'project' as 'advertising' | 'project',
     domain: '',
-    redirectLink: '',
-    benefits: ['', '', '', '', ''],
+    redirect_link: '',
+    benefits: [] as string[],
     countries: [] as string[],
-    sdaAmount: '',
-    policyAgreed: false,
-    hasTeamIn5Countries: false,
-    hasSDA2000Plus: false,
+    sda_amount: 0,
+    has_team_in_5_countries: false,
+    has_sda_2000_plus: false,
   });
 
-  // Mock applications
-  const [applications] = useState<ApplicationRequest[]>([
-    {
-      id: '1',
-      projectName: 'AI Learning Hub',
-      ownerName: 'Ahmed Hassan',
-      partnershipType: 'project',
-      status: 'approved',
-      submittedDate: '2024-02-15',
-    },
-    {
-      id: '2',
-      projectName: 'Islamic Finance App',
-      ownerName: 'Fatima Al-Mansouri',
-      partnershipType: 'advertising',
-      status: 'pending',
-      submittedDate: '2024-03-10',
-    },
-  ]);
+  /* ── Data Fetching ─── */
 
-  const categories = Array.from(new Set(mockPartners.map((p) => p.category)));
-  const filteredPartners = selectedCategory
-    ? mockPartners.filter((p) => p.category === selectedCategory)
-    : mockPartners;
-
-  const handleBenefitChange = (index: number, value: string) => {
-    const newBenefits = [...formData.benefits];
-    newBenefits[index] = value;
-    setFormData({ ...formData, benefits: newBenefits });
-  };
-
-  const addBenefit = () => {
-    setFormData({ ...formData, benefits: [...formData.benefits, ''] });
-  };
-
-  const handleCountryToggle = (country: string) => {
-    setFormData(prev => ({
-      ...prev,
-      countries: prev.countries.includes(country)
-        ? prev.countries.filter(c => c !== country)
-        : [...prev.countries, country]
-    }));
-  };
-
-  const validateStep = () => {
-    if (currentStep === 1) {
-      return (
-        partnershipType &&
-        formData.projectName.trim() !== '' &&
-        formData.ownerName.trim() !== '' &&
-        formData.ownerEmail.includes('@')
-      );
-    } else if (currentStep === 2) {
-      return (
-        formData.domain.trim() !== '' &&
-        formData.redirectLink.trim() !== '' &&
-        formData.benefits.filter(b => b.trim()).length >= 5
-      );
-    } else if (currentStep === 3) {
-      // Advertising: Only needs agreement
-      if (partnershipType === 'advertising') {
-        return formData.policyAgreed;
-      }
-      // Project: Needs 5 countries confirmation + 2000+ SDA + agreement
-      return (
-        formData.hasTeamIn5Countries &&
-        formData.hasSDA2000Plus &&
-        formData.policyAgreed
-      );
+  const fetchPartners = useCallback(async () => {
+    try {
+      const res = await fetch('/api/partnerships');
+      const data = await res.json();
+      if (data.partners) setPartners(data.partners);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
     }
-    return false;
-  };
+  }, []);
 
-  const handleSubmit = () => {
-    if (validateStep()) {
-      // Show submission modal
-      setShowSubmissionModal(true);
-      // Simulated delay before clearing form
-      setTimeout(() => {
-        setShowApplicationForm(false);
-        setCurrentStep(1);
-        setPartnershipType(null);
-        setFormData({
-          projectName: '',
-          ownerName: '',
-          ownerEmail: '',
-          domain: '',
-          redirectLink: '',
-          benefits: ['', '', '', '', ''],
-          countries: [],
-          sdaAmount: '',
-          policyAgreed: false,
-          hasTeamIn5Countries: false,
-          hasSDA2000Plus: false,
+  const fetchMyApps = useCallback(async () => {
+    if (!session?.access_token) return;
+    try {
+      const res = await fetch('/api/partnerships/my-applications', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data.applications) setMyApps(data.applications);
+    } catch {
+      // silent
+    }
+  }, [session?.access_token]);
+
+  useEffect(() => {
+    fetchPartners();
+  }, [fetchPartners]);
+
+  useEffect(() => {
+    if (activeView === 'my-apps') fetchMyApps();
+  }, [activeView, fetchMyApps]);
+
+  /* ── Filter Logic ─── */
+
+  const categories = Array.from(new Set(partners.map((p) => p.category)));
+
+  const filteredPartners = partners.filter((p) => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const featuredPartners = filteredPartners.filter((p) => p.status === 'featured');
+  const regularPartners = filteredPartners.filter((p) => p.status !== 'featured');
+
+  /* ── Submit Application ─── */
+
+  const handleSubmitApplication = async () => {
+    if (!session?.access_token) {
+      setSubmitMessage({ type: 'error', text: 'Vous devez être connecté pour postuler' });
+      return;
+    }
+    if (!appForm.project_name || !appForm.owner_name || !appForm.owner_email) {
+      setSubmitMessage({ type: 'error', text: 'Veuillez remplir tous les champs obligatoires' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/partnerships', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(appForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSubmitMessage({ type: 'success', text: 'Candidature envoyée avec succès !' });
+        setAppForm({
+          project_name: '', owner_name: '', owner_email: '', partnership_type: 'project',
+          domain: '', redirect_link: '', benefits: [], countries: [],
+          sda_amount: 0, has_team_in_5_countries: false, has_sda_2000_plus: false,
         });
-      }, 2000);
+        setAppStep(1);
+        setTimeout(() => { setActiveView('my-apps'); setSubmitMessage(null); }, 2000);
+      } else {
+        setSubmitMessage({ type: 'error', text: data.error || 'Erreur lors de l\'envoi' });
+      }
+    } catch {
+      setSubmitMessage({ type: 'error', text: 'Erreur réseau' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
+  /* ── Render ─── */
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 p-4 md:p-8 transition-colors">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center">
-            <Award className="text-white" size={24} />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-950 dark:text-white">Partners</h1>
-        </div>
-        <p className="text-gray-600 dark:text-gray-400">Join our network of innovative organizations</p>
-      </motion.div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+      {/* Animated Background Orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-20 -left-32 w-96 h-96 bg-brand-500/8 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-40 -right-32 w-80 h-80 bg-gold-500/6 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '6s' }} />
+      </div>
 
-      {/* Tabs */}
-      <motion.div
-        variants={itemVariants}
-        className="flex gap-4 mb-8 border-b border-gray-200 dark:border-gray-800"
-      >
-        <button
-          onClick={() => setCurrentTab('explore')}
-          className={`pb-4 px-4 font-semibold transition-all ${
-            currentTab === 'explore'
-              ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
-          }`}
-        >
-          Explore Partners
-        </button>
-        <button
-          onClick={() => setCurrentTab('applications')}
-          className={`pb-4 px-4 font-semibold transition-all ${
-            currentTab === 'applications'
-              ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
-          }`}
-        >
-          My Applications
-        </button>
-      </motion.div>
-
-      {/* CTA Section - Only on explore tab */}
-      {currentTab === 'explore' && (
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+        {/* Header */}
         <motion.div
-          variants={itemVariants}
-          className="mb-8 bg-gradient-to-r from-pink-500 via-pink-600 to-rose-600 rounded-xl p-8 text-white shadow-lg shadow-pink-500/20"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
         >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Become a Partner</h2>
-              <p className="text-pink-100">Collaborate with us to create meaningful impact and grow together</p>
-            </div>
-            <Button 
-              size="lg" 
-              variant="primary"
-              onClick={() => setShowApplicationForm(true)}
-              className="bg-pink-600 dark:bg-white text-white dark:text-pink-600 hover:bg-pink-700 dark:hover:bg-gray-100 font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-            >
-              Apply Now
-              <ArrowRight size={20} />
-            </Button>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-full text-brand-400 text-xs font-semibold mb-4">
+            <Sparkles size={14} /> Réseau de Partenaires
           </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-3">
+            <span className="bg-gradient-to-r from-white via-brand-100 to-white bg-clip-text text-transparent">
+              Nos Partenariats
+            </span>
+          </h1>
+          <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto">
+            Découvrez nos partenaires stratégiques et rejoignez l&#39;écosystème Sidra
+          </p>
         </motion.div>
-      )}
 
-      {/* Explore Tab Content */}
-      {currentTab === 'explore' && !showApplicationForm && (
-        <>
-          {/* Category Filter */}
-          <motion.div
-            variants={itemVariants}
-            className="flex gap-2 mb-8 overflow-x-auto pb-2"
-          >
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
-                selectedCategory === null
-                  ? 'bg-pink-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'
+        {/* Navigation Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex justify-center gap-2 mb-8 flex-wrap"
+        >
+          {([
+            { id: 'browse' as const, label: 'Partenaires', icon: Building2 },
+            { id: 'apply' as const, label: 'Devenir Partenaire', icon: Plus },
+            { id: 'my-apps' as const, label: 'Mes Candidatures', icon: FileText },
+          ]).map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all border backdrop-blur-xl ${
+                  activeView === tab.id
+                    ? 'bg-brand-500/20 text-brand-400 border-brand-500/40 shadow-lg shadow-brand-500/10'
+                    : 'bg-white/[0.04] text-slate-400 border-white/[0.08] hover:bg-white/[0.08] hover:text-white'
+                }`}
+              >
+                <Icon size={16} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </motion.div>
+
+        {/* Message Banner */}
+        <AnimatePresence>
+          {submitMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`flex items-center gap-3 p-4 mb-6 rounded-xl border backdrop-blur-xl ${
+                submitMessage.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : 'bg-red-500/10 border-red-500/30 text-red-300'
               }`}
             >
-              All Partners
-            </button>
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === category
-                    ? 'bg-pink-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"
-          >
-            {[
-              { label: 'Active Partners', value: mockPartners.filter(p => p.status === 'active' || p.status === 'featured').length },
-              { label: 'Total Contributors', value: mockPartners.reduce((sum, p) => sum + p.followers, 0).toLocaleString() },
-              { label: 'Success Rate', value: '98%' },
-              { label: 'Countries', value: '45+' },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                variants={itemVariants}
-                whileHover={{ y: -5 }}
-                className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-800"
-              >
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{stat.label}</p>
-                <p className="text-3xl font-bold text-gray-950 dark:text-white">{stat.value}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Partners Grid */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4"
-          >
-            {filteredPartners.map((partner) => (
-              <motion.div
-                key={partner.id}
-                variants={itemVariants}
-                whileHover={{ y: -8 }}
-                onClick={() => setSelectedPartner(selectedPartner === partner.id ? null : partner.id)}
-                className={`rounded-xl overflow-hidden border transition-all cursor-pointer backdrop-blur-sm ${
-                  selectedPartner === partner.id
-                    ? 'ring-2 ring-pink-500 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-500/10 dark:to-rose-500/10 border-pink-300 dark:border-pink-700'
-                    : partner.status === 'featured'
-                    ? 'bg-gradient-to-br from-yellow-50/50 to-orange-50/50 dark:from-yellow-500/5 dark:to-orange-500/5 border-yellow-200 dark:border-yellow-700'
-                    : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-pink-300 dark:hover:border-pink-700'
-                }`}
-              >
-                {/* Featured Badge */}
-                {partner.status === 'featured' && (
-                  <div className="relative h-1 bg-gradient-to-r from-yellow-400 to-orange-400" />
-                )}
-
-                <div className="p-4">
-                  {/* Logo and Status */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="w-14 h-14 bg-gradient-to-br from-pink-100 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30 rounded-lg flex items-center justify-center text-3xl">
-                      {partner.logo}
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      partner.status === 'featured' ? 'bg-yellow-500 text-white' :
-                      partner.status === 'active' ? 'bg-green-500 text-white' :
-                      'bg-brand-500 text-white'
-                    }`}>
-                      {partner.status.toUpperCase()}
-                    </span>
-                  </div>
-
-                  {/* Name and Category */}
-                  <h3 className="text-lg font-bold text-gray-950 dark:text-white mb-1">
-                    {partner.name}
-                  </h3>
-                  <p className="text-xs text-pink-600 dark:text-pink-400 font-semibold mb-3">
-                    {partner.category}
-                  </p>
-
-                  {/* Description */}
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-1">
-                    {partner.description}
-                  </p>
-
-                  {/* Rating */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={14}
-                          className={i < Math.floor(partner.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-700'}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-xs font-semibold text-gray-950 dark:text-white">
-                      {partner.rating}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-500">
-                      ({partner.reviews})
-                    </span>
-                  </div>
-
-                  {/* Benefits */}
-                  {selectedPartner === partner.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="space-y-2 mb-4 py-4 border-y border-gray-200 dark:border-gray-800"
-                    >
-                      <p className="text-sm font-semibold text-gray-950 dark:text-white">Project Advantages:</p>
-                      {partner.benefits.map((benefit, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <div className="w-2 h-2 rounded-full bg-pink-600" />
-                          {benefit}
-                        </div>
-                      ))}
-                    </motion.div>
-                  )}
-
-                  {/* Action Button */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-4"
-                  >
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                    >
-                      Join Now
-                    </Button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Empty State */}
-          {filteredPartners.length === 0 && (
-            <motion.div
-              variants={itemVariants}
-              className="text-center py-12"
-            >
-              <Award size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">No partners in this category.</p>
+              {submitMessage.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+              <span className="text-sm font-medium">{submitMessage.text}</span>
+              <button onClick={() => setSubmitMessage(null)} className="ml-auto hover:opacity-70"><X size={16} /></button>
             </motion.div>
           )}
-        </>
-      )}
+        </AnimatePresence>
 
-      {/* Applications Tab Content */}
-      {currentTab === 'applications' && !showApplicationForm && (
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-4"
-        >
-          {applications.length === 0 ? (
-            <motion.div
-              variants={itemVariants}
-              className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-xl"
-            >
-              <AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 mb-4">No applications yet</p>
-              <Button onClick={() => setShowApplicationForm(true)}>
-                Submit Application
-              </Button>
-            </motion.div>
-          ) : (
-            applications.map((app) => (
-              <motion.div
-                key={app.id}
-                variants={itemVariants}
-                className={`rounded-xl p-6 border transition-all ${
-                  app.status === 'approved'
-                    ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-700'
-                    : app.status === 'pending'
-                    ? 'bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-700'
-                    : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-700'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-bold text-gray-950 dark:text-white">
-                        {app.projectName}
-                      </h3>
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
-                        app.status === 'approved'
-                          ? 'bg-green-500 text-white'
-                          : app.status === 'pending'
-                          ? 'bg-yellow-500 text-white'
-                          : 'bg-red-500 text-white'
-                      }`}>
-                        {app.status === 'approved' && <Check size={14} />}
-                        {app.status === 'pending' && <Clock size={14} />}
-                        {app.status === 'rejected' && <X size={14} />}
-                        {app.status.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      Owner: <span className="font-semibold">{app.ownerName}</span>
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      Type: <span className="font-semibold capitalize">{app.partnershipType}</span>
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500">
-                      Submitted: {new Date(app.submittedDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {app.message && (
-                    <AlertCircle className="text-yellow-600 dark:text-yellow-400 flex-shrink-0" size={24} />
-                  )}
-                </div>
-              </motion.div>
-            ))
-          )}
-
-          <Button 
-            onClick={() => setShowApplicationForm(true)}
-            className="w-full mt-6"
-            variant="primary"
-          >
-            New Application
-          </Button>
-        </motion.div>
-      )}
-
-      {/* Application Form Modal */}
-      {showApplicationForm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={() => setShowApplicationForm(false)}
-        >
-          <motion.div
-            initial={{ scale: 0.95, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Form Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-pink-500 to-rose-600 p-6 text-white flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-bold">Partnership Application</h3>
-                <p className="text-pink-100">Step {currentStep} of 3</p>
+        {/* ═══════════════════════════════════════════ BROWSE VIEW ═══ */}
+        {activeView === 'browse' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            {/* Search + Filter */}
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un partenaire..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+                />
               </div>
-              <button
-                onClick={() => {
-                  setShowApplicationForm(false);
-                  setCurrentStep(1);
-                  setPartnershipType(null);
-                }}
-                className="p-2 hover:bg-pink-600 rounded-lg transition-all"
-              >
-                <X size={24} />
-              </button>
             </div>
 
-            {/* Progress Bar */}
-            <div className="px-6 pt-6">
-              <div className="flex gap-2 mb-6">
-                {[1, 2, 3].map((step) => (
-                  <div key={step} className="flex-1">
-                    <div className={`h-2 rounded-full transition-all ${
-                      step <= currentStep
-                        ? 'bg-pink-600'
-                        : 'bg-gray-300 dark:bg-gray-700'
-                    }`} />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
-                      Step {step}
-                    </p>
-                  </div>
+            {/* Category Pills */}
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                    !selectedCategory
+                      ? 'bg-brand-500/20 text-brand-400 border-brand-500/40'
+                      : 'bg-white/[0.04] text-slate-500 border-white/[0.08] hover:text-white'
+                  }`}
+                >
+                  Tous
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                      selectedCategory === cat
+                        ? 'bg-brand-500/20 text-brand-400 border-brand-500/40'
+                        : 'bg-white/[0.04] text-slate-500 border-white/[0.08] hover:text-white'
+                    }`}
+                  >
+                    {cat}
+                  </button>
                 ))}
               </div>
-            </div>
+            )}
 
-            {/* Form Content */}
-            <div className="px-6 py-6 space-y-6">
-              {/* Step 1: Partnership Type & Basic Info */}
-              {currentStep === 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <h4 className="text-lg font-bold text-gray-950 dark:text-white mb-4">
-                      Select Partnership Type
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {['advertising', 'project'].map((type) => (
-                        <motion.button
-                          key={type}
-                          onClick={() => setPartnershipType(type as 'advertising' | 'project')}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className={`p-6 rounded-xl border-2 transition-all relative overflow-hidden ${
-                            partnershipType === type
-                              ? 'border-pink-600 bg-pink-600 dark:bg-pink-600 text-white shadow-lg shadow-pink-500/30'
-                              : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-pink-400 dark:hover:border-pink-600'
-                          }`}
-                        >
-                          {partnershipType === type && (
-                            <div className="absolute top-3 right-3 bg-white dark:bg-gray-900 rounded-full p-1">
-                              <Check size={18} className="text-pink-600" />
+            {/* Loading */}
+            {loading && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 size={32} className="animate-spin text-brand-400" />
+              </div>
+            )}
+
+            {/* Stats Banner */}
+            {!loading && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: 'Partenaires', value: partners.length, icon: Building2, gradient: 'from-brand-500 to-emerald-400' },
+                  { label: 'En vedette', value: featuredPartners.length, icon: Star, gradient: 'from-gold-500 to-amber-400' },
+                  { label: 'Catégories', value: categories.length, icon: Globe, gradient: 'from-blue-500 to-cyan-400' },
+                  { label: 'Note moyenne', value: partners.length > 0 ? (partners.reduce((s, p) => s + (p.rating || 0), 0) / partners.length).toFixed(1) : '0', icon: Award, gradient: 'from-purple-500 to-pink-400' },
+                ].map((stat, i) => {
+                  const Icon = stat.icon;
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="bg-white/[0.03] backdrop-blur-xl rounded-xl p-4 border border-white/[0.08]"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider">{stat.label}</span>
+                        <div className={`w-7 h-7 bg-gradient-to-br ${stat.gradient} rounded-lg flex items-center justify-center`}>
+                          <Icon size={13} className="text-white" />
+                        </div>
+                      </div>
+                      <p className="text-xl font-bold text-white">{stat.value}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Featured Partners */}
+            {featuredPartners.length > 0 && (
+              <div>
+                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Star size={18} className="text-gold-400" />
+                  Partenaires en Vedette
+                </h2>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {featuredPartners.map((partner, i) => (
+                    <motion.div
+                      key={partner.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.08 }}
+                      whileHover={{ y: -4 }}
+                      onClick={() => setSelectedPartner(partner)}
+                      className="group bg-gradient-to-br from-gold-500/[0.08] to-transparent backdrop-blur-xl rounded-2xl border border-gold-500/20 p-6 cursor-pointer hover:border-gold-500/40 hover:shadow-lg hover:shadow-gold-500/10 transition-all"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 bg-white/[0.06] rounded-xl flex items-center justify-center text-3xl flex-shrink-0 group-hover:scale-110 transition-transform">
+                          {partner.logo_emoji || '🏢'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-bold text-white truncate">{partner.name}</h3>
+                            <span className="px-2 py-0.5 bg-gold-500/20 border border-gold-500/30 rounded-md text-[10px] font-bold text-gold-400 flex-shrink-0">
+                              ★ VEDETTE
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-400 line-clamp-2 mb-3">{partner.description}</p>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                            <span className="flex items-center gap-1"><Globe size={12} /> {partner.category}</span>
+                            <span className="flex items-center gap-1"><Star size={12} className="text-gold-400" /> {partner.rating?.toFixed(1) || '0.0'}</span>
+                            <span className="flex items-center gap-1"><Users size={12} /> {(partner.followers_count || 0).toLocaleString('fr-FR')}</span>
+                          </div>
+                          {partner.benefits?.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                              {partner.benefits.slice(0, 3).map((b, j) => (
+                                <span key={j} className="px-2 py-0.5 bg-gold-500/10 border border-gold-500/15 rounded text-[10px] text-gold-300">
+                                  {b}
+                                </span>
+                              ))}
                             </div>
                           )}
-                          <div className={`font-bold capitalize mb-2 ${
-                            partnershipType === type
-                              ? 'text-white'
-                              : 'text-gray-950 dark:text-white'
-                          }`}>
-                            Partnership for {type === 'advertising' ? 'Advertising' : 'Project'}
-                          </div>
-                          <p className={`text-xs ${
-                            partnershipType === type
-                              ? 'text-pink-100'
-                              : 'text-gray-600 dark:text-gray-400'
-                          }`}>
-                            {type === 'advertising'
-                              ? 'Promote your brand through our platform'
-                              : 'Showcase your project to our community'}
-                          </p>
-                        </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Regular Partners */}
+            {regularPartners.length > 0 && (
+              <div>
+                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Building2 size={18} className="text-brand-400" />
+                  Tous les Partenaires
+                </h2>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {regularPartners.map((partner, i) => (
+                    <motion.div
+                      key={partner.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      whileHover={{ y: -3 }}
+                      onClick={() => setSelectedPartner(partner)}
+                      className="group bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/[0.08] p-5 cursor-pointer hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-500/5 transition-all"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-11 h-11 bg-white/[0.06] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
+                          {partner.logo_emoji || '🏢'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-white truncate">{partner.name}</h3>
+                          <p className="text-xs text-slate-500 mt-0.5">{partner.category}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-3">{partner.description}</p>
+                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/[0.06] text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1"><Star size={11} className="text-gold-400" /> {partner.rating?.toFixed(1)}</span>
+                        <span className="flex items-center gap-1"><Users size={11} /> {(partner.followers_count || 0).toLocaleString('fr-FR')}</span>
+                        {partner.website_url && (
+                          <span className="flex items-center gap-1 text-brand-400 ml-auto"><ExternalLink size={11} /></span>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && filteredPartners.length === 0 && (
+              <div className="text-center py-20">
+                <div className="w-20 h-20 bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/[0.08]">
+                  <Building2 size={32} className="text-slate-600" />
+                </div>
+                <p className="text-slate-400 font-medium text-lg">Aucun partenaire trouvé</p>
+                <p className="text-slate-600 text-sm mt-1">Revenez bientôt ou modifiez vos filtres</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════ APPLY VIEW ═══ */}
+        {activeView === 'apply' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto">
+            {/* Step Indicator */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              {[1, 2, 3].map((step) => (
+                <div key={step} className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    appStep >= step
+                      ? 'bg-gradient-to-br from-brand-500 to-emerald-400 text-white shadow-lg shadow-brand-500/25'
+                      : 'bg-white/[0.06] text-slate-600 border border-white/[0.1]'
+                  }`}>
+                    {appStep > step ? <Check size={14} /> : step}
+                  </div>
+                  {step < 3 && <div className={`w-12 h-0.5 rounded-full transition-all ${appStep > step ? 'bg-brand-500' : 'bg-white/[0.08]'}`} />}
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-white/[0.03] backdrop-blur-2xl rounded-2xl border border-white/[0.08] p-6 md:p-8">
+              {/* Step 1: Basic Info */}
+              {appStep === 1 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">Informations du Projet</h3>
+                    <p className="text-sm text-slate-400">Décrivez votre projet ou entreprise</p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom du projet *</label>
+                    <input type="text" value={appForm.project_name}
+                      onChange={(e) => setAppForm({ ...appForm, project_name: e.target.value })}
+                      placeholder="Ex: Mon Entreprise Tech"
+                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom du propriétaire *</label>
+                      <input type="text" value={appForm.owner_name}
+                        onChange={(e) => setAppForm({ ...appForm, owner_name: e.target.value })}
+                        placeholder="Votre nom"
+                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Email *</label>
+                      <input type="email" value={appForm.owner_email}
+                        onChange={(e) => setAppForm({ ...appForm, owner_email: e.target.value })}
+                        placeholder="email@exemple.com"
+                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-2 block">Type de partenariat</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {([
+                        { id: 'project' as const, label: 'Projet / Collaboration', emoji: '🤝', desc: 'Développement conjoint, intégration technique' },
+                        { id: 'advertising' as const, label: 'Publicité / Sponsoring', emoji: '📢', desc: 'Visibilité, promotion, placement média' },
+                      ]).map((type) => (
+                        <button
+                          key={type.id}
+                          onClick={() => setAppForm({ ...appForm, partnership_type: type.id })}
+                          className={`text-left p-4 rounded-xl border transition-all ${
+                            appForm.partnership_type === type.id
+                              ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/5'
+                              : 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15]'
+                          }`}
+                        >
+                          <span className="text-2xl mb-2 block">{type.emoji}</span>
+                          <p className="text-sm font-semibold text-white">{type.label}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{type.desc}</p>
+                        </button>
                       ))}
                     </div>
                   </div>
 
-                  <div>
-                    <h4 className="text-lg font-bold text-gray-950 dark:text-white mb-4">
-                      Project & Owner Information
-                    </h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
-                          Project Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.projectName}
-                          onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-950 dark:text-white focus:ring-2 focus:ring-pink-600 outline-none"
-                          placeholder="Enter project name"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
-                          Owner Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.ownerName}
-                          onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-950 dark:text-white focus:ring-2 focus:ring-pink-600 outline-none"
-                          placeholder="Enter owner name"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
-                          Email Address *
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.ownerEmail}
-                          onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-950 dark:text-white focus:ring-2 focus:ring-pink-600 outline-none"
-                          placeholder="Enter email address"
-                        />
-                      </div>
-                    </div>
+                  <div className="flex justify-end pt-2">
+                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                      onClick={() => setAppStep(2)}
+                      disabled={!appForm.project_name || !appForm.owner_name || !appForm.owner_email}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25 disabled:opacity-40 disabled:cursor-not-allowed">
+                      Suivant <ChevronRight size={16} />
+                    </motion.button>
                   </div>
                 </motion.div>
               )}
 
-              {/* Step 2: Domain & Benefits */}
-              {currentStep === 2 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
-                >
+              {/* Step 2: Details */}
+              {appStep === 2 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
-                      Project Domain *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.domain}
-                      onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-950 dark:text-white focus:ring-2 focus:ring-pink-600 outline-none"
-                      placeholder="example.com"
-                    />
+                    <h3 className="text-xl font-bold text-white mb-1">Détails Complémentaires</h3>
+                    <p className="text-sm text-slate-400">Informations techniques et géographiques</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Domaine / Site web</label>
+                      <input type="text" value={appForm.domain}
+                        onChange={(e) => setAppForm({ ...appForm, domain: e.target.value })}
+                        placeholder="exemple.com"
+                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Lien de redirection</label>
+                      <input type="text" value={appForm.redirect_link}
+                        onChange={(e) => setAppForm({ ...appForm, redirect_link: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
-                      Redirect Link *
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.redirectLink}
-                      onChange={(e) => setFormData({ ...formData, redirectLink: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-950 dark:text-white focus:ring-2 focus:ring-pink-600 outline-none"
-                      placeholder="https://example.com"
-                    />
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Montant SDA disponible</label>
+                    <input type="number" value={appForm.sda_amount || ''}
+                      onChange={(e) => setAppForm({ ...appForm, sda_amount: Number(e.target.value) })}
+                      placeholder="0"
+                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="text-sm font-semibold text-gray-950 dark:text-white">
-                        Project Advantages (Minimum 5) *
-                      </label>
+                    <label className="text-xs font-medium text-slate-400 mb-2 block">Pays d&#39;opération</label>
+                    <div className="flex flex-wrap gap-2">
+                      {COUNTRIES_LIST.map((country) => (
+                        <button
+                          key={country}
+                          onClick={() => {
+                            const countries = appForm.countries.includes(country)
+                              ? appForm.countries.filter((c) => c !== country)
+                              : [...appForm.countries, country];
+                            setAppForm({ ...appForm, countries });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                            appForm.countries.includes(country)
+                              ? 'bg-brand-500/20 text-brand-400 border-brand-500/40'
+                              : 'bg-white/[0.04] text-slate-500 border-white/[0.08] hover:text-white'
+                          }`}
+                        >
+                          {country}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                      appForm.has_team_in_5_countries ? 'bg-brand-500/10 border-brand-500/40' : 'bg-white/[0.03] border-white/[0.08]'
+                    }`}>
+                      <input type="checkbox" checked={appForm.has_team_in_5_countries}
+                        onChange={(e) => setAppForm({ ...appForm, has_team_in_5_countries: e.target.checked })}
+                        className="sr-only" />
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                        appForm.has_team_in_5_countries ? 'bg-brand-500 border-brand-500' : 'border-slate-600'
+                      }`}>
+                        {appForm.has_team_in_5_countries && <Check size={12} className="text-white" />}
+                      </div>
+                      <span className="text-xs text-slate-300">Équipe dans 5+ pays</span>
+                    </label>
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                      appForm.has_sda_2000_plus ? 'bg-brand-500/10 border-brand-500/40' : 'bg-white/[0.03] border-white/[0.08]'
+                    }`}>
+                      <input type="checkbox" checked={appForm.has_sda_2000_plus}
+                        onChange={(e) => setAppForm({ ...appForm, has_sda_2000_plus: e.target.checked })}
+                        className="sr-only" />
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                        appForm.has_sda_2000_plus ? 'bg-brand-500 border-brand-500' : 'border-slate-600'
+                      }`}>
+                        {appForm.has_sda_2000_plus && <Check size={12} className="text-white" />}
+                      </div>
+                      <span className="text-xs text-slate-300">2000+ SDA</span>
+                    </label>
+                  </div>
+
+                  <div className="flex justify-between pt-2">
+                    <button onClick={() => setAppStep(1)} className="px-5 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
+                      ← Retour
+                    </button>
+                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                      onClick={() => setAppStep(3)}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25">
+                      Suivant <ChevronRight size={16} />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Benefits + Submit */}
+              {appStep === 3 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">Avantages Proposés</h3>
+                    <p className="text-sm text-slate-400">Sélectionnez les avantages que vous pouvez offrir</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {BENEFITS_OPTIONS.map((benefit) => (
                       <button
-                        onClick={addBenefit}
-                        className="flex items-center gap-1 text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300"
+                        key={benefit}
+                        onClick={() => {
+                          const benefits = appForm.benefits.includes(benefit)
+                            ? appForm.benefits.filter((b) => b !== benefit)
+                            : [...appForm.benefits, benefit];
+                          setAppForm({ ...appForm, benefits });
+                        }}
+                        className={`flex items-center gap-2 p-3 rounded-xl text-xs font-medium transition-all border text-left ${
+                          appForm.benefits.includes(benefit)
+                            ? 'bg-brand-500/15 text-brand-300 border-brand-500/40'
+                            : 'bg-white/[0.03] text-slate-400 border-white/[0.08] hover:border-white/[0.15]'
+                        }`}
                       >
-                        <Plus size={16} /> Add
+                        <div className={`w-4 h-4 rounded-sm border flex-shrink-0 flex items-center justify-center transition-all ${
+                          appForm.benefits.includes(benefit) ? 'bg-brand-500 border-brand-500' : 'border-slate-600'
+                        }`}>
+                          {appForm.benefits.includes(benefit) && <Check size={10} className="text-white" />}
+                        </div>
+                        {benefit}
                       </button>
+                    ))}
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-white/[0.03] rounded-xl border border-white/[0.08] p-4 space-y-2">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Récapitulatif</p>
+                    <div className="text-sm text-slate-300 space-y-1">
+                      <p><span className="text-slate-500">Projet:</span> {appForm.project_name || '—'}</p>
+                      <p><span className="text-slate-500">Contact:</span> {appForm.owner_name} ({appForm.owner_email})</p>
+                      <p><span className="text-slate-500">Type:</span> {appForm.partnership_type === 'advertising' ? '📢 Publicité' : '🤝 Projet'}</p>
+                      {appForm.countries.length > 0 && <p><span className="text-slate-500">Pays:</span> {appForm.countries.join(', ')}</p>}
+                      {appForm.sda_amount > 0 && <p><span className="text-slate-500">SDA:</span> <span className="text-gold-400">{appForm.sda_amount}</span></p>}
                     </div>
-                    <div className="space-y-2">
-                      {formData.benefits.map((benefit, idx) => (
-                        <input
-                          key={idx}
-                          type="text"
-                          value={benefit}
-                          onChange={(e) => handleBenefitChange(idx, e.target.value)}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-950 dark:text-white focus:ring-2 focus:ring-pink-600 outline-none"
-                          placeholder={`Advantage ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                      {formData.benefits.filter(b => b.trim()).length}/5 advantages entered
-                    </p>
+                  </div>
+
+                  <div className="flex justify-between pt-2">
+                    <button onClick={() => setAppStep(2)} className="px-5 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
+                      ← Retour
+                    </button>
+                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                      disabled={submitting || !session?.access_token}
+                      onClick={handleSubmitApplication}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25 disabled:opacity-40">
+                      {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                      {submitting ? 'Envoi...' : 'Envoyer la Candidature'}
+                    </motion.button>
                   </div>
                 </motion.div>
               )}
-
-              {/* Step 3: Verification */}
-              {currentStep === 3 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
-                >
-                  {/* Advertising Partnership - Simple Verification */}
-                  {partnershipType === 'advertising' && (
-                    <div className="space-y-6">
-                      <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-600 rounded-xl p-6">
-                        <h4 className="text-lg font-bold text-brand-800 dark:text-brand-100 mb-3">
-                          📢 Advertising Partnership Agreement
-                        </h4>
-                        <p className="text-sm text-brand-700 dark:text-brand-200 mb-4">
-                          By submitting this application, you confirm your commitment to promoting your brand on our platform following our guidelines and terms of service.
-                        </p>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={formData.policyAgreed}
-                              onChange={(e) => setFormData({ ...formData, policyAgreed: e.target.checked })}
-                              className="w-4 h-4 rounded accent-brand-500"
-                            />
-                            <label className="text-sm text-brand-700 dark:text-brand-200">
-                              I have read and agree to the advertising guidelines and partnership terms *
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Project Partnership - Detailed Verification */}
-                  {partnershipType === 'project' && (
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="text-lg font-bold text-gray-950 dark:text-white mb-4">
-                          Project Verification Checklist
-                        </h4>
-                        
-                        {/* Requirement 1: Team Members in 5 Countries */}
-                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-500/10 dark:to-pink-500/10 border border-purple-200 dark:border-purple-700 rounded-xl p-6 mb-4">
-                          <div className="flex items-start gap-3">
-                            <div className="pt-1">
-                              <Check className="text-purple-600 dark:text-purple-400" size={20} />
-                            </div>
-                            <div className="flex-1">
-                              <h5 className="font-semibold text-gray-950 dark:text-white mb-2">
-                                Has your project team members in at least 5 different countries?
-                              </h5>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                                Your team should have representatives dispersed across multiple geographical regions
-                              </p>
-                              <label className="flex items-center gap-3 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={formData.hasTeamIn5Countries}
-                                  onChange={(e) => {
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      hasTeamIn5Countries: e.target.checked
-                                    }));
-                                  }}
-                                  className="w-5 h-5 rounded accent-purple-600"
-                                />
-                                <span className="text-sm font-semibold text-gray-950 dark:text-white">
-                                  I confirm my team operates in 5+ countries
-                                </span>
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Requirement 2: SDA Balance */}
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-500/10 dark:to-emerald-500/10 border border-green-200 dark:border-green-700 rounded-xl p-6 mb-4">
-                          <div className="flex items-start gap-3">
-                            <div className="pt-1">
-                              <Check className="text-green-600 dark:text-green-400" size={20} />
-                            </div>
-                            <div className="flex-1">
-                              <h5 className="font-semibold text-gray-950 dark:text-white mb-2">
-                                Does your project have accumulated at least 2000 SDA?
-                              </h5>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                                Minimum Sidra token balance required to ensure project stability
-                              </p>
-                              <label className="flex items-center gap-3 cursor-pointer mb-3">
-                                <input
-                                  type="checkbox"
-                                  checked={formData.hasSDA2000Plus}
-                                  onChange={(e) => {
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      hasSDA2000Plus: e.target.checked
-                                    }));
-                                  }}
-                                  className="w-5 h-5 rounded accent-green-600"
-                                />
-                                <span className="text-sm font-semibold text-gray-950 dark:text-white">
-                                  Confirmed - Project has 2000+ SDA
-                                </span>
-                              </label>
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-950 dark:text-white mb-2">
-                                  Actual SDA Balance (for reference)
-                                </label>
-                                <input
-                                  type="number"
-                                  value={formData.sdaAmount}
-                                  onChange={(e) => setFormData({ ...formData, sdaAmount: e.target.value })}
-                                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-950 dark:text-white focus:ring-2 focus:ring-green-600 outline-none"
-                                  placeholder="Enter SDA amount"
-                                  min="0"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Agreement */}
-                        <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-500/10 dark:to-rose-500/10 border border-pink-200 dark:border-pink-700 rounded-xl p-6">
-                          <h5 className="font-semibold text-gray-950 dark:text-white mb-4">
-                            Final Confirmation
-                          </h5>
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
-                                checked={formData.policyAgreed}
-                                onChange={(e) => setFormData({ ...formData, policyAgreed: e.target.checked })}
-                                className="w-4 h-4 rounded accent-pink-600"
-                              />
-                              <label className="text-sm text-gray-700 dark:text-gray-400">
-                                I confirm all information is accurate and agree to partnership terms *
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </div>
-
-            {/* Form Footer */}
-            <div className="sticky bottom-0 bg-gray-100 dark:bg-gray-800 px-6 py-4 flex gap-3 justify-between border-t border-gray-200 dark:border-gray-700">
-              {currentStep > 1 && (
-                <Button
-                  onClick={() => setCurrentStep(currentStep - 1)}
-                  variant="secondary"
-                >
-                  Back
-                </Button>
-              )}
-              <div className="flex-1" />
-              {currentStep < 3 ? (
-                <Button
-                  onClick={() => setCurrentStep(currentStep + 1)}
-                  variant="primary"
-                  disabled={!validateStep()}
-                  className="disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                  <ArrowRight size={18} />
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleSubmit}
-                  variant="primary"
-                  disabled={!validateStep()}
-                  className="disabled:opacity-50 disabled:cursor-not-allowed bg-green-600 hover:bg-green-700"
-                >
-                  <Check size={18} />
-                  Submit Application
-                </Button>
-              )}
             </div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
 
-      {/* Submission Success Modal */}
-      {showSubmissionModal && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-        >
-          <motion.div
-            initial={{ scale: 0.95, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl"
-          >
-            {/* Success Header */}
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-8 text-white text-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring' }}
-                className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4"
-              >
-                <Check className="text-green-600" size={32} />
-              </motion.div>
-              <h3 className="text-2xl font-bold mb-2">Application Submitted!</h3>
-              <p className="text-green-100">Your partnership request has been received</p>
-            </div>
-
-            {/* Message Content */}
-            <div className="p-8 space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-center space-y-3"
-              >
-                <p className="text-gray-950 dark:text-white font-semibold text-lg">
-                  Votre demande est soumise pour révision
-                </p>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Merci de patienter. Nous vous répondrons bientôt avec des détails sur votre demande de partenariat.
-                </p>
-              </motion.div>
-
-              {/* Loading Animation */}
-              <motion.div
-                className="flex justify-center gap-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                {[0, 1, 2].map((i) => (
+        {/* ═══════════════════════════════════════════ MY APPS VIEW ═══ */}
+        {activeView === 'my-apps' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto space-y-4">
+            {!session?.access_token ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/[0.08]">
+                  <AlertCircle size={28} className="text-slate-600" />
+                </div>
+                <p className="text-slate-400 font-medium">Connectez-vous pour voir vos candidatures</p>
+              </div>
+            ) : myApps.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/[0.08]">
+                  <FileText size={28} className="text-slate-600" />
+                </div>
+                <p className="text-slate-400 font-medium">Aucune candidature</p>
+                <p className="text-slate-600 text-sm mt-1">Soumettez votre première candidature de partenariat</p>
+                <button onClick={() => setActiveView('apply')} className="mt-4 px-5 py-2.5 bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-xl text-sm font-medium hover:bg-brand-500/30 transition-colors">
+                  Postuler maintenant
+                </button>
+              </div>
+            ) : (
+              myApps.map((app, i) => {
+                const statusMap: Record<string, { label: string; color: string; icon: typeof Clock }> = {
+                  pending: { label: 'En attente', color: 'text-amber-400 bg-amber-500/15 border-amber-500/30', icon: Clock },
+                  approved: { label: 'Approuvé', color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30', icon: CheckCircle },
+                  rejected: { label: 'Rejeté', color: 'text-red-400 bg-red-500/15 border-red-500/30', icon: XCircle },
+                };
+                const status = statusMap[app.status] || statusMap.pending;
+                const StatusIcon = status.icon;
+                return (
                   <motion.div
-                    key={i}
-                    className="w-3 h-3 bg-green-500 rounded-full"
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{
-                      duration: 1.5,
-                      delay: i * 0.2,
-                      repeat: Infinity,
-                    }}
-                  />
-                ))}
-              </motion.div>
-
-              {/* Info Box */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-600 rounded-xl p-4"
-              >
-                <p className="text-xs text-brand-700 dark:text-brand-200">
-                  <span className="font-semibold">💡 Conseil:</span> Vous pouvez consulter le statut de votre demande dans l'onglet "My Applications"
-                </p>
-              </motion.div>
-
-              {/* Action Button */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-              >
-                <Button
-                  onClick={() => {
-                    setShowSubmissionModal(false);
-                    setCurrentTab('applications');
-                  }}
-                  variant="primary"
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  View My Applications
-                  <ArrowRight size={18} />
-                </Button>
-              </motion.div>
-            </div>
+                    key={app.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                    className="bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/[0.08] p-5 hover:border-white/[0.15] transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-base font-semibold text-white">{app.project_name}</h3>
+                          <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${status.color}`}>
+                            <StatusIcon size={10} /> {status.label}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-400 mt-1">{app.partnership_type === 'advertising' ? '📢 Publicité' : '🤝 Projet'}</p>
+                      </div>
+                      <span className="text-xs text-slate-600 flex-shrink-0">{timeAgo(app.created_at)}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-slate-500">
+                      {app.domain && <span className="flex items-center gap-1"><Globe size={11} /> {app.domain}</span>}
+                      {app.countries?.length > 0 && <span className="flex items-center gap-1"><MapPin size={11} /> {app.countries.length} pays</span>}
+                      {app.sda_amount > 0 && <span className="flex items-center gap-1 text-gold-400"><Coins size={11} /> {app.sda_amount} SDA</span>}
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
           </motion.div>
-        </motion.div>
-      )}
+        )}
+
+        {/* ═══════════════════════════════════════════ PARTNER DETAIL MODAL ═══ */}
+        <AnimatePresence>
+          {selectedPartner && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSelectedPartner(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-lg bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-white/[0.1] shadow-2xl overflow-hidden"
+              >
+                <div className="p-6 border-b border-white/[0.08]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-white/[0.06] rounded-xl flex items-center justify-center text-4xl flex-shrink-0">
+                      {selectedPartner.logo_emoji || '🏢'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-bold text-white">{selectedPartner.name}</h2>
+                        {selectedPartner.status === 'featured' && (
+                          <span className="px-2 py-0.5 bg-gold-500/20 border border-gold-500/30 rounded-md text-[10px] font-bold text-gold-400">★</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-400 mt-1">{selectedPartner.category}</p>
+                    </div>
+                    <button onClick={() => setSelectedPartner(null)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400"><X size={18} /></button>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+                  <p className="text-sm text-slate-300 leading-relaxed">{selectedPartner.description}</p>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white/[0.04] rounded-xl p-3 text-center border border-white/[0.06]">
+                      <Star size={16} className="text-gold-400 mx-auto mb-1" />
+                      <p className="text-lg font-bold text-white">{selectedPartner.rating?.toFixed(1)}</p>
+                      <p className="text-[10px] text-slate-500">Note</p>
+                    </div>
+                    <div className="bg-white/[0.04] rounded-xl p-3 text-center border border-white/[0.06]">
+                      <Users size={16} className="text-brand-400 mx-auto mb-1" />
+                      <p className="text-lg font-bold text-white">{(selectedPartner.followers_count || 0).toLocaleString('fr-FR')}</p>
+                      <p className="text-[10px] text-slate-500">Followers</p>
+                    </div>
+                    <div className="bg-white/[0.04] rounded-xl p-3 text-center border border-white/[0.06]">
+                      <Eye size={16} className="text-purple-400 mx-auto mb-1" />
+                      <p className="text-lg font-bold text-white">{(selectedPartner.reviews_count || 0).toLocaleString('fr-FR')}</p>
+                      <p className="text-[10px] text-slate-500">Avis</p>
+                    </div>
+                  </div>
+
+                  {selectedPartner.benefits?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Avantages</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPartner.benefits.map((b, i) => (
+                          <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-lg text-xs text-brand-300">
+                            <Check size={12} /> {b}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedPartner.website_url && (
+                    <a
+                      href={selectedPartner.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] rounded-xl text-sm text-brand-400 font-medium transition-colors"
+                    >
+                      <ExternalLink size={16} /> Visiter le site web
+                    </a>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

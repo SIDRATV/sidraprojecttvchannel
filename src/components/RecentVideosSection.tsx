@@ -18,8 +18,15 @@ import {
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { videoService } from '@/services/videos';
-import { formatViewCount, truncateText } from '@/lib/utils';
+import { truncateText } from '@/lib/utils';
 import type { VideoWithRelations } from '@/types';
+
+function formatViews(views: number): string {
+  if (!views) return '0 vue';
+  if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M vues`;
+  if (views >= 1000) return `${(views / 1000).toFixed(1)}K vues`;
+  return `${views} vue${views > 1 ? 's' : ''}`;
+}
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -38,6 +45,21 @@ function formatDuration(seconds: number): string {
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
+
+function getYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
+
+function getThumbnail(video: VideoWithRelations): string {
+  if (video.thumbnail_url) return video.thumbnail_url;
+  const ytId = getYouTubeId(video.video_url);
+  if (ytId) return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+  return PLACEHOLDER;
+}
+
+const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' fill='%23111827'%3E%3Crect width='640' height='360'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-size='40' fill='%234b5563'%3E▶%3C/text%3E%3C/svg%3E";
 
 export function RecentVideosSection() {
   const { user } = useAuth();
@@ -102,7 +124,27 @@ export function RecentVideosSection() {
     );
   }
 
-  if (videos.length === 0) return null;
+  if (videos.length === 0 && !loading) {
+    return (
+      <section className="py-16 bg-white dark:bg-gray-950 transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-400 shadow-lg shadow-brand-500/20">
+              <Clock size={20} className="text-white" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-950 dark:text-white">Vidéos Récentes</h2>
+          </div>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 border border-gray-200 dark:border-gray-700">
+              <Film size={32} className="text-gray-400 dark:text-gray-600" />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Aucune vidéo pour le moment</p>
+            <p className="text-gray-400 dark:text-gray-600 text-sm mt-1">Les vidéos récentes apparaîtront ici</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   // Split: first 4 are "hero" large cards, rest are smaller
   const heroVideos = videos.slice(0, 4);
@@ -160,8 +202,9 @@ export function RecentVideosSection() {
                 >
                   {/* Thumbnail */}
                   <img
-                    src={video.thumbnail_url}
+                    src={getThumbnail(video)}
                     alt={video.title}
+                    onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
 
@@ -201,8 +244,11 @@ export function RecentVideosSection() {
                     <h3 className="text-lg font-bold text-white mb-1.5 line-clamp-2 group-hover:text-brand-200 transition-colors">
                       {video.title}
                     </h3>
+                    {video.users?.full_name && (
+                      <p className="text-xs text-gray-400 mb-1.5">{video.users.full_name}</p>
+                    )}
                     <div className="flex items-center gap-4 text-xs text-gray-300">
-                      <span className="flex items-center gap-1"><Eye size={12} /> {formatViewCount(video.views)}</span>
+                      <span className="flex items-center gap-1"><Eye size={12} /> {formatViews(video.views)}</span>
                       <span className="flex items-center gap-1"><Heart size={12} /> {video.likes}</span>
                       <span className="flex items-center gap-1"><Clock size={12} /> {timeAgo(video.created_at)}</span>
                     </div>
@@ -230,8 +276,9 @@ export function RecentVideosSection() {
                     {/* Thumbnail */}
                     <div className="relative w-full aspect-video overflow-hidden">
                       <img
-                        src={video.thumbnail_url}
+                        src={getThumbnail(video)}
                         alt={video.title}
+                        onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                       {/* Duration */}
@@ -256,11 +303,14 @@ export function RecentVideosSection() {
 
                     {/* Info */}
                     <div className="p-3">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1.5 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                         {video.title}
                       </h3>
+                      {video.users?.full_name && (
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1 truncate">{video.users.full_name}</p>
+                      )}
                       <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-500">
-                        <span className="flex items-center gap-1"><Eye size={11} /> {formatViewCount(video.views)}</span>
+                        <span className="flex items-center gap-1"><Eye size={11} /> {formatViews(video.views)}</span>
                         <span>{timeAgo(video.created_at)}</span>
                       </div>
                       {video.categories && (
@@ -299,8 +349,9 @@ export function RecentVideosSection() {
               {selectedVideo && (
                 <div className="relative w-full h-48 overflow-hidden">
                   <img
-                    src={selectedVideo.thumbnail_url}
+                    src={getThumbnail(selectedVideo)}
                     alt={selectedVideo.title}
+                    onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-gray-900 via-transparent to-transparent" />

@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { Hero } from '@/components/Hero';
 import { CategoryBrowser } from '@/components/CategoryBrowser';
-import { VideoGrid } from '@/components/VideoGrid';
+import { RecentVideosSection } from '@/components/RecentVideosSection';
 import { InspirationSection } from '@/components/InspirationSection';
 import { NewsletterSection } from '@/components/NewsletterSection';
 import { Sparkles } from 'lucide-react';
@@ -19,18 +19,9 @@ export default function HomePage() {
       {/* Hero Section */}
       <Hero />
 
-      {/* Categories Section */}
+      {/* Recent Videos — Main Section (login required to play) */}
       <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
-        <CategoryBrowser />
-      </motion.div>
-
-      {/* Featured Videos */}
-      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
-        <VideoGrid
-          title="Featured Content"
-          featured
-          limit={6}
-        />
+        <RecentVideosSection />
       </motion.div>
 
       {/* Divider */}
@@ -42,17 +33,14 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Categories Section */}
+      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
+        <CategoryBrowser />
+      </motion.div>
+
       {/* Inspiration Section */}
       <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
         <InspirationSection />
-      </motion.div>
-
-      {/* Popular Videos */}
-      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
-        <VideoGrid
-          title="Popular Now"
-          limit={12}
-        />
       </motion.div>
 
       {/* Newsletter */}

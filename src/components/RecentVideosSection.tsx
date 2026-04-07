@@ -12,14 +12,31 @@ import {
   LogIn,
   X,
   Loader2,
-  TrendingUp,
-  Sparkles,
+  Crown,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { videoService } from '@/services/videos';
-import { truncateText } from '@/lib/utils';
+import { premiumVideoService } from '@/services/premiumVideos';
 import type { VideoWithRelations } from '@/types';
+import type { PremiumVideoWithRelations } from '@/types/premium';
+
+// Unified video type for display
+interface DisplayVideo {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string;
+  video_url: string;
+  duration: number;
+  views: number;
+  likes: number;
+  created_at: string;
+  category_name: string;
+  uploader_name: string;
+  isPremium: boolean;
+  min_plan?: string;
+}
 
 function formatViews(views: number): string {
   if (!views) return '0 vue';
@@ -52,44 +69,93 @@ function getYouTubeId(url: string): string | null {
   return match ? match[1] : null;
 }
 
-function getThumbnail(video: VideoWithRelations): string {
+function getThumbnailFromVideo(video: VideoWithRelations): string {
   if (video.thumbnail_url) return video.thumbnail_url;
   const ytId = getYouTubeId(video.video_url);
   if (ytId) return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
   return PLACEHOLDER;
 }
 
+function normalizeVideos(videos: VideoWithRelations[]): DisplayVideo[] {
+  return videos.map((v) => ({
+    id: v.id,
+    title: v.title,
+    description: v.description || '',
+    thumbnail_url: getThumbnailFromVideo(v),
+    video_url: v.video_url,
+    duration: v.duration || 0,
+    views: v.views || 0,
+    likes: v.likes || 0,
+    created_at: v.created_at,
+    category_name: v.categories?.name || '',
+    uploader_name: v.users?.full_name || '',
+    isPremium: false,
+  }));
+}
+
+function normalizePremiumVideos(videos: PremiumVideoWithRelations[]): DisplayVideo[] {
+  return videos.map((v) => ({
+    id: `premium-${v.id}`,
+    title: v.title,
+    description: v.description || '',
+    thumbnail_url: v.thumbnail_url || PLACEHOLDER,
+    video_url: '',
+    duration: v.duration || 0,
+    views: v.views || 0,
+    likes: v.likes || 0,
+    created_at: v.created_at,
+    category_name: v.categories?.name || '',
+    uploader_name: '',
+    isPremium: true,
+    min_plan: v.min_plan,
+  }));
+}
+
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' fill='%23111827'%3E%3Crect width='640' height='360'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-size='40' fill='%234b5563'%3E▶%3C/text%3E%3C/svg%3E";
 
 export function RecentVideosSection() {
   const { user } = useAuth();
-  const [videos, setVideos] = useState<VideoWithRelations[]>([]);
+  const [videos, setVideos] = useState<DisplayVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<VideoWithRelations | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<DisplayVideo | null>(null);
 
   useEffect(() => {
-    const fetchRecent = async () => {
+    const fetchAll = async () => {
       try {
-        const data = await videoService.getVideos(16);
-        setVideos(Array.isArray(data) ? data : []);
+        const [regularData, premiumData] = await Promise.all([
+          videoService.getVideos(12),
+          premiumVideoService.getVideos(8),
+        ]);
+        const regular = normalizeVideos(Array.isArray(regularData) ? regularData : []);
+        const premium = normalizePremiumVideos(Array.isArray(premiumData) ? premiumData : []);
+        // Merge and sort by most recent
+        const merged = [...regular, ...premium].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setVideos(merged);
       } catch {
         // silent
       } finally {
         setLoading(false);
       }
     };
-    fetchRecent();
+    fetchAll();
   }, []);
 
-  const handleVideoClick = useCallback((video: VideoWithRelations) => {
-    if (user) {
-      // User is logged in — navigate to video
-      window.location.href = `/video/${video.id}`;
-    } else {
+  const handleVideoClick = useCallback((video: DisplayVideo) => {
+    if (!user) {
       // Not logged in — show login prompt
       setSelectedVideo(video);
       setShowLoginPrompt(true);
+      return;
+    }
+    if (video.isPremium) {
+      // Premium video — go to premium content page
+      const realId = video.id.replace('premium-', '');
+      window.location.href = `/premium?video=${realId}`;
+    } else {
+      window.location.href = `/video/${video.id}`;
     }
   }, [user]);
 
@@ -202,7 +268,7 @@ export function RecentVideosSection() {
                 >
                   {/* Thumbnail */}
                   <img
-                    src={getThumbnail(video)}
+                    src={video.thumbnail_url}
                     alt={video.title}
                     onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
@@ -210,6 +276,14 @@ export function RecentVideosSection() {
 
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-950/90 via-gray-950/30 to-transparent" />
+
+                  {/* Premium Badge */}
+                  {video.isPremium && (
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-gold-500 to-amber-400 rounded-lg shadow-lg shadow-gold-500/30 z-10">
+                      <Crown size={12} className="text-white" />
+                      <span className="text-[10px] font-bold text-white uppercase tracking-wide">Premium</span>
+                    </div>
+                  )}
 
                   {/* Duration Badge */}
                   {video.duration > 0 && (
@@ -236,16 +310,16 @@ export function RecentVideosSection() {
 
                   {/* Info */}
                   <div className="absolute bottom-0 left-0 right-0 p-5">
-                    {video.categories && (
+                    {video.category_name && (
                       <span className="inline-block px-2.5 py-0.5 bg-brand-500/20 border border-brand-500/30 rounded-md text-[10px] font-bold text-brand-300 mb-2 uppercase tracking-wide">
-                        {video.categories.name}
+                        {video.category_name}
                       </span>
                     )}
                     <h3 className="text-lg font-bold text-white mb-1.5 line-clamp-2 group-hover:text-brand-200 transition-colors">
                       {video.title}
                     </h3>
-                    {video.users?.full_name && (
-                      <p className="text-xs text-gray-400 mb-1.5">{video.users.full_name}</p>
+                    {video.uploader_name && (
+                      <p className="text-xs text-gray-400 mb-1.5">{video.uploader_name}</p>
                     )}
                     <div className="flex items-center gap-4 text-xs text-gray-300">
                       <span className="flex items-center gap-1"><Eye size={12} /> {formatViews(video.views)}</span>
@@ -276,11 +350,18 @@ export function RecentVideosSection() {
                     {/* Thumbnail */}
                     <div className="relative w-full aspect-video overflow-hidden">
                       <img
-                        src={getThumbnail(video)}
+                        src={video.thumbnail_url}
                         alt={video.title}
                         onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
+                      {/* Premium Badge */}
+                      {video.isPremium && (
+                        <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-gold-500 to-amber-400 rounded-md shadow-lg shadow-gold-500/30 z-10">
+                          <Crown size={10} className="text-white" />
+                          <span className="text-[9px] font-bold text-white uppercase">Premium</span>
+                        </div>
+                      )}
                       {/* Duration */}
                       {video.duration > 0 && (
                         <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] text-white font-medium">
@@ -306,16 +387,16 @@ export function RecentVideosSection() {
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                         {video.title}
                       </h3>
-                      {video.users?.full_name && (
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1 truncate">{video.users.full_name}</p>
+                      {video.uploader_name && (
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1 truncate">{video.uploader_name}</p>
                       )}
                       <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-500">
                         <span className="flex items-center gap-1"><Eye size={11} /> {formatViews(video.views)}</span>
                         <span>{timeAgo(video.created_at)}</span>
                       </div>
-                      {video.categories && (
+                      {video.category_name && (
                         <span className="inline-block mt-2 px-2 py-0.5 bg-brand-500/10 dark:bg-brand-500/15 rounded text-[10px] text-brand-600 dark:text-brand-400 font-medium">
-                          {video.categories.name}
+                          {video.category_name}
                         </span>
                       )}
                     </div>
@@ -349,7 +430,7 @@ export function RecentVideosSection() {
               {selectedVideo && (
                 <div className="relative w-full h-48 overflow-hidden">
                   <img
-                    src={getThumbnail(selectedVideo)}
+                    src={selectedVideo.thumbnail_url}
                     alt={selectedVideo.title}
                     onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
                     className="w-full h-full object-cover"

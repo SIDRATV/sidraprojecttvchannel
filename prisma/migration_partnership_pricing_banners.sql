@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS sponsored_banners (
   video_url TEXT DEFAULT '',
   media_type TEXT NOT NULL DEFAULT 'image' CHECK (media_type IN ('image', 'video')),
   autoplay BOOLEAN DEFAULT false,
+  display_duration INT NOT NULL DEFAULT 10,
   link_url TEXT DEFAULT '',
   banner_type TEXT NOT NULL DEFAULT 'large' CHECK (banner_type IN ('large', 'medium', 'small')),
   starts_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

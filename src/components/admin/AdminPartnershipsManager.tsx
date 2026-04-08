@@ -91,6 +91,7 @@ interface SponsoredBanner {
   video_url: string;
   media_type: string;
   autoplay: boolean;
+  display_duration: number;
   link_url: string;
   banner_type: string;
   starts_at: string;
@@ -154,6 +155,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
     video_url: '',
     media_type: 'image' as 'image' | 'video',
     autoplay: false,
+    display_duration: 10,
     link_url: '',
     banner_type: 'large',
     starts_at: new Date().toISOString().split('T')[0],
@@ -329,7 +331,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
         setMessage({ type: 'success', text: editingBanner ? 'Bannière mise à jour' : 'Bannière créée' });
         setShowBannerModal(false);
         setEditingBanner(null);
-        setBannerForm({ title: '', description: '', image_url: '', video_url: '', media_type: 'image', autoplay: false, link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
+        setBannerForm({ title: '', description: '', image_url: '', video_url: '', media_type: 'image', autoplay: false, display_duration: 10, link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
         await fetchData();
       } else {
         setMessage({ type: 'error', text: data.error || 'Erreur' });
@@ -947,7 +949,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
               whileTap={{ scale: 0.97 }}
               onClick={() => {
                 setEditingBanner(null);
-                setBannerForm({ title: '', description: '', image_url: '', video_url: '', media_type: 'image', autoplay: false, link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
+                setBannerForm({ title: '', description: '', image_url: '', video_url: '', media_type: 'image', autoplay: false, display_duration: 10, link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
                 setShowBannerModal(true);
               }}
               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25"
@@ -1004,6 +1006,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                         <span>👁 {banner.impressions} impressions</span>
                         <span>🖱 {banner.clicks} clics</span>
                         <span>⭐ Priorité: {banner.priority}</span>
+                        <span>⏱ {banner.display_duration}s</span>
                       </div>
                     </div>
                   </div>
@@ -1027,6 +1030,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                           video_url: banner.video_url || '',
                           media_type: (banner.media_type || 'image') as 'image' | 'video',
                           autoplay: banner.autoplay ?? false,
+                          display_duration: banner.display_duration || 10,
                           link_url: banner.link_url,
                           banner_type: banner.banner_type,
                           starts_at: banner.starts_at.split('T')[0],
@@ -1173,7 +1177,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                   <input type="url" value={bannerForm.link_url} onChange={(e) => setBannerForm({ ...bannerForm, link_url: e.target.value })}
                     placeholder="https://..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs font-medium text-slate-400 mb-1.5 block">Type de bannière</label>
                     <select value={bannerForm.banner_type} onChange={(e) => setBannerForm({ ...bannerForm, banner_type: e.target.value })}
@@ -1187,6 +1191,14 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                     <label className="text-xs font-medium text-slate-400 mb-1.5 block">Priorité</label>
                     <input type="number" value={bannerForm.priority} onChange={(e) => setBannerForm({ ...bannerForm, priority: Number(e.target.value) })}
                       className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Durée d&#39;affichage</label>
+                    <div className="relative">
+                      <input type="number" min={5} value={bannerForm.display_duration} onChange={(e) => setBannerForm({ ...bannerForm, display_duration: Math.max(5, Number(e.target.value)) })}
+                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50 pr-12" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">sec</span>
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

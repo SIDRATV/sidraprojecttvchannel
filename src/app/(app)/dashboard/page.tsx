@@ -88,10 +88,7 @@ export default function DashboardPage() {
 
         {/* Featured Carousel */}
         <motion.div variants={fadeInUp}>
-          <YouTubeFeaturedCarousel
-            query="technology innovation trending"
-            maxResults={5}
-          />
+          <YouTubeFeaturedCarousel />
         </motion.div>
 
         {/* Latest Videos Section */}

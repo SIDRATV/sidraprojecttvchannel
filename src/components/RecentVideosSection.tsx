@@ -212,199 +212,122 @@ export function RecentVideosSection() {
     );
   }
 
-  // Split: first 4 are "hero" large cards, rest are smaller
-  const heroVideos = videos.slice(0, 4);
-  const gridVideos = videos.slice(4);
-
+  // All videos in one horizontal carousel
   return (
-    <>
-      <section className="py-16 bg-white dark:bg-gray-950 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mb-10"
-          >
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-400 shadow-lg shadow-brand-500/20">
-                    <Clock size={20} className="text-white" />
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-gray-950 dark:text-white">Vidéos Récentes</h2>
+    <section className="py-16 bg-white dark:bg-gray-950 transition-colors">
+      {/* Section Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-400 shadow-lg shadow-brand-500/20">
+                  <Clock size={20} className="text-white" />
                 </div>
-                <div className="h-1 w-20 rounded-full bg-gradient-to-r from-brand-500 to-brand-400 ml-[52px]" />
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-3 ml-[52px]">
-                  Découvrez les dernières vidéos de l&#39;écosystème Sidra
-                </p>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-950 dark:text-white">Vidéos Récentes</h2>
               </div>
-              {!user && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-gold-500/10 dark:bg-gold-500/15 border border-gold-500/20 rounded-full">
-                  <Lock size={14} className="text-gold-500" />
-                  <span className="text-xs font-medium text-gold-600 dark:text-gold-400">
-                    Connectez-vous pour regarder
-                  </span>
-                </div>
-              )}
+              <div className="h-1 w-20 rounded-full bg-gradient-to-r from-brand-500 to-brand-400 ml-[52px]" />
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-3 ml-[52px]">
+                Découvrez les dernières vidéos de l&#39;écosystème Sidra
+              </p>
             </div>
-          </motion.div>
+            {!user && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-gold-500/10 dark:bg-gold-500/15 border border-gold-500/20 rounded-full">
+                <Lock size={14} className="text-gold-500" />
+                <span className="text-xs font-medium text-gold-600 dark:text-gold-400">
+                  Connectez-vous pour regarder
+                </span>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
 
-          {/* Hero Row — 4 Large Cards */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8"
-          >
-            {heroVideos.map((video) => (
-              <motion.div key={video.id} variants={itemVariants}>
-                <div
-                  onClick={() => handleVideoClick(video)}
-                  className="relative w-full h-60 md:h-72 rounded-2xl overflow-hidden group cursor-pointer"
-                >
-                  {/* Thumbnail */}
+      {/* Horizontal Scrollable Carousel */}
+      <div
+        className="w-full overflow-x-auto pb-6 scrollbar-hide"
+        style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}
+      >
+        <div
+          className="flex gap-5 px-4 sm:px-6 lg:px-8"
+          style={{ width: 'max-content' }}
+        >
+          {videos.map((video, index) => (
+            <motion.div
+              key={video.id}
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              className="flex-shrink-0 w-72 snap-start"
+            >
+              <div
+                onClick={() => handleVideoClick(video)}
+                className="group cursor-pointer rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-brand-500/30 dark:hover:border-brand-500/30 transition-all hover:shadow-lg hover:shadow-brand-500/5"
+              >
+                {/* Thumbnail */}
+                <div className="relative w-full aspect-video overflow-hidden">
                   <img
                     src={video.thumbnail_url}
                     alt={video.title}
                     onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-950/90 via-gray-950/30 to-transparent" />
-
                   {/* Premium Badge */}
                   {video.isPremium && (
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-gold-500 to-amber-400 rounded-lg shadow-lg shadow-gold-500/30 z-10">
-                      <Crown size={12} className="text-white" />
-                      <span className="text-[10px] font-bold text-white uppercase tracking-wide">Premium</span>
+                    <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-gold-500 to-amber-400 rounded-md shadow-lg shadow-gold-500/30 z-10">
+                      <Crown size={10} className="text-white" />
+                      <span className="text-[9px] font-bold text-white uppercase">Premium</span>
                     </div>
                   )}
-
-                  {/* Duration Badge */}
+                  {/* Duration */}
                   {video.duration > 0 && (
-                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-xs text-white font-medium">
+                    <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] text-white font-medium">
                       {formatDuration(video.duration)}
                     </div>
                   )}
-
-                  {/* Play Button */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <motion.div
-                      whileHover={{ scale: 1.15 }}
-                      className="relative"
-                    >
-                      <div className="w-16 h-16 bg-brand-500/30 backdrop-blur-md rounded-full flex items-center justify-center border border-brand-500/50 group-hover:bg-brand-500/60 transition-all shadow-lg shadow-brand-500/20">
+                  {/* Play Overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-10 h-10 bg-brand-500/80 rounded-full flex items-center justify-center">
                         {user ? (
-                          <Play size={28} className="text-white fill-white ml-1" />
+                          <Play size={18} className="text-white fill-white ml-0.5" />
                         ) : (
-                          <Lock size={24} className="text-white" />
+                          <Lock size={16} className="text-white" />
                         )}
                       </div>
-                    </motion.div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
-                    {video.category_name && (
-                      <span className="inline-block px-2.5 py-0.5 bg-brand-500/20 border border-brand-500/30 rounded-md text-[10px] font-bold text-brand-300 mb-2 uppercase tracking-wide">
-                        {video.category_name}
-                      </span>
-                    )}
-                    <h3 className="text-lg font-bold text-white mb-1.5 line-clamp-2 group-hover:text-brand-200 transition-colors">
-                      {video.title}
-                    </h3>
-                    {video.uploader_name && (
-                      <p className="text-xs text-gray-400 mb-1.5">{video.uploader_name}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-gray-300">
-                      <span className="flex items-center gap-1"><Eye size={12} /> {formatViews(video.views)}</span>
-                      <span className="flex items-center gap-1"><Heart size={12} /> {video.likes}</span>
-                      <span className="flex items-center gap-1"><Clock size={12} /> {timeAgo(video.created_at)}</span>
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
+
+                {/* Info */}
+                <div className="p-3">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                    {video.title}
+                  </h3>
+                  {video.uploader_name && (
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1 truncate">{video.uploader_name}</p>
+                  )}
+                  <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-500">
+                    <span className="flex items-center gap-1"><Eye size={11} /> {formatViews(video.views)}</span>
+                    <span>{timeAgo(video.created_at)}</span>
+                  </div>
+                  {video.category_name && (
+                    <span className="inline-block mt-2 px-2 py-0.5 bg-brand-500/10 dark:bg-brand-500/15 rounded text-[10px] text-brand-600 dark:text-brand-400 font-medium">
+                      {video.category_name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </section>
-
-      {/* Horizontal Scrollable Carousel — Full Width */}
-      {gridVideos.length > 0 && (
-        <section className="bg-white dark:bg-gray-950 transition-colors">
-          <div className="w-full overflow-x-auto pb-6" style={{ scrollbarWidth: 'thin' }}>
-            <div className="inline-flex gap-4 snap-x snap-mandatory scroll-smooth px-4 sm:px-6 lg:px-8">
-              {gridVideos.map((video) => (
-                <div key={video.id} className="flex-shrink-0 w-72 snap-start">
-                  <div
-                    onClick={() => handleVideoClick(video)}
-                    className="group cursor-pointer rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-brand-500/30 dark:hover:border-brand-500/30 transition-all hover:shadow-lg hover:shadow-brand-500/5"
-                  >
-                    {/* Thumbnail */}
-                    <div className="relative w-full aspect-video overflow-hidden">
-                      <img
-                        src={video.thumbnail_url}
-                        alt={video.title}
-                        onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      {/* Premium Badge */}
-                      {video.isPremium && (
-                        <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-gold-500 to-amber-400 rounded-md shadow-lg shadow-gold-500/30 z-10">
-                          <Crown size={10} className="text-white" />
-                          <span className="text-[9px] font-bold text-white uppercase">Premium</span>
-                        </div>
-                      )}
-                      {/* Duration */}
-                      {video.duration > 0 && (
-                        <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] text-white font-medium">
-                          {formatDuration(video.duration)}
-                        </div>
-                      )}
-                      {/* Play Overlay */}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-10 h-10 bg-brand-500/80 rounded-full flex items-center justify-center">
-                            {user ? (
-                              <Play size={18} className="text-white fill-white ml-0.5" />
-                            ) : (
-                              <Lock size={16} className="text-white" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Info */}
-                    <div className="p-3">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                        {video.title}
-                      </h3>
-                      {video.uploader_name && (
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1 truncate">{video.uploader_name}</p>
-                      )}
-                      <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-500">
-                        <span className="flex items-center gap-1"><Eye size={11} /> {formatViews(video.views)}</span>
-                        <span>{timeAgo(video.created_at)}</span>
-                      </div>
-                      {video.category_name && (
-                        <span className="inline-block mt-2 px-2 py-0.5 bg-brand-500/10 dark:bg-brand-500/15 rounded text-[10px] text-brand-600 dark:text-brand-400 font-medium">
-                          {video.category_name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      </div>
 
       {/* Login Prompt Modal */}
       <AnimatePresence>
@@ -483,6 +406,6 @@ export function RecentVideosSection() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </section>
   );
 }

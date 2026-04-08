@@ -20,7 +20,7 @@ export default function HomePage() {
       <Hero />
 
       {/* Recent Videos — Main Section (login required to play) */}
-      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
+      <motion.div variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }} style={{ overflow: 'visible' }}>
         <RecentVideosSection />
       </motion.div>
 

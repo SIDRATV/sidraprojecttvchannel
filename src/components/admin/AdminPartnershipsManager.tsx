@@ -147,7 +147,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
     try {
       const benefitsArr = form.benefits.split(',').map(b => b.trim()).filter(Boolean);
       const body = editingPartner
-        ? { partnerId: editingPartner.id, target: 'partner', ...form, benefits: benefitsArr }
+        ? { id: editingPartner.id, target: 'partner', ...form, benefits: benefitsArr }
         : { ...form, benefits: benefitsArr };
 
       const res = await fetch('/api/admin/partnerships', {
@@ -197,7 +197,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
       const res = await fetch('/api/admin/partnerships', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ applicationId: appId, target: 'application', status: newStatus }),
+        body: JSON.stringify({ id: appId, target: 'application', status: newStatus }),
       });
       const data = await res.json();
       if (data.success) {
@@ -351,7 +351,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                         await fetch('/api/admin/partnerships', {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                          body: JSON.stringify({ partnerId: p.id, target: 'partner', status: e.target.value }),
+                          body: JSON.stringify({ id: p.id, target: 'partner', status: e.target.value }),
                         });
                         await fetchData();
                       } catch {}

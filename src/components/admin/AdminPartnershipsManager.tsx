@@ -29,6 +29,7 @@ import {
   BarChart3,
   RefreshCw,
   MessageSquare,
+  Play,
 } from 'lucide-react';
 
 interface Partner {
@@ -87,6 +88,9 @@ interface SponsoredBanner {
   title: string;
   description: string;
   image_url: string;
+  video_url: string;
+  media_type: string;
+  autoplay: boolean;
   link_url: string;
   banner_type: string;
   starts_at: string;
@@ -147,6 +151,9 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
     title: '',
     description: '',
     image_url: '',
+    video_url: '',
+    media_type: 'image' as 'image' | 'video',
+    autoplay: false,
     link_url: '',
     banner_type: 'large',
     starts_at: new Date().toISOString().split('T')[0],
@@ -294,8 +301,16 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
   };
 
   const handleSaveBanner = async () => {
-    if (!bannerForm.image_url || !bannerForm.ends_at) {
-      setMessage({ type: 'error', text: 'Image et date de fin requises' });
+    if (bannerForm.media_type === 'image' && !bannerForm.image_url) {
+      setMessage({ type: 'error', text: 'URL de l\'image requise' });
+      return;
+    }
+    if (bannerForm.media_type === 'video' && !bannerForm.video_url) {
+      setMessage({ type: 'error', text: 'URL de la vidéo requise' });
+      return;
+    }
+    if (!bannerForm.ends_at) {
+      setMessage({ type: 'error', text: 'Date de fin requise' });
       return;
     }
     setSaving(true);
@@ -314,7 +329,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
         setMessage({ type: 'success', text: editingBanner ? 'Bannière mise à jour' : 'Bannière créée' });
         setShowBannerModal(false);
         setEditingBanner(null);
-        setBannerForm({ title: '', description: '', image_url: '', link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
+        setBannerForm({ title: '', description: '', image_url: '', video_url: '', media_type: 'image', autoplay: false, link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
         await fetchData();
       } else {
         setMessage({ type: 'error', text: data.error || 'Erreur' });
@@ -932,7 +947,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
               whileTap={{ scale: 0.97 }}
               onClick={() => {
                 setEditingBanner(null);
-                setBannerForm({ title: '', description: '', image_url: '', link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
+                setBannerForm({ title: '', description: '', image_url: '', video_url: '', media_type: 'image', autoplay: false, link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
                 setShowBannerModal(true);
               }}
               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25"
@@ -952,11 +967,21 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                   className="bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/[0.08] p-5 hover:border-white/[0.15] transition-colors"
                 >
                   <div className="flex items-start gap-4">
-                    {banner.image_url && (
+                    {banner.media_type === 'video' && banner.video_url ? (
+                      <div className="w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-white/[0.06] relative">
+                        <video src={banner.video_url} muted className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <Play size={16} className="text-white" />
+                        </div>
+                        {banner.autoplay && (
+                          <span className="absolute top-0.5 right-0.5 px-1 py-0.5 bg-brand-500/80 rounded text-[8px] font-bold text-white">AUTO</span>
+                        )}
+                      </div>
+                    ) : banner.image_url ? (
                       <div className="w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-white/[0.06]">
                         <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
                       </div>
-                    )}
+                    ) : null}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-semibold text-white">{banner.title || 'Sans titre'}</h3>
@@ -968,6 +993,11 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                           {isRunning ? 'EN COURS' : isExpired ? 'EXPIRÉ' : 'PLANIFIÉ'}
                         </span>
                         <span className="text-[10px] text-slate-500 uppercase">{banner.banner_type}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+                          banner.media_type === 'video' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                        }`}>
+                          {banner.media_type === 'video' ? '🎬 Vidéo' : '🖼 Image'}
+                        </span>
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-500">
                         <span>📅 {new Date(banner.starts_at).toLocaleDateString('fr-FR')} → {new Date(banner.ends_at).toLocaleDateString('fr-FR')}</span>
@@ -994,6 +1024,9 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                           title: banner.title,
                           description: banner.description,
                           image_url: banner.image_url,
+                          video_url: banner.video_url || '',
+                          media_type: (banner.media_type || 'image') as 'image' | 'video',
+                          autoplay: banner.autoplay ?? false,
                           link_url: banner.link_url,
                           banner_type: banner.banner_type,
                           starts_at: banner.starts_at.split('T')[0],
@@ -1066,11 +1099,75 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                     placeholder="Description..." rows={2}
                     className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 resize-none" />
                 </div>
+
+                {/* Media Type Selector */}
                 <div>
-                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">URL de l&#39;image *</label>
-                  <input type="url" value={bannerForm.image_url} onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
-                    placeholder="https://..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                  <label className="text-xs font-medium text-slate-400 mb-2 block">Type de média</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      { id: 'image' as const, label: 'Image', emoji: '🖼', desc: 'Image statique' },
+                      { id: 'video' as const, label: 'Vidéo', emoji: '🎬', desc: 'Vidéo (MP4, WebM, YouTube)' },
+                    ]).map((mt) => (
+                      <button
+                        key={mt.id}
+                        type="button"
+                        onClick={() => setBannerForm({ ...bannerForm, media_type: mt.id })}
+                        className={`text-left p-3 rounded-xl border transition-all ${
+                          bannerForm.media_type === mt.id
+                            ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/5'
+                            : 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15]'
+                        }`}
+                      >
+                        <span className="text-xl mb-0.5 block">{mt.emoji}</span>
+                        <p className="text-sm font-semibold text-white">{mt.label}</p>
+                        <p className="text-[10px] text-slate-500">{mt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {bannerForm.media_type === 'image' && (
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">URL de l&#39;image *</label>
+                    <input type="url" value={bannerForm.image_url} onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
+                      placeholder="https://..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                )}
+
+                {bannerForm.media_type === 'video' && (
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">URL de la vidéo *</label>
+                      <input type="url" value={bannerForm.video_url} onChange={(e) => setBannerForm({ ...bannerForm, video_url: e.target.value })}
+                        placeholder="https://youtube.com/watch?v=... ou https://example.com/video.mp4"
+                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                      <p className="text-[10px] text-slate-500 mt-1">Supporte YouTube, MP4, WebM. Pour YouTube, collez le lien complet.</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Image de couverture (optionnel)</label>
+                      <input type="url" value={bannerForm.image_url} onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
+                        placeholder="https://... (thumbnail affichée avant lecture)"
+                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                      bannerForm.autoplay ? 'bg-brand-500/10 border-brand-500/40' : 'bg-white/[0.03] border-white/[0.08]'
+                    }`}>
+                      <input type="checkbox" checked={bannerForm.autoplay}
+                        onChange={(e) => setBannerForm({ ...bannerForm, autoplay: e.target.checked })}
+                        className="sr-only" />
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                        bannerForm.autoplay ? 'bg-brand-500 border-brand-500' : 'border-slate-600'
+                      }`}>
+                        {bannerForm.autoplay && <Check size={12} className="text-white" />}
+                      </div>
+                      <div>
+                        <span className="text-sm text-white font-medium">Lecture automatique</span>
+                        <p className="text-[10px] text-slate-500">La vidéo se lancera automatiquement (muet) quand visible</p>
+                      </div>
+                    </label>
+                  </>
+                )}
+
                 <div>
                   <label className="text-xs font-medium text-slate-400 mb-1.5 block">Lien de redirection</label>
                   <input type="url" value={bannerForm.link_url} onChange={(e) => setBannerForm({ ...bannerForm, link_url: e.target.value })}

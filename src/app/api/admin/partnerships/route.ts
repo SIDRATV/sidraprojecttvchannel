@@ -87,9 +87,9 @@ export async function POST(request: NextRequest) {
     const { target } = body;
 
     if (target === 'banner') {
-      const { title, description, image_url, link_url, banner_type, starts_at, ends_at, partner_id, application_id, priority } = body;
-      if (!image_url || !ends_at) {
-        return NextResponse.json({ error: 'image_url and ends_at are required' }, { status: 400 });
+      const { title, description, image_url, video_url, media_type, autoplay, link_url, banner_type, starts_at, ends_at, partner_id, application_id, priority } = body;
+      if ((!image_url && media_type !== 'video') || !ends_at) {
+        return NextResponse.json({ error: 'image_url (or video_url for video type) and ends_at are required' }, { status: 400 });
       }
 
       const { data, error } = await (supabase as any)
@@ -97,7 +97,10 @@ export async function POST(request: NextRequest) {
         .insert({
           title: title || '',
           description: description || '',
-          image_url,
+          image_url: image_url || '',
+          video_url: video_url || '',
+          media_type: media_type || 'image',
+          autoplay: autoplay ?? false,
           link_url: link_url || '',
           banner_type: banner_type || 'large',
           starts_at: starts_at || new Date().toISOString(),
@@ -265,7 +268,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (target === 'banner') {
-      const allowedFields = ['title', 'description', 'image_url', 'link_url', 'banner_type', 'starts_at', 'ends_at', 'is_active', 'priority', 'partner_id', 'application_id'];
+      const allowedFields = ['title', 'description', 'image_url', 'video_url', 'media_type', 'autoplay', 'link_url', 'banner_type', 'starts_at', 'ends_at', 'is_active', 'priority', 'partner_id', 'application_id'];
       const safeUpdates: Record<string, any> = {};
       for (const key of allowedFields) {
         if (updates[key] !== undefined) safeUpdates[key] = updates[key];

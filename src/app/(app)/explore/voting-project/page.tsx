@@ -12,7 +12,6 @@ import {
   TrendingUp,
   Award,
   Loader2,
-  Target,
   Sparkles,
   ArrowRight,
   BarChart3,
@@ -116,7 +115,6 @@ export default function VotingProjectPage() {
   };
 
   const totalVotesAll = projects.reduce((s, p) => s + p.total_votes, 0);
-  const totalFunding = projects.reduce((s, p) => s + Number(p.funding_current), 0);
 
   if (loading) {
     return (
@@ -217,7 +215,6 @@ export default function VotingProjectPage() {
         {[
           { label: 'Projets Totaux', value: projects.length, icon: Award, color: 'from-brand-500 to-emerald-400' },
           { label: 'Votes Actifs', value: totalVotesAll, icon: ThumbsUp, color: 'from-blue-500 to-cyan-400' },
-          { label: 'Financement', value: `${(totalFunding / 1000).toFixed(1)}K`, icon: Target, color: 'from-gold-500 to-amber-400' },
           { label: 'Terminés', value: projects.filter(p => p.status === 'completed').length, icon: CheckCircle2, color: 'from-emerald-500 to-green-400' },
         ].map((stat, i) => {
           const Icon = stat.icon;
@@ -258,9 +255,6 @@ export default function VotingProjectPage() {
           {filteredProjects.map((project, idx) => {
             const totalVotes = project.total_votes || 1;
             const votePercentage = totalVotes > 0 ? (project.upvotes / totalVotes) * 100 : 50;
-            const fundingGoal = Number(project.funding_goal) || 1;
-            const fundingCurrent = Number(project.funding_current) || 0;
-            const fundingPercentage = Math.min(100, (fundingCurrent / fundingGoal) * 100);
             const daysLeft = getDaysLeft(project.ends_at);
             const userVote = userVotes[project.id];
             const isVoting = votingLoading === project.id;
@@ -364,28 +358,6 @@ export default function VotingProjectPage() {
                         </span>
                       </div>
                     </div>
-
-                    {/* Funding Progress */}
-                    {fundingGoal > 0 && (
-                      <div className="mb-5">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                            Financement
-                          </p>
-                          <p className="text-xs text-gold-400 font-medium">
-                            {fundingCurrent.toLocaleString()} / {fundingGoal.toLocaleString()} SIDRA
-                          </p>
-                        </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                          <motion.div
-                            className="h-full bg-gradient-to-r from-gold-500 to-amber-400 rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${fundingPercentage}%` }}
-                            transition={{ duration: 1.2, delay: idx * 0.1 }}
-                          />
-                        </div>
-                      </div>
-                    )}
 
                     {/* Info Row — Glass pills */}
                     <div className="flex gap-3 mb-5">

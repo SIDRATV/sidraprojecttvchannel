@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
 
     let partners = null;
     let applications = null;
+    let pricing = null;
+    let banners = null;
 
     if (type === 'partners' || type === 'all') {
       const { data, error } = await (supabase as any)
@@ -44,13 +46,33 @@ export async function GET(request: NextRequest) {
       applications = data;
     }
 
-    return NextResponse.json({ partners, applications });
+    if (type === 'pricing' || type === 'all') {
+      const { data, error } = await (supabase as any)
+        .from('partnership_pricing')
+        .select('*')
+        .order('partnership_type')
+        .order('duration_type');
+      if (error) throw error;
+      pricing = data;
+    }
+
+    if (type === 'banners' || type === 'all') {
+      const { data, error } = await (supabase as any)
+        .from('sponsored_banners')
+        .select('*')
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      banners = data;
+    }
+
+    return NextResponse.json({ partners, applications, pricing, banners });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// POST /api/admin/partnerships — create a new partner
+// POST /api/admin/partnerships — create a new partner or banner
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient();
@@ -62,6 +84,37 @@ export async function POST(request: NextRequest) {
     if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
+    const { target } = body;
+
+    if (target === 'banner') {
+      const { title, description, image_url, link_url, banner_type, starts_at, ends_at, partner_id, application_id, priority } = body;
+      if (!image_url || !ends_at) {
+        return NextResponse.json({ error: 'image_url and ends_at are required' }, { status: 400 });
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('sponsored_banners')
+        .insert({
+          title: title || '',
+          description: description || '',
+          image_url,
+          link_url: link_url || '',
+          banner_type: banner_type || 'large',
+          starts_at: starts_at || new Date().toISOString(),
+          ends_at,
+          partner_id: partner_id || null,
+          application_id: application_id || null,
+          is_active: true,
+          priority: priority || 0,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ success: true, banner: data });
+    }
+
+    // Default: create partner
     const { name, description, category, logo_emoji, logo_url, website_url, status, benefits } = body;
 
     if (!name) {
@@ -128,12 +181,58 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (target === 'application') {
-      const allowedFields = ['status', 'admin_note'];
+      const allowedFields = ['status', 'admin_note', 'correction_note'];
       const safeUpdates: Record<string, any> = {};
       for (const key of allowedFields) {
         if (updates[key] !== undefined) safeUpdates[key] = updates[key];
       }
       safeUpdates.updated_at = new Date().toISOString();
+
+      // If rejecting, process refund
+      if (updates.status === 'rejected') {
+        const { data: app } = await (supabase as any)
+          .from('partnership_applications')
+          .select('user_id, payment_id, payment_amount, payment_currency, payment_status')
+          .eq('id', id)
+          .single();
+
+        if (app && app.payment_status === 'paid' && app.payment_amount > 0 && (app.payment_currency === 'sidra' || app.payment_currency === 'sptc')) {
+          // Refund to wallet
+          const { data: wallet } = await (supabase as any)
+            .from('wallet_accounts')
+            .select('balance')
+            .eq('user_id', app.user_id)
+            .single();
+
+          if (wallet) {
+            await (supabase as any)
+              .from('wallet_accounts')
+              .update({ balance: Number(wallet.balance) + Number(app.payment_amount), updated_at: new Date().toISOString() })
+              .eq('user_id', app.user_id);
+
+            await (supabase as any)
+              .from('wallet_transactions')
+              .insert({
+                user_id: app.user_id,
+                type: 'partnership_refund',
+                amount: Number(app.payment_amount),
+                currency: app.payment_currency,
+                status: 'completed',
+                description: `Remboursement partenariat rejeté`,
+              });
+          }
+
+          // Update payment record
+          if (app.payment_id) {
+            await (supabase as any)
+              .from('partnership_payments')
+              .update({ status: 'refunded', refund_reason: updates.admin_note || 'Candidature rejetée', updated_at: new Date().toISOString() })
+              .eq('id', app.payment_id);
+          }
+
+          safeUpdates.payment_status = 'refunded';
+        }
+      }
 
       const { data, error } = await (supabase as any)
         .from('partnership_applications')
@@ -144,6 +243,44 @@ export async function PATCH(request: NextRequest) {
 
       if (error) throw error;
       return NextResponse.json({ success: true, application: data });
+    }
+
+    if (target === 'pricing') {
+      const allowedFields = ['price_sidra', 'price_sptc', 'price_usd', 'is_active'];
+      const safeUpdates: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (updates[key] !== undefined) safeUpdates[key] = updates[key];
+      }
+      safeUpdates.updated_at = new Date().toISOString();
+
+      const { data, error } = await (supabase as any)
+        .from('partnership_pricing')
+        .update(safeUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ success: true, pricing: data });
+    }
+
+    if (target === 'banner') {
+      const allowedFields = ['title', 'description', 'image_url', 'link_url', 'banner_type', 'starts_at', 'ends_at', 'is_active', 'priority', 'partner_id', 'application_id'];
+      const safeUpdates: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (updates[key] !== undefined) safeUpdates[key] = updates[key];
+      }
+      safeUpdates.updated_at = new Date().toISOString();
+
+      const { data, error } = await (supabase as any)
+        .from('sponsored_banners')
+        .update(safeUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ success: true, banner: data });
     }
 
     return NextResponse.json({ error: 'Invalid target' }, { status: 400 });
@@ -171,7 +308,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'id and target query params required' }, { status: 400 });
     }
 
-    const table = target === 'partner' ? 'partners' : 'partnership_applications';
+    const table = target === 'partner' ? 'partners' : target === 'banner' ? 'sponsored_banners' : 'partnership_applications';
     const { error } = await (supabase as any).from(table).delete().eq('id', id);
     if (error) throw error;
 

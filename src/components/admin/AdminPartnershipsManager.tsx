@@ -23,6 +23,12 @@ import {
   Check,
   XCircle,
   Clock,
+  DollarSign,
+  Image as ImageIcon,
+  Link2,
+  BarChart3,
+  RefreshCw,
+  MessageSquare,
 } from 'lucide-react';
 
 interface Partner {
@@ -56,6 +62,39 @@ interface PartnerApplication {
   has_team_in_5_countries: boolean;
   has_sda_2000_plus: boolean;
   status: string;
+  payment_status: string;
+  payment_amount: number;
+  payment_currency: string;
+  duration_type: string;
+  correction_note: string;
+  created_at: string;
+}
+
+interface PricingItem {
+  id: string;
+  partnership_type: string;
+  duration_type: string;
+  price_sidra: number;
+  price_sptc: number;
+  price_usd: number;
+  is_active: boolean;
+}
+
+interface SponsoredBanner {
+  id: string;
+  application_id: string | null;
+  partner_id: string | null;
+  title: string;
+  description: string;
+  image_url: string;
+  link_url: string;
+  banner_type: string;
+  starts_at: string;
+  ends_at: string;
+  is_active: boolean;
+  impressions: number;
+  clicks: number;
+  priority: number;
   created_at: string;
 }
 
@@ -77,9 +116,11 @@ const APP_STATUS = [
 ];
 
 export function AdminPartnershipsManager({ token }: { token: string }) {
-  const [tab, setTab] = useState<'partners' | 'applications'>('partners');
+  const [tab, setTab] = useState<'partners' | 'applications' | 'pricing' | 'banners'>('partners');
   const [partners, setPartners] = useState<Partner[]>([]);
   const [applications, setApplications] = useState<PartnerApplication[]>([]);
+  const [pricing, setPricing] = useState<PricingItem[]>([]);
+  const [banners, setBanners] = useState<SponsoredBanner[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
@@ -87,6 +128,9 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingApp, setViewingApp] = useState<PartnerApplication | null>(null);
+  const [correctionNote, setCorrectionNote] = useState('');
+  const [showBannerModal, setShowBannerModal] = useState(false);
+  const [editingBanner, setEditingBanner] = useState<SponsoredBanner | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -99,6 +143,18 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
     benefits: '',
   });
 
+  const [bannerForm, setBannerForm] = useState({
+    title: '',
+    description: '',
+    image_url: '',
+    link_url: '',
+    banner_type: 'large',
+    starts_at: new Date().toISOString().split('T')[0],
+    ends_at: '',
+    priority: 0,
+    partner_id: '',
+  });
+
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/partnerships?type=all', {
@@ -107,6 +163,8 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
       const data = await res.json();
       if (data.partners) setPartners(data.partners);
       if (data.applications) setApplications(data.applications);
+      if (data.pricing) setPricing(data.pricing);
+      if (data.banners) setBanners(data.banners);
     } catch {
       setMessage({ type: 'error', text: 'Erreur de chargement' });
     } finally {
@@ -192,21 +250,110 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
     }
   };
 
-  const handleAppStatus = async (appId: string, newStatus: string) => {
+  const handleAppStatus = async (appId: string, newStatus: string, adminNote?: string) => {
+    try {
+      const body: any = { id: appId, target: 'application', status: newStatus };
+      if (adminNote) body.admin_note = adminNote;
+      if (newStatus === 'correction_needed' && correctionNote) {
+        body.correction_note = correctionNote;
+      }
+      const res = await fetch('/api/admin/partnerships', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const labels: Record<string, string> = { approved: 'approuvée', rejected: 'rejetée (remboursement effectué)', correction_needed: 'correction demandée' };
+        setMessage({ type: 'success', text: `Candidature ${labels[newStatus] || newStatus}` });
+        setCorrectionNote('');
+        await fetchData();
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Erreur' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Erreur réseau' });
+    }
+  };
+
+  const handlePricingUpdate = async (pricingId: string, field: string, value: number) => {
     try {
       const res = await fetch('/api/admin/partnerships', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id: appId, target: 'application', status: newStatus }),
+        body: JSON.stringify({ id: pricingId, target: 'pricing', [field]: value }),
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({ type: 'success', text: `Candidature ${newStatus === 'approved' ? 'approuvée' : 'rejetée'}` });
+        setMessage({ type: 'success', text: 'Prix mis à jour' });
         await fetchData();
       }
     } catch {
       setMessage({ type: 'error', text: 'Erreur réseau' });
     }
+  };
+
+  const handleSaveBanner = async () => {
+    if (!bannerForm.image_url || !bannerForm.ends_at) {
+      setMessage({ type: 'error', text: 'Image et date de fin requises' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const body = editingBanner
+        ? { id: editingBanner.id, target: 'banner', ...bannerForm, partner_id: bannerForm.partner_id || null }
+        : { target: 'banner', ...bannerForm, partner_id: bannerForm.partner_id || null };
+
+      const res = await fetch('/api/admin/partnerships', {
+        method: editingBanner ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: editingBanner ? 'Bannière mise à jour' : 'Bannière créée' });
+        setShowBannerModal(false);
+        setEditingBanner(null);
+        setBannerForm({ title: '', description: '', image_url: '', link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
+        await fetchData();
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Erreur' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Erreur réseau' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteBanner = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/partnerships?id=${encodeURIComponent(id)}&target=banner`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: 'Bannière supprimée' });
+        await fetchData();
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Erreur réseau' });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleToggleBanner = async (banner: SponsoredBanner) => {
+    try {
+      await fetch('/api/admin/partnerships', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: banner.id, target: 'banner', is_active: !banner.is_active }),
+      });
+      await fetchData();
+    } catch {}
   };
 
   const pendingCount = applications.filter(a => a.status === 'pending').length;
@@ -288,18 +435,23 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
       </div>
 
       {/* Sub Tabs */}
-      <div className="flex gap-2">
-        {(['partners', 'applications'] as const).map((t) => (
+      <div className="flex gap-2 flex-wrap">
+        {([
+          { key: 'partners' as const, label: `Partenaires (${partners.length})` },
+          { key: 'applications' as const, label: `Candidatures (${applications.length})` },
+          { key: 'pricing' as const, label: `Tarification (${pricing.length})` },
+          { key: 'banners' as const, label: `Bannières (${banners.length})` },
+        ]).map((t) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={t.key}
+            onClick={() => setTab(t.key)}
             className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border backdrop-blur-xl ${
-              tab === t
+              tab === t.key
                 ? 'bg-brand-500/20 text-brand-400 border-brand-500/40'
                 : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
             }`}
           >
-            {t === 'partners' ? `Partenaires (${partners.length})` : `Candidatures (${applications.length})`}
+            {t.label}
           </button>
         ))}
       </div>
@@ -418,6 +570,13 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                       {app.domain && <span className="flex items-center gap-1"><Globe size={11} /> {app.domain}</span>}
                       {app.countries?.length > 0 && <span>{app.countries.length} pays</span>}
                       {app.sda_amount > 0 && <span className="text-gold-400">{app.sda_amount} SDA</span>}
+                      {app.payment_status && (
+                        <span className={`font-medium ${app.payment_status === 'paid' ? 'text-emerald-400' : app.payment_status === 'refunded' ? 'text-red-400' : 'text-slate-500'}`}>
+                          💳 {app.payment_status === 'paid' ? 'Payé' : app.payment_status === 'refunded' ? 'Remboursé' : 'Non payé'}
+                          {app.payment_amount > 0 && ` · ${app.payment_amount} ${(app.payment_currency || '').toUpperCase()}`}
+                        </span>
+                      )}
+                      {app.duration_type && <span>📅 {app.duration_type === 'weekly' ? 'Hebdo' : app.duration_type === 'monthly' ? 'Mensuel' : 'Annuel'}</span>}
                       <span>{new Date(app.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
                     {app.benefits?.length > 0 && (
@@ -449,11 +608,19 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                         <Check size={13} /> Approuver
                       </motion.button>
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => { setViewingApp(app); setCorrectionNote(''); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg text-xs text-amber-400 transition-colors">
+                        <MessageSquare size={13} /> Correction
+                      </motion.button>
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                         onClick={() => handleAppStatus(app.id, 'rejected')}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs text-red-400 transition-colors">
                         <XCircle size={13} /> Rejeter
                       </motion.button>
                     </>
+                  )}
+                  {app.status === 'correction_needed' && (
+                    <span className="text-xs text-amber-400 italic">En attente de correction du demandeur</span>
                   )}
                 </div>
               </motion.div>
@@ -548,13 +715,56 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                     <p className="text-sm text-white">{viewingApp.has_sda_2000_plus ? '✅ Oui' : '❌ Non'}</p>
                   </div>
                 </div>
+                {/* Payment Info */}
+                <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-3 font-semibold">💳 Informations de paiement</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Statut paiement</p>
+                      <p className={`text-sm font-medium ${viewingApp.payment_status === 'paid' ? 'text-emerald-400' : viewingApp.payment_status === 'refunded' ? 'text-red-400' : 'text-slate-400'}`}>
+                        {viewingApp.payment_status === 'paid' ? '✅ Payé' : viewingApp.payment_status === 'refunded' ? '↩️ Remboursé' : '⏳ Non payé'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Montant</p>
+                      <p className="text-sm text-white">{viewingApp.payment_amount || 0} {(viewingApp.payment_currency || '-').toUpperCase()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Durée</p>
+                      <p className="text-sm text-white capitalize">{viewingApp.duration_type === 'weekly' ? 'Hebdomadaire' : viewingApp.duration_type === 'monthly' ? 'Mensuel' : viewingApp.duration_type === 'yearly' ? 'Annuel' : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Moyen de paiement</p>
+                      <p className="text-sm text-white capitalize">{viewingApp.payment_currency || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Correction Note Input */}
+                {viewingApp.status === 'pending' && (
+                  <div>
+                    <label className="text-xs font-medium text-amber-400 mb-1.5 block">💬 Note de correction (optionnel)</label>
+                    <textarea
+                      value={correctionNote}
+                      onChange={(e) => setCorrectionNote(e.target.value)}
+                      placeholder="Décrivez les informations manquantes ou corrections nécessaires..."
+                      rows={3}
+                      className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/50 resize-none"
+                    />
+                  </div>
+                )}
               </div>
               {viewingApp.status === 'pending' && (
-                <div className="p-6 border-t border-white/[0.08] flex items-center justify-end gap-3">
+                <div className="p-6 border-t border-white/[0.08] flex items-center justify-end gap-3 flex-wrap">
                   <button onClick={() => { handleAppStatus(viewingApp.id, 'rejected'); setViewingApp(null); }}
                     className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-sm text-red-400 font-medium">
-                    Rejeter
+                    Rejeter (+ Remboursement)
                   </button>
+                  {correctionNote && (
+                    <button onClick={() => { handleAppStatus(viewingApp.id, 'correction_needed'); setViewingApp(null); }}
+                      className="px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl text-sm text-amber-400 font-medium">
+                      Demander Correction
+                    </button>
+                  )}
                   <button onClick={() => { handleAppStatus(viewingApp.id, 'approved'); setViewingApp(null); }}
                     className="px-5 py-2.5 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25">
                     Approuver
@@ -645,6 +855,273 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                   className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25 disabled:opacity-50 transition-all">
                   {saving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
                   {editingPartner ? 'Enregistrer' : 'Créer'}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PRICING TAB */}
+      {tab === 'pricing' && (
+        <div className="space-y-6">
+          <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+            <p className="text-sm text-slate-400 mb-1">Définissez les prix pour chaque type de partenariat et durée.</p>
+            <p className="text-xs text-slate-500">Les utilisateurs devront payer avant de soumettre leur demande.</p>
+          </div>
+          {['project', 'advertising'].map((pType) => {
+            const typeLabel = pType === 'project' ? '🤝 Partenariat Projet' : '📢 Publicité / Bannière';
+            const typePricing = pricing.filter(p => p.partnership_type === pType);
+            return (
+              <div key={pType} className="space-y-3">
+                <h3 className="text-lg font-bold text-white">{typeLabel}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {typePricing.map((p) => {
+                    const dLabel = p.duration_type === 'weekly' ? 'Hebdomadaire' : p.duration_type === 'monthly' ? 'Mensuel' : 'Annuel';
+                    return (
+                      <div key={p.id} className="bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/[0.08] p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-white">{dLabel}</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.is_active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                            {p.is_active ? 'Actif' : 'Inactif'}
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-[10px] text-slate-500 uppercase tracking-wide">Sidra (SDA)</label>
+                            <input type="number" value={p.price_sidra} onChange={(e) => handlePricingUpdate(p.id, 'price_sidra', Number(e.target.value))}
+                              className="w-full mt-1 bg-white/[0.06] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-slate-500 uppercase tracking-wide">SPTC</label>
+                            <input type="number" value={p.price_sptc} onChange={(e) => handlePricingUpdate(p.id, 'price_sptc', Number(e.target.value))}
+                              className="w-full mt-1 bg-white/[0.06] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-slate-500 uppercase tracking-wide">USD (Visa)</label>
+                            <input type="number" value={p.price_usd} onChange={(e) => handlePricingUpdate(p.id, 'price_usd', Number(e.target.value))}
+                              className="w-full mt-1 bg-white/[0.06] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {pricing.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-slate-400 font-medium">Aucun tarif configuré</p>
+              <p className="text-slate-500 text-sm mt-1">Exécutez la migration SQL pour initialiser les tarifs par défaut.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* BANNERS TAB */}
+      {tab === 'banners' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400">Gérez les bannières publicitaires sponsorisées.</p>
+              <p className="text-xs text-slate-500 mt-1">Les bannières actives seront affichées sur la plateforme.</p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                setEditingBanner(null);
+                setBannerForm({ title: '', description: '', image_url: '', link_url: '', banner_type: 'large', starts_at: new Date().toISOString().split('T')[0], ends_at: '', priority: 0, partner_id: '' });
+                setShowBannerModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25"
+            >
+              <Plus size={16} /> Nouvelle Bannière
+            </motion.button>
+          </div>
+
+          <div className="space-y-3">
+            {banners.map((banner) => {
+              const isExpired = new Date(banner.ends_at) < new Date();
+              const isRunning = banner.is_active && !isExpired && new Date(banner.starts_at) <= new Date();
+              return (
+                <motion.div
+                  key={banner.id}
+                  layout
+                  className="bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/[0.08] p-5 hover:border-white/[0.15] transition-colors"
+                >
+                  <div className="flex items-start gap-4">
+                    {banner.image_url && (
+                      <div className="w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-white/[0.06]">
+                        <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-white">{banner.title || 'Sans titre'}</h3>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          isRunning ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                          isExpired ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                          'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                        }`}>
+                          {isRunning ? 'EN COURS' : isExpired ? 'EXPIRÉ' : 'PLANIFIÉ'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 uppercase">{banner.banner_type}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-500">
+                        <span>📅 {new Date(banner.starts_at).toLocaleDateString('fr-FR')} → {new Date(banner.ends_at).toLocaleDateString('fr-FR')}</span>
+                        <span>👁 {banner.impressions} impressions</span>
+                        <span>🖱 {banner.clicks} clics</span>
+                        <span>⭐ Priorité: {banner.priority}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/[0.06]">
+                    <button onClick={() => handleToggleBanner(banner)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${
+                        banner.is_active
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                          : 'bg-white/[0.06] border-white/[0.1] text-slate-400 hover:bg-white/[0.1]'
+                      }`}
+                    >
+                      {banner.is_active ? '✅ Actif' : '⏸ Inactif'}
+                    </button>
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setEditingBanner(banner);
+                        setBannerForm({
+                          title: banner.title,
+                          description: banner.description,
+                          image_url: banner.image_url,
+                          link_url: banner.link_url,
+                          banner_type: banner.banner_type,
+                          starts_at: banner.starts_at.split('T')[0],
+                          ends_at: banner.ends_at.split('T')[0],
+                          priority: banner.priority,
+                          partner_id: banner.partner_id || '',
+                        });
+                        setShowBannerModal(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] rounded-lg text-xs text-slate-300">
+                      <Edit3 size={13} /> Modifier
+                    </motion.button>
+                    <div className="flex-1" />
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                      disabled={deletingId === banner.id}
+                      onClick={() => { if (confirm('Supprimer cette bannière ?')) handleDeleteBanner(banner.id); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs text-red-400 disabled:opacity-50">
+                      {deletingId === banner.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Supprimer
+                    </motion.button>
+                  </div>
+                </motion.div>
+              );
+            })}
+            {banners.length === 0 && (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 mx-auto mb-4 bg-white/[0.04] rounded-2xl flex items-center justify-center border border-white/[0.08]">
+                  <ImageIcon size={28} className="text-slate-600" />
+                </div>
+                <p className="text-slate-400 font-medium">Aucune bannière</p>
+                <p className="text-slate-500 text-sm mt-1">Créez une bannière pour les partenaires publicitaires</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* BANNER MODAL */}
+      <AnimatePresence>
+        {showBannerModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowBannerModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-white/[0.1] shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-white/[0.08] flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <ImageIcon size={20} className="text-brand-400" />
+                  {editingBanner ? 'Modifier la Bannière' : 'Nouvelle Bannière'}
+                </h3>
+                <button onClick={() => setShowBannerModal(false)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400"><X size={18} /></button>
+              </div>
+              <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+                <div>
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">Titre</label>
+                  <input type="text" value={bannerForm.title} onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
+                    placeholder="Titre de la bannière..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">Description</label>
+                  <textarea value={bannerForm.description} onChange={(e) => setBannerForm({ ...bannerForm, description: e.target.value })}
+                    placeholder="Description..." rows={2}
+                    className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 resize-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">URL de l&#39;image *</label>
+                  <input type="url" value={bannerForm.image_url} onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
+                    placeholder="https://..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">Lien de redirection</label>
+                  <input type="url" value={bannerForm.link_url} onChange={(e) => setBannerForm({ ...bannerForm, link_url: e.target.value })}
+                    placeholder="https://..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Type de bannière</label>
+                    <select value={bannerForm.banner_type} onChange={(e) => setBannerForm({ ...bannerForm, banner_type: e.target.value })}
+                      className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50">
+                      <option value="large">Grande</option>
+                      <option value="medium">Moyenne</option>
+                      <option value="small">Petite</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Priorité</label>
+                    <input type="number" value={bannerForm.priority} onChange={(e) => setBannerForm({ ...bannerForm, priority: Number(e.target.value) })}
+                      className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Date de début</label>
+                    <input type="date" value={bannerForm.starts_at} onChange={(e) => setBannerForm({ ...bannerForm, starts_at: e.target.value })}
+                      className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Date de fin *</label>
+                    <input type="date" value={bannerForm.ends_at} onChange={(e) => setBannerForm({ ...bannerForm, ends_at: e.target.value })}
+                      className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">Partenaire associé (optionnel)</label>
+                  <select value={bannerForm.partner_id} onChange={(e) => setBannerForm({ ...bannerForm, partner_id: e.target.value })}
+                    className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50">
+                    <option value="">Aucun</option>
+                    {partners.map(p => <option key={p.id} value={p.id}>{p.logo_emoji} {p.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="p-6 border-t border-white/[0.08] flex items-center justify-end gap-3">
+                <button onClick={() => setShowBannerModal(false)}
+                  className="px-4 py-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] rounded-xl text-sm text-slate-300 font-medium">
+                  Annuler
+                </button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={saving} onClick={handleSaveBanner}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25 disabled:opacity-50">
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                  {editingBanner ? 'Enregistrer' : 'Créer'}
                 </motion.button>
               </div>
             </motion.div>

@@ -30,6 +30,10 @@ import {
   Coins,
   CheckCircle,
   XCircle,
+  CreditCard,
+  RefreshCcw,
+  Info,
+  DollarSign,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -51,6 +55,16 @@ interface Partner {
   join_date: string;
 }
 
+interface PricingItem {
+  id: string;
+  partnership_type: string;
+  duration_type: string;
+  price_sidra: number;
+  price_sptc: number;
+  price_usd: number;
+  is_active: boolean;
+}
+
 interface Application {
   id: string;
   project_name: string;
@@ -66,6 +80,11 @@ interface Application {
   has_sda_2000_plus: boolean;
   status: string;
   created_at: string;
+  payment_status?: string;
+  payment_amount?: number;
+  payment_currency?: string;
+  duration_type?: string;
+  correction_note?: string;
 }
 
 /* ── Helpers ───────────────────────────────────────────── */
@@ -114,6 +133,7 @@ export default function PartenariatPage() {
   const [appStep, setAppStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [pricing, setPricing] = useState<PricingItem[]>([]);
   const [appForm, setAppForm] = useState({
     project_name: '',
     owner_name: '',
@@ -126,9 +146,21 @@ export default function PartenariatPage() {
     sda_amount: 0,
     has_team_in_5_countries: false,
     has_sda_2000_plus: false,
+    duration_type: 'monthly' as 'weekly' | 'monthly' | 'yearly',
+    payment_currency: 'sidra' as 'sidra' | 'sptc' | 'visa',
   });
 
   /* ── Data Fetching ─── */
+
+  const fetchPricing = useCallback(async () => {
+    try {
+      const res = await fetch('/api/partnerships/pricing');
+      const data = await res.json();
+      if (data.pricing) setPricing(data.pricing);
+    } catch {
+      // silent
+    }
+  }, []);
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -157,7 +189,8 @@ export default function PartenariatPage() {
 
   useEffect(() => {
     fetchPartners();
-  }, [fetchPartners]);
+    fetchPricing();
+  }, [fetchPartners, fetchPricing]);
 
   useEffect(() => {
     if (activeView === 'my-apps') fetchMyApps();
@@ -201,11 +234,12 @@ export default function PartenariatPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setSubmitMessage({ type: 'success', text: 'Candidature envoyée avec succès !' });
+        setSubmitMessage({ type: 'success', text: 'Candidature envoyée et paiement effectué avec succès !' });
         setAppForm({
           project_name: '', owner_name: '', owner_email: '', partnership_type: 'project',
           domain: '', redirect_link: '', benefits: [], countries: [],
           sda_amount: 0, has_team_in_5_countries: false, has_sda_2000_plus: false,
+          duration_type: 'monthly', payment_currency: 'sidra',
         });
         setAppStep(1);
         setTimeout(() => { setActiveView('my-apps'); setSubmitMessage(null); }, 2000);
@@ -495,7 +529,7 @@ export default function PartenariatPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto">
             {/* Step Indicator */}
             <div className="flex items-center justify-center gap-2 mb-8">
-              {[1, 2, 3].map((step) => (
+              {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center gap-2">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                     appStep >= step
@@ -504,7 +538,7 @@ export default function PartenariatPage() {
                   }`}>
                     {appStep > step ? <Check size={14} /> : step}
                   </div>
-                  {step < 3 && <div className={`w-12 h-0.5 rounded-full transition-all ${appStep > step ? 'bg-brand-500' : 'bg-white/[0.08]'}`} />}
+                  {step < 4 && <div className={`w-10 h-0.5 rounded-full transition-all ${appStep > step ? 'bg-brand-500' : 'bg-white/[0.08]'}`} />}
                 </div>
               ))}
             </div>
@@ -677,12 +711,128 @@ export default function PartenariatPage() {
                 </motion.div>
               )}
 
-              {/* Step 3: Benefits + Submit */}
+              {/* Step 3: Plan & Paiement */}
               {appStep === 3 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1">Avantages Proposés</h3>
-                    <p className="text-sm text-slate-400">Sélectionnez les avantages que vous pouvez offrir</p>
+                    <h3 className="text-xl font-bold text-white mb-1">Plan & Paiement</h3>
+                    <p className="text-sm text-slate-400">Choisissez la durée et le mode de paiement</p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-2 block">Durée du partenariat</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {([
+                        { id: 'weekly' as const, label: 'Hebdomadaire', desc: 'Par semaine', badge: '' },
+                        { id: 'monthly' as const, label: 'Mensuel', desc: 'Par mois', badge: '' },
+                        { id: 'yearly' as const, label: 'Annuel', desc: 'Par an', badge: 'Populaire' },
+                      ]).map((dur) => (
+                        <button
+                          key={dur.id}
+                          onClick={() => setAppForm({ ...appForm, duration_type: dur.id })}
+                          className={`relative text-left p-4 rounded-xl border transition-all ${
+                            appForm.duration_type === dur.id
+                              ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/5'
+                              : 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15]'
+                          }`}
+                        >
+                          {dur.badge && (
+                            <span className="absolute -top-2 right-2 px-2 py-0.5 bg-brand-500/30 border border-brand-500/40 rounded-md text-[9px] font-bold text-brand-300">
+                              {dur.badge}
+                            </span>
+                          )}
+                          <p className="text-sm font-semibold text-white">{dur.label}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{dur.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-2 block">Mode de paiement</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {([
+                        { id: 'sidra' as const, label: 'Sidra', emoji: '🪙', desc: 'Sidra Coin' },
+                        { id: 'sptc' as const, label: 'SPTC', emoji: '💎', desc: 'Pièce native' },
+                        { id: 'visa' as const, label: 'Visa', emoji: '💳', desc: 'Carte bancaire' },
+                      ]).map((curr) => (
+                        <button
+                          key={curr.id}
+                          onClick={() => setAppForm({ ...appForm, payment_currency: curr.id })}
+                          className={`text-left p-4 rounded-xl border transition-all ${
+                            appForm.payment_currency === curr.id
+                              ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/5'
+                              : 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15]'
+                          }`}
+                        >
+                          <span className="text-2xl mb-1 block">{curr.emoji}</span>
+                          <p className="text-sm font-semibold text-white">{curr.label}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{curr.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const cp = pricing.find(
+                      (p) => p.partnership_type === appForm.partnership_type && p.duration_type === appForm.duration_type
+                    );
+                    const amt = cp
+                      ? appForm.payment_currency === 'sidra' ? cp.price_sidra
+                        : appForm.payment_currency === 'sptc' ? cp.price_sptc
+                        : cp.price_usd
+                      : 0;
+                    const cl = appForm.payment_currency === 'sidra' ? 'Sidra' : appForm.payment_currency === 'sptc' ? 'SPTC' : 'USD';
+                    const dl = appForm.duration_type === 'weekly' ? 'semaine' : appForm.duration_type === 'monthly' ? 'mois' : 'an';
+                    return (
+                      <div className="bg-gradient-to-br from-brand-500/10 to-emerald-500/10 rounded-xl border border-brand-500/30 p-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-slate-400 mb-1">Montant à payer</p>
+                            <p className="text-3xl font-bold text-white">
+                              {amt.toLocaleString('fr-FR')} <span className="text-lg text-brand-400">{cl}</span>
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">par {dl}</p>
+                          </div>
+                          <div className="w-14 h-14 bg-brand-500/20 rounded-xl flex items-center justify-center">
+                            <DollarSign size={28} className="text-brand-400" />
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-white/[0.08]">
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                            <Info size={12} />
+                            {appForm.payment_currency === 'visa'
+                              ? 'Le paiement sera traité par carte bancaire'
+                              : `Le montant sera déduit de votre portefeuille ${cl}`}
+                          </p>
+                          <p className="text-[11px] text-emerald-400/70 flex items-center gap-1.5 mt-1">
+                            <RefreshCcw size={12} />
+                            Remboursement automatique en cas de rejet
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex justify-between pt-2">
+                    <button onClick={() => setAppStep(2)} className="px-5 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
+                      ← Retour
+                    </button>
+                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                      onClick={() => setAppStep(4)}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25">
+                      Suivant <ChevronRight size={16} />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 4: Avantages & Confirmation */}
+              {appStep === 4 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">Avantages & Confirmation</h3>
+                    <p className="text-sm text-slate-400">Sélectionnez vos avantages et confirmez votre candidature</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -718,21 +868,34 @@ export default function PartenariatPage() {
                       <p><span className="text-slate-500">Projet:</span> {appForm.project_name || '—'}</p>
                       <p><span className="text-slate-500">Contact:</span> {appForm.owner_name} ({appForm.owner_email})</p>
                       <p><span className="text-slate-500">Type:</span> {appForm.partnership_type === 'advertising' ? '📢 Publicité' : '🤝 Projet'}</p>
+                      <p><span className="text-slate-500">Durée:</span> {appForm.duration_type === 'weekly' ? 'Hebdomadaire' : appForm.duration_type === 'monthly' ? 'Mensuel' : 'Annuel'}</p>
+                      {(() => {
+                        const cp = pricing.find(
+                          (p) => p.partnership_type === appForm.partnership_type && p.duration_type === appForm.duration_type
+                        );
+                        const amt = cp
+                          ? appForm.payment_currency === 'sidra' ? cp.price_sidra
+                            : appForm.payment_currency === 'sptc' ? cp.price_sptc
+                            : cp.price_usd
+                          : 0;
+                        const cl = appForm.payment_currency === 'sidra' ? 'Sidra' : appForm.payment_currency === 'sptc' ? 'SPTC' : 'USD';
+                        return <p><span className="text-slate-500">Paiement:</span> <span className="text-brand-400 font-semibold">{amt.toLocaleString('fr-FR')} {cl}</span></p>;
+                      })()}
                       {appForm.countries.length > 0 && <p><span className="text-slate-500">Pays:</span> {appForm.countries.join(', ')}</p>}
                       {appForm.sda_amount > 0 && <p><span className="text-slate-500">SDA:</span> <span className="text-gold-400">{appForm.sda_amount}</span></p>}
                     </div>
                   </div>
 
                   <div className="flex justify-between pt-2">
-                    <button onClick={() => setAppStep(2)} className="px-5 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
+                    <button onClick={() => setAppStep(3)} className="px-5 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
                       ← Retour
                     </button>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                       disabled={submitting || !session?.access_token}
                       onClick={handleSubmitApplication}
                       className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-500 to-emerald-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-500/25 disabled:opacity-40">
-                      {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                      {submitting ? 'Envoi...' : 'Envoyer la Candidature'}
+                      {submitting ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
+                      {submitting ? 'Paiement en cours...' : 'Payer & Envoyer'}
                     </motion.button>
                   </div>
                 </motion.div>
@@ -768,9 +931,12 @@ export default function PartenariatPage() {
                   pending: { label: 'En attente', color: 'text-amber-400 bg-amber-500/15 border-amber-500/30', icon: Clock },
                   approved: { label: 'Approuvé', color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30', icon: CheckCircle },
                   rejected: { label: 'Rejeté', color: 'text-red-400 bg-red-500/15 border-red-500/30', icon: XCircle },
+                  correction_needed: { label: 'Correction requise', color: 'text-orange-400 bg-orange-500/15 border-orange-500/30', icon: AlertCircle },
                 };
                 const status = statusMap[app.status] || statusMap.pending;
                 const StatusIcon = status.icon;
+                const durLabel = app.duration_type === 'weekly' ? 'Hebdo.' : app.duration_type === 'monthly' ? 'Mensuel' : app.duration_type === 'yearly' ? 'Annuel' : '';
+                const currLabel = app.payment_currency === 'sidra' ? 'Sidra' : app.payment_currency === 'sptc' ? 'SPTC' : app.payment_currency === 'visa' ? 'USD' : '';
                 return (
                   <motion.div
                     key={app.id}
@@ -794,8 +960,33 @@ export default function PartenariatPage() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-slate-500">
                       {app.domain && <span className="flex items-center gap-1"><Globe size={11} /> {app.domain}</span>}
                       {app.countries?.length > 0 && <span className="flex items-center gap-1"><MapPin size={11} /> {app.countries.length} pays</span>}
-                      {app.sda_amount > 0 && <span className="flex items-center gap-1 text-gold-400"><Coins size={11} /> {app.sda_amount} SDA</span>}
+                      {app.payment_amount != null && app.payment_amount > 0 && (
+                        <span className="flex items-center gap-1 text-brand-400"><CreditCard size={11} /> {app.payment_amount} {currLabel} · {durLabel}</span>
+                      )}
+                      {app.payment_status === 'refunded' && (
+                        <span className="flex items-center gap-1 text-emerald-400"><RefreshCcw size={11} /> Remboursé</span>
+                      )}
                     </div>
+                    {app.status === 'correction_needed' && app.correction_note && (
+                      <div className="mt-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                        <p className="text-xs font-semibold text-orange-400 mb-1 flex items-center gap-1"><Info size={12} /> Note de correction</p>
+                        <p className="text-xs text-orange-300/80">{app.correction_note}</p>
+                      </div>
+                    )}
+                    {app.status === 'pending' && (
+                      <div className="mt-3 p-3 bg-amber-500/5 border border-amber-500/15 rounded-lg">
+                        <p className="text-[11px] text-amber-400/70 flex items-center gap-1.5">
+                          <Clock size={11} /> Votre candidature est en cours d&#39;examen par notre équipe
+                        </p>
+                      </div>
+                    )}
+                    {app.status === 'rejected' && app.payment_status === 'refunded' && (
+                      <div className="mt-3 p-3 bg-emerald-500/5 border border-emerald-500/15 rounded-lg">
+                        <p className="text-[11px] text-emerald-400/70 flex items-center gap-1.5">
+                          <RefreshCcw size={11} /> Votre paiement de {app.payment_amount} {currLabel} a été remboursé
+                        </p>
+                      </div>
+                    )}
                   </motion.div>
                 );
               })

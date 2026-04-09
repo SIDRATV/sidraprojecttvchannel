@@ -33,7 +33,7 @@ export function BottomNavBar() {
       className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 transition-colors"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-14">
           {/* Navigation Items */}
           <div className="flex items-center space-x-2 flex-1">
             {navItems.map((item) => {
@@ -46,7 +46,7 @@ export function BottomNavBar() {
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all ${
+                    className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg transition-all ${
                       isPremium
                         ? isActive
                           ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-gray-900 shadow-lg shadow-gold-500/30'
@@ -56,7 +56,7 @@ export function BottomNavBar() {
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white'
                     }`}
                   >
-                    <Icon size={24} />
+                    <Icon size={20} />
                     <span className="text-xs font-medium mt-1">{item.label}</span>
                   </motion.div>
                 </Link>

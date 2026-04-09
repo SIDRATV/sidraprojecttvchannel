@@ -43,6 +43,8 @@ import {
   Bell,
   Send,
   Wrench,
+  Mic2,
+  Radio,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui';
@@ -69,9 +71,11 @@ import { AdminVotingManager } from '@/components/admin/AdminVotingManager';
 import { AdminNewsManager } from '@/components/admin/AdminNewsManager';
 import { AdminPartnershipsManager } from '@/components/admin/AdminPartnershipsManager';
 import { AdminMaintenanceManager } from '@/components/admin/AdminMaintenanceManager';
+import { AdminPodcastManager } from '@/components/admin/AdminPodcastManager';
+import { AdminLiveManager } from '@/components/admin/AdminLiveManager';
 import type { Category } from '@/types';
 
-type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'maintenance';
+type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'maintenance' | 'podcast' | 'live';
 
 const COLORS = ['#0F7A5C', '#19C37D', '#D4AF37', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -119,6 +123,8 @@ export function AdminDashboard() {
     { id: 'voting', label: 'Projets de Vote', icon: Award },
     { id: 'news', label: 'Actualités', icon: Bell },
     { id: 'partnerships', label: 'Partenariats', icon: Award },
+    { id: 'podcast', label: 'Podcasts', icon: Mic2 },
+    { id: 'live', label: 'Lives', icon: Radio },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
   ] as const;
 
@@ -293,6 +299,8 @@ export function AdminDashboard() {
             {activeTab === 'voting' && <VotingTab />}
             {activeTab === 'news' && <NewsTab />}
             {activeTab === 'partnerships' && <PartnershipsTab />}
+            {activeTab === 'podcast' && <PodcastTab />}
+            {activeTab === 'live' && <LiveTab />}
             {activeTab === 'maintenance' && <MaintenanceTab />}
           </motion.div>
         </div>
@@ -1782,4 +1790,18 @@ function MaintenanceTab() {
   const { session } = useAuth();
   if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
   return <AdminMaintenanceManager token={session.access_token} />;
+}
+
+// ==================== PODCAST TAB ====================
+function PodcastTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return <AdminPodcastManager token={session.access_token} />;
+}
+
+// ==================== LIVE TAB ====================
+function LiveTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return <AdminLiveManager token={session.access_token} />;
 }

@@ -1,4 +1,7 @@
-'use client';
+const fs = require('fs');
+const path = require('path');
+
+const content = `'use client';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +17,7 @@ interface PageBanner {
   subtitle: string;
 }
 
-const DISPLAY_CATEGORIES = ['Technologie', 'Business', 'IA & ML', 'D\u00e9veloppement', 'Marketing', 'Design', 'Soci\u00e9t\u00e9', 'Sport'];
+const DISPLAY_CATEGORIES = ['Technologie', 'Business', 'IA & ML', 'D\\u00e9veloppement', 'Marketing', 'Design', 'Soci\\u00e9t\\u00e9', 'Sport'];
 
 export default function PodcastPage() {
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
@@ -35,7 +38,7 @@ export default function PodcastPage() {
       let url = '/api/podcasts?limit=50';
       if (viewType === 'trending') url += '&type=trending';
       else if (viewType === 'recent') url += '&type=featured';
-      if (selectedCategory) url += `&category=${encodeURIComponent(selectedCategory)}`;
+      if (selectedCategory) url += \`&category=\${encodeURIComponent(selectedCategory)}\`;
       const response = await fetch(url, { cache: 'no-store' });
       const data = await response.json();
       setPodcasts(Array.isArray(data) ? data : []);
@@ -70,7 +73,7 @@ export default function PodcastPage() {
 
   const getYtId = (p: Podcast & { youtube_id?: string }): string | null => {
     if ((p as any).youtube_id) return (p as any).youtube_id;
-    const m = p.image?.match(/img\.youtube\.com\/vi\/([a-zA-Z0-9_-]{11})/);
+    const m = p.image?.match(/img\\.youtube\\.com\\/vi\\/([a-zA-Z0-9_-]{11})/);
     return m ? m[1] : null;
   };
 
@@ -92,7 +95,7 @@ export default function PodcastPage() {
           </div>
           <div>
             <h1 className="text-3xl font-extrabold text-white drop-shadow-lg">{banner?.title || 'Podcasts'}</h1>
-            <p className="text-white/80 text-sm mt-1">{banner?.subtitle || 'D\u00e9couvrez nos derniers \u00e9pisodes et s\u00e9ries'}</p>
+            <p className="text-white/80 text-sm mt-1">{banner?.subtitle || 'D\\u00e9couvrez nos derniers \\u00e9pisodes et s\\u00e9ries'}</p>
           </div>
         </div>
       </div>
@@ -102,7 +105,7 @@ export default function PodcastPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
-            placeholder="Rechercher par titre ou cr\u00e9ateur..."
+            placeholder="Rechercher par titre ou cr\\u00e9ateur..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all"
@@ -112,7 +115,7 @@ export default function PodcastPage() {
         <div className="flex gap-2">
           {[
             { id: 'all', label: 'Tous', icon: Filter },
-            { id: 'recent', label: 'R\u00e9cents', icon: Clock },
+            { id: 'recent', label: 'R\\u00e9cents', icon: Clock },
             { id: 'trending', label: 'Tendances', icon: TrendingUp },
           ].map(({ id, label, icon: Icon }) => (
             <motion.button
@@ -120,11 +123,11 @@ export default function PodcastPage() {
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => setViewType(id as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+              className={\`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all \${
                 viewType === id
                   ? 'bg-brand-500 text-white shadow-md'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
+              }\`}
             >
               <Icon size={15} />
               {label}
@@ -138,9 +141,9 @@ export default function PodcastPage() {
               key={cat || '__all__'}
               whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+              className={\`px-4 py-1.5 rounded-full text-sm font-medium transition-all \${
                 selectedCategory === cat ? 'bg-brand-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
+              }\`}
             >{cat || 'Toutes'}</motion.button>
           ))}
         </div>
@@ -156,7 +159,7 @@ export default function PodcastPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {paginatedPodcasts.map((podcast) => {
                 const ytId = getYtId(podcast as any);
-                const thumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : podcast.image;
+                const thumb = ytId ? \`https://img.youtube.com/vi/\${ytId}/mqdefault.jpg\` : podcast.image;
                 return (
                   <motion.div
                     key={podcast.id}
@@ -206,7 +209,7 @@ export default function PodcastPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-3 pb-4">
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} disabled={currentPage === 0} className="px-4 py-2 rounded-lg bg-brand-500 text-white disabled:opacity-40 text-sm">
-                  Pr\u00e9c\u00e9dent
+                  Pr\\u00e9c\\u00e9dent
                 </motion.button>
                 <span className="text-sm text-gray-500">{currentPage + 1} / {totalPages}</span>
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))} disabled={currentPage === totalPages - 1} className="px-4 py-2 rounded-lg bg-brand-500 text-white disabled:opacity-40 text-sm">
@@ -220,7 +223,7 @@ export default function PodcastPage() {
         {!isLoading && paginatedPodcasts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Mic2 size={48} className="text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-lg font-medium text-gray-600 dark:text-gray-400">Aucun podcast trouv\u00e9</p>
+            <p className="text-lg font-medium text-gray-600 dark:text-gray-400">Aucun podcast trouv\\u00e9</p>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Ajustez vos filtres ou revenez plus tard</p>
           </div>
         )}
@@ -240,7 +243,7 @@ export default function PodcastPage() {
             >
               <div className="aspect-video">
                 <iframe
-                  src={`https://www.youtube.com/embed/${activeVideo.youtube_id}?autoplay=1&rel=0`}
+                  src={\`https://www.youtube.com/embed/\${activeVideo.youtube_id}?autoplay=1&rel=0\`}
                   className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -264,3 +267,11 @@ export default function PodcastPage() {
     </main>
   );
 }
+`;
+
+fs.writeFileSync(
+  path.join(__dirname, '..', 'src', 'app', '(app)', 'podcast', 'page.tsx'),
+  content,
+  'utf8'
+);
+console.log('podcast/page.tsx written successfully');

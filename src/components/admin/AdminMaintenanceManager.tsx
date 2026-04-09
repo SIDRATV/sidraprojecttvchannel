@@ -29,6 +29,7 @@ interface UserProfile {
   id: string;
   username: string;
   email: string;
+  full_name?: string;
   avatar_url?: string;
 }
 
@@ -49,6 +50,9 @@ export function AdminMaintenanceManager({ token }: { token: string }) {
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [searching, setSearching] = useState(false);
   const [exemptUsers, setExemptUsers] = useState<UserProfile[]>([]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -70,6 +74,24 @@ export function AdminMaintenanceManager({ token }: { token: string }) {
     }
   }, [token]);
 
+  const fetchAllUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch('/api/admin/users?limit=50', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const users = Array.isArray(data) ? data : data.users || [];
+        setAllUsers(users);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [token]);
+
   const fetchExemptUsers = async (userIds: string[]) => {
     try {
       const res = await fetch(`/api/admin/users?ids=${userIds.join(',')}`, {
@@ -86,7 +108,8 @@ export function AdminMaintenanceManager({ token }: { token: string }) {
 
   useEffect(() => {
     fetchSettings();
-  }, [fetchSettings]);
+    fetchAllUsers();
+  }, [fetchSettings, fetchAllUsers]);
 
   const toggleMaintenance = async () => {
     setToggling(true);
@@ -145,8 +168,14 @@ export function AdminMaintenanceManager({ token }: { token: string }) {
   };
 
   const searchUsers = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      // If empty search, show all users filtered by non-exempt
+      setSearchResults(allUsers.filter((u) => !settings.exempt_user_ids.includes(u.id)));
+      setSearchPerformed(true);
+      return;
+    }
     setSearching(true);
+    setSearchPerformed(true);
     try {
       const res = await fetch(`/api/admin/users?search=${encodeURIComponent(searchQuery)}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -156,9 +185,13 @@ export function AdminMaintenanceManager({ token }: { token: string }) {
         const users = Array.isArray(data) ? data : data.users || [];
         // Filter out already exempt users
         setSearchResults(users.filter((u: UserProfile) => !settings.exempt_user_ids.includes(u.id)));
+      } else {
+        setError('Erreur lors de la recherche d\'utilisateurs');
+        setTimeout(() => setError(''), 3000);
       }
     } catch {
-      // Ignore search errors
+      setError('Erreur réseau lors de la recherche');
+      setTimeout(() => setError(''), 3000);
     } finally {
       setSearching(false);
     }
@@ -363,7 +396,7 @@ export function AdminMaintenanceManager({ token }: { token: string }) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={searchUsers}
-            disabled={searching || !searchQuery.trim()}
+            disabled={searching}
             className="px-4 py-2.5 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 border border-brand-500/30 rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50"
           >
             {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search size={14} />}
@@ -371,39 +404,55 @@ export function AdminMaintenanceManager({ token }: { token: string }) {
           </motion.button>
         </div>
 
-        {/* Search results */}
-        <AnimatePresence>
-          {searchResults.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-4 bg-slate-900/50 rounded-xl border border-slate-700/50 divide-y divide-slate-700/50 overflow-hidden"
-            >
-              {searchResults.map((user) => (
-                <div key={user.id} className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center text-xs text-white font-medium">
-                      {user.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
-                    </div>
-                    <div>
-                      <p className="text-sm text-white font-medium">{user.username || 'Sans nom'}</p>
-                      <p className="text-xs text-slate-400">{user.email}</p>
-                    </div>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => addExemptUser(user)}
-                    className="p-2 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors"
-                  >
-                    <UserPlus size={14} />
-                  </motion.button>
+        {/* All users list / Search results */}
+        {(() => {
+          const displayUsers = searchPerformed
+            ? searchResults
+            : allUsers.filter((u) => !settings.exempt_user_ids.includes(u.id));
+          
+          return (
+            <>
+              {loadingUsers && !searchPerformed ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                  <span className="ml-2 text-sm text-slate-400">Chargement des utilisateurs...</span>
                 </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              ) : displayUsers.length > 0 ? (
+                <div className="mb-4 bg-slate-900/50 rounded-xl border border-slate-700/50 divide-y divide-slate-700/50 overflow-hidden max-h-64 overflow-y-auto">
+                  <div className="px-4 py-2 bg-slate-800/50 text-xs text-slate-400 font-medium sticky top-0">
+                    {searchPerformed ? `${displayUsers.length} résultat(s)` : `${displayUsers.length} utilisateur(s) disponible(s)`}
+                  </div>
+                  {displayUsers.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-800/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center text-xs text-white font-medium">
+                          {user.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div>
+                          <p className="text-sm text-white font-medium">{user.username || user.full_name || 'Sans nom'}</p>
+                          <p className="text-xs text-slate-400">{user.email}</p>
+                        </div>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => addExemptUser(user)}
+                        className="p-2 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors"
+                        title="Ajouter à la liste d'exemption"
+                      >
+                        <UserPlus size={14} />
+                      </motion.button>
+                    </div>
+                  ))}
+                </div>
+              ) : searchPerformed ? (
+                <div className="mb-4 text-center py-6 bg-slate-900/50 rounded-xl border border-slate-700/50">
+                  <p className="text-sm text-slate-400">Aucun utilisateur trouvé pour cette recherche.</p>
+                </div>
+              ) : null}
+            </>
+          );
+        })()}
 
         {/* Current exempt users list */}
         {exemptUsers.length > 0 ? (

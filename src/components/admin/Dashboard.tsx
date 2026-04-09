@@ -1219,9 +1219,11 @@ function FinancesTab() {
     ]);
     if (fin) setFinances(fin);
     if (wlt) {
-      setWalletSummary(wlt.summary);
+      setWalletSummary(wlt.summary ?? { totalDeposited: '0', totalWithdrawn: '0', pendingTransactions: 0, netFlow: '0' });
       setWalletTxs(wlt.transactions ?? []);
       setTxTotal(wlt.total ?? 0);
+    } else {
+      setWalletSummary({ totalDeposited: '0', totalWithdrawn: '0', pendingTransactions: 0, netFlow: '0' });
     }
     setLoading(false);
   }, [session, txPage]);
@@ -1255,7 +1257,7 @@ function FinancesTab() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Revenus Actifs (USD)', value: loading ? '…' : `$${parseFloat(finances?.totalActiveRevenue ?? '0').toFixed(2)}`, icon: DollarSign, color: 'from-green-500 to-emerald-400' },
+          { label: 'Revenus Actifs (SIDRA)', value: loading ? '…' : `${parseFloat(finances?.totalActiveRevenue ?? '0').toFixed(4)} SIDRA`, icon: DollarSign, color: 'from-green-500 to-emerald-400' },
           { label: 'Abonnés Actifs', value: loading ? '…' : (finances?.totalActiveSubscribers ?? 0), icon: Crown, color: 'from-gold-500 to-gold-400' },
           { label: 'Balance Plateforme', value: loading ? '…' : `${parseFloat(finances?.totalPlatformBalance ?? '0').toFixed(2)} SIDRA`, icon: Wallet, color: 'from-brand-500 to-brand-400' },
           { label: 'Tx en attente', value: loading ? '…' : (walletSummary?.pendingTransactions ?? 0), icon: Clock, color: 'from-orange-500 to-orange-400' },

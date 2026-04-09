@@ -13,21 +13,21 @@ export async function GET(request: NextRequest) {
 
   // Total active subscriptions and revenue
   const [subscriptionRes, planBreakdownRes, monthlyRes, walletRes] = await Promise.all([
-    // Overall totals
+    // Overall totals — active subscriptions
     (supabase as any)
-      .from('platform_subscriptions')
-      .select('amount_usd, status, plan')
+      .from('premium_subscriptions')
+      .select('amount_paid, status, plan_id')
       .eq('status', 'active'),
 
     // Revenue by plan (all time)
     (supabase as any)
-      .from('platform_subscriptions')
-      .select('plan, amount_usd, status'),
+      .from('premium_subscriptions')
+      .select('plan_id, amount_paid, status'),
 
     // Recent months activity
     (supabase as any)
-      .from('platform_subscriptions')
-      .select('amount_usd, plan, created_at, status')
+      .from('premium_subscriptions')
+      .select('amount_paid, plan_id, created_at, status')
       .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: true }),
 
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
   // Compute totals
   const totalActiveRevenue = activeSubs.reduce(
-    (sum: number, s: any) => sum + (parseFloat(s.amount_usd) || 0),
+    (sum: number, s: any) => sum + (parseFloat(s.amount_paid) || 0),
     0,
   );
   const totalActiveSubscribers = activeSubs.length;
@@ -52,17 +52,18 @@ export async function GET(request: NextRequest) {
   // Revenue by plan
   const byPlan: Record<string, { count: number; revenue: number }> = {};
   for (const s of allSubs) {
-    if (!byPlan[s.plan]) byPlan[s.plan] = { count: 0, revenue: 0 };
-    byPlan[s.plan].count += 1;
-    if (s.status === 'active') byPlan[s.plan].revenue += parseFloat(s.amount_usd) || 0;
+    const planKey = s.plan_id ?? 'unknown';
+    if (!byPlan[planKey]) byPlan[planKey] = { count: 0, revenue: 0 };
+    byPlan[planKey].count += 1;
+    if (s.status === 'active') byPlan[planKey].revenue += parseFloat(s.amount_paid) || 0;
   }
 
   // Monthly revenue (last 90 days grouped by month)
   const monthlyMap: Record<string, number> = {};
   for (const s of recentSubs) {
-    if (s.status === 'cancelled') continue;
+    if (s.status === 'cancelled' || s.status === 'fraud') continue;
     const month = s.created_at.slice(0, 7); // "YYYY-MM"
-    monthlyMap[month] = (monthlyMap[month] ?? 0) + (parseFloat(s.amount_usd) || 0);
+    monthlyMap[month] = (monthlyMap[month] ?? 0) + (parseFloat(s.amount_paid) || 0);
   }
   const monthlyRevenue = Object.entries(monthlyMap)
     .map(([month, revenue]) => ({ month, revenue }))
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
   );
 
   return NextResponse.json({
-    totalActiveRevenue: totalActiveRevenue.toFixed(2),
+    totalActiveRevenue: totalActiveRevenue.toFixed(4),
     totalActiveSubscribers,
     byPlan,
     monthlyRevenue,

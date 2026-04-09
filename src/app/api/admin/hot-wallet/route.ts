@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   let txQuery = (supabase as any)
     .from('wallet_transactions')
     .select(
-      'id, type, direction, amount, fee, status, tx_hash, created_at, updated_at, user_id, currency, metadata, users(email, full_name, username)',
+      'id, type, direction, amount, fee, status, tx_hash, created_at, updated_at, user_id, currency, metadata',
       { count: 'exact' },
     )
     .order('created_at', { ascending: false })
@@ -46,12 +46,33 @@ export async function GET(request: NextRequest) {
     // Top wallets by balance
     (supabase as any)
       .from('wallet_accounts')
-      .select('user_id, balance, locked_balance, currency, users(email, full_name, username)')
+      .select('user_id, balance, locked_balance, currency')
       .order('balance', { ascending: false })
       .limit(10),
   ]);
 
   const allTxs = summaryRes.data ?? [];
+  const rawTxs = txRes.data ?? [];
+
+  // Enrich transactions with user info
+  const userIds = [...new Set(rawTxs.map((t: any) => t.user_id).filter(Boolean))] as string[];
+  let usersMap: Record<string, { email: string; full_name: string; username: string }> = {};
+  if (userIds.length > 0) {
+    const { data: usersData } = await supabase
+      .from('users')
+      .select('id, email, full_name, username')
+      .in('id', userIds);
+    if (usersData) {
+      for (const u of usersData) {
+        usersMap[u.id] = { email: u.email, full_name: u.full_name, username: u.username ?? '' };
+      }
+    }
+  }
+
+  const transactions = rawTxs.map((t: any) => ({
+    ...t,
+    users: usersMap[t.user_id] ?? null,
+  }));
 
   const successfulDeposits = allTxs
     .filter((t: any) => t.type === 'deposit' && t.status === 'completed')
@@ -64,7 +85,7 @@ export async function GET(request: NextRequest) {
   const pendingCount = allTxs.filter((t: any) => t.status === 'pending').length;
 
   return NextResponse.json({
-    transactions: txRes.data ?? [],
+    transactions,
     total: txRes.count ?? 0,
     page,
     limit,

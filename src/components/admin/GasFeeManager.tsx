@@ -34,10 +34,10 @@ export function GasFeeManager({ token }: GasFeeManagerProps) {
         setCurrent(data);
         setInputPercent(data.gas_fee_percent.toFixed(2));
       } else {
-        setMessage({ type: 'error', text: 'Failed to load gas fee settings.' });
+        setMessage({ type: 'error', text: 'Impossible de charger les paramètres de frais.' });
       }
     } catch {
-      setMessage({ type: 'error', text: 'Network error loading gas fees.' });
+      setMessage({ type: 'error', text: 'Erreur réseau lors du chargement.' });
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export function GasFeeManager({ token }: GasFeeManagerProps) {
   const handleSave = async () => {
     const percent = parseFloat(inputPercent);
     if (!Number.isFinite(percent) || percent < 0 || percent > 20) {
-      setMessage({ type: 'error', text: 'Gas fee must be between 0% and 20%.' });
+      setMessage({ type: 'error', text: 'Le frais doit être compris entre 0% et 20%.' });
       return;
     }
     setSaving(true);
@@ -70,10 +70,10 @@ export function GasFeeManager({ token }: GasFeeManagerProps) {
         setInputPercent(data.gas_fee_percent.toFixed(2));
         setMessage({ type: 'success', text: data.message || 'Gas fee updated successfully.' });
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to update gas fee.' });
+        setMessage({ type: 'error', text: data.error || 'Impossible de mettre à jour les frais de gas.' });
       }
     } catch {
-      setMessage({ type: 'error', text: 'Network error saving gas fee.' });
+      setMessage({ type: 'error', text: 'Erreur réseau lors de la sauvegarde des frais.' });
     } finally {
       setSaving(false);
     }
@@ -90,8 +90,8 @@ export function GasFeeManager({ token }: GasFeeManagerProps) {
             <Zap size={18} className="text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-base">Gas Fee Control</h3>
-            <p className="text-slate-400 text-xs">Blockchain withdrawal fee — applied in real time</p>
+            <h3 className="font-bold text-white text-base">Frais de Gas</h3>
+            <p className="text-slate-400 text-xs">Frais de retrait blockchain — appliqué en temps réel</p>
           </div>
         </div>
         <button
@@ -114,7 +114,7 @@ export function GasFeeManager({ token }: GasFeeManagerProps) {
           <div className="flex items-start gap-3 p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-xl">
             <Info size={15} className="text-blue-400 flex-shrink-0 mt-0.5" />
             <p className="text-blue-300 text-xs leading-relaxed">
-              This fee is charged only on <span className="font-semibold">blockchain withdrawals</span>. Internal transfers between users are <span className="font-semibold">always free</span>.
+              Ce frais s&apos;applique uniquement aux <span className="font-semibold">retraits blockchain</span>. Les virements internes entre utilisateurs sont <span className="font-semibold">toujours gratuits</span>.
             </p>
           </div>
 
@@ -122,21 +122,21 @@ export function GasFeeManager({ token }: GasFeeManagerProps) {
           {current && (
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
-                <p className="text-slate-400 text-xs mb-1">Current BPS</p>
+                <p className="text-slate-400 text-xs mb-1">BPS actuel</p>
                 <p className="text-white font-bold text-xl">{current.gas_fee_bps}</p>
-                <p className="text-slate-500 text-xs">basis points</p>
+                <p className="text-slate-500 text-xs">points de base</p>
               </div>
               <div className="p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
-                <p className="text-slate-400 text-xs mb-1">Effective Rate</p>
+                <p className="text-slate-400 text-xs mb-1">Taux effectif</p>
                 <p className="text-amber-400 font-bold text-xl">{current.gas_fee_percent.toFixed(2)}%</p>
-                <p className="text-slate-500 text-xs">per withdrawal</p>
+                <p className="text-slate-500 text-xs">par retrait</p>
               </div>
             </div>
           )}
 
           {/* Input control */}
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-300">New Gas Fee (%)</label>
+            <label className="text-sm font-semibold text-slate-300">Nouveau Frais de Gas (%)</label>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => adjustPercent(-0.1)}
@@ -195,7 +195,7 @@ export function GasFeeManager({ token }: GasFeeManagerProps) {
               }`}
             >
               {message.type === 'success' ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}
-              <span className="text-sm">{message.text}</span>
+              <span className="text-sm">{message.type === 'success' ? 'Frais de gas mis à jour avec succès.' : message.text}</span>
             </motion.div>
           )}
 
@@ -206,13 +206,13 @@ export function GasFeeManager({ token }: GasFeeManagerProps) {
             className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 disabled:from-slate-700 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg shadow-amber-500/20 transition-all text-sm"
           >
             {saving ? (
-              <><Loader2 size={15} className="animate-spin" /> Saving…</>
+              <><Loader2 size={15} className="animate-spin" /> Enregistrement…</>
             ) : (
-              <><Save size={15} /> Apply Gas Fee Changes</>
+              <><Save size={15} /> Appliquer les Frais de Gas</>
             )}
           </button>
           {!changed && !saving && current && (
-            <p className="text-slate-500 text-xs text-center">No changes to apply</p>
+            <p className="text-slate-500 text-xs text-center">Aucune modification à appliquer</p>
           )}
         </div>
       )}

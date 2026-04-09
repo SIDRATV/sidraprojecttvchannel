@@ -138,6 +138,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   };
 
   return (
+    <>
     <motion.header
       initial={{ y: -80 }}
       animate={{ y: 0 }}
@@ -378,9 +379,12 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
         </div>
       </div>
 
-      {/* Logout Confirmation Modal */}
-      <AnimatePresence>
-        {showLogoutConfirm && (
+      {/* (logout modal moved outside header) */}
+    </motion.header>
+
+    {/* Logout Confirmation Modal — outside motion.header to avoid transform stacking context */}
+    <AnimatePresence>
+      {showLogoutConfirm && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -427,26 +431,26 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Search Bar - Bottom Section */}
-      {showSearch && (
-        <div className="border-t border-gray-200 dark:border-gray-800 px-4 lg:px-8 py-3 bg-gray-50 dark:bg-gray-800/50 transition-colors">
-          <form onSubmit={handleSearch} className="max-w-7xl mx-auto">
-            <motion.div whileFocus={{ scale: 1.01 }} className="relative">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search videos, channels, categories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400/50 transition-all"
-              />
-            </motion.div>
-          </form>
-        </div>
       )}
-    </motion.header>
+    </AnimatePresence>
+
+    {/* Search Bar - Bottom Section */}
+    {showSearch && (
+      <div className="sticky top-0 z-49 border-t border-gray-200 dark:border-gray-800 px-4 lg:px-8 py-3 bg-gray-50 dark:bg-gray-800/50 transition-colors">
+        <form onSubmit={handleSearch} className="max-w-7xl mx-auto">
+          <motion.div whileFocus={{ scale: 1.01 }} className="relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search videos, channels, categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400/50 transition-all"
+            />
+          </motion.div>
+        </form>
+      </div>
+    )}
+    </>
   );
 }

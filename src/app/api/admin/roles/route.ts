@@ -17,12 +17,32 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Also fetch current assignments (who has which role)
+  // Fetch formal role assignments
   const { data: assignments } = await (supabase as any)
     .from('admin_assignments')
     .select('user_id, role_id, notes, assigned_at, users(id, email, full_name, username)');
 
-  return NextResponse.json({ roles: roles ?? [], assignments: assignments ?? [] });
+  // Also include users with is_admin=true who have no formal assignment
+  const { data: adminUsers } = await (supabase as any)
+    .from('users')
+    .select('id, email, full_name, username')
+    .eq('is_admin', true);
+
+  const assignedUserIds = new Set((assignments ?? []).map((a: any) => a.user_id));
+  const virtualAssignments = (adminUsers ?? [])
+    .filter((u: any) => !assignedUserIds.has(u.id))
+    .map((u: any) => ({
+      user_id: u.id,
+      role_id: null,
+      notes: null,
+      assigned_at: null,
+      users: { id: u.id, email: u.email, full_name: u.full_name, username: u.username },
+    }));
+
+  return NextResponse.json({
+    roles: roles ?? [],
+    assignments: [...(assignments ?? []), ...virtualAssignments],
+  });
 }
 
 // POST — create a new role

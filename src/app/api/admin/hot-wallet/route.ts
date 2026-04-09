@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   let txQuery = (supabase as any)
     .from('wallet_transactions')
     .select(
-      'id, type, direction, amount, fee, status, tx_hash, created_at, updated_at, user_id, currency, metadata',
+      'id, type, direction, amount, fee, status, tx_hash, network, description, created_at, updated_at, user_id, currency, metadata',
       { count: 'exact' },
     )
     .order('created_at', { ascending: false })
@@ -75,11 +75,11 @@ export async function GET(request: NextRequest) {
   }));
 
   const successfulDeposits = allTxs
-    .filter((t: any) => t.type === 'deposit' && t.status === 'completed')
+    .filter((t: any) => t.type === 'deposit' && t.status === 'success')
     .reduce((s: number, t: any) => s + (parseFloat(t.amount) || 0), 0);
 
   const successfulWithdrawals = allTxs
-    .filter((t: any) => t.type === 'withdrawal' && t.status === 'completed')
+    .filter((t: any) => t.type === 'withdrawal' && t.status === 'success')
     .reduce((s: number, t: any) => s + (parseFloat(t.amount) || 0), 0);
 
   const pendingCount = allTxs.filter((t: any) => t.status === 'pending').length;

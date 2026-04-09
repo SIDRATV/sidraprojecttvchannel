@@ -1208,14 +1208,19 @@ function FinancesTab() {
   const [loading, setLoading] = useState(true);
   const [txPage, setTxPage] = useState(1);
   const [txTotal, setTxTotal] = useState(0);
+  const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const TX_LIMIT = 20;
 
   const loadData = useCallback(async () => {
     if (!session?.access_token) return;
     const token = session.access_token;
+    const params = new URLSearchParams({ page: String(txPage), limit: String(TX_LIMIT) });
+    if (filterType) params.set('type', filterType);
+    if (filterStatus) params.set('status', filterStatus);
     const [fin, wlt] = await Promise.all([
       adminFetch<any>('/api/admin/finances', token),
-      adminFetch<any>(`/api/admin/hot-wallet?page=${txPage}&limit=${TX_LIMIT}`, token),
+      adminFetch<any>(`/api/admin/hot-wallet?${params}`, token),
     ]);
     if (fin) setFinances(fin);
     if (wlt) {
@@ -1226,15 +1231,18 @@ function FinancesTab() {
       setWalletSummary({ totalDeposited: '0', totalWithdrawn: '0', pendingTransactions: 0, netFlow: '0' });
     }
     setLoading(false);
-  }, [session, txPage]);
+  }, [session, txPage, filterType, filterStatus]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setTxPage(1); }, [filterType, filterStatus]);
 
   const byPlanEntries = finances?.byPlan ? Object.entries(finances.byPlan) as [string, any][] : [];
   const planChartData = byPlanEntries.map(([plan, data]) => ({ name: plan, abonnés: data.count, revenus: data.revenue }));
 
   const txStatusColors: Record<string, string> = {
-    completed: 'bg-green-500/20 text-green-400',
+    success: 'bg-green-500/20 text-green-400',
     pending: 'bg-yellow-500/20 text-yellow-400',
     failed: 'bg-red-500/20 text-red-400',
     cancelled: 'bg-slate-500/20 text-slate-400',
@@ -1318,14 +1326,40 @@ function FinancesTab() {
       )}
 
       <Card className="overflow-hidden border border-slate-700/50 bg-slate-800/30">
-        <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h3 className="font-bold text-white flex items-center gap-2">
             <Wallet size={18} className="text-brand-400" />
             Toutes les Transactions ({txTotal.toLocaleString()})
           </h3>
-          <button onClick={loadData} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white transition-all">
-            <RefreshCw size={16} />
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Type filter */}
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-500/50"
+            >
+              <option value="">Tous les types</option>
+              <option value="deposit">Dépôt</option>
+              <option value="withdrawal">Retrait</option>
+              <option value="internal_transfer">Transfert</option>
+              <option value="fee">Frais</option>
+              <option value="adjustment">Ajustement</option>
+            </select>
+            {/* Status filter */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-500/50"
+            >
+              <option value="">Tous les statuts</option>
+              <option value="pending">En attente</option>
+              <option value="success">Succès</option>
+              <option value="failed">Échoué</option>
+            </select>
+            <button onClick={loadData} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white transition-all">
+              <RefreshCw size={16} />
+            </button>
+          </div>
         </div>
         {loading ? (
           <div className="flex items-center justify-center py-12"><Loader2 size={28} className="animate-spin text-brand-400" /></div>
@@ -1337,7 +1371,7 @@ function FinancesTab() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-700/30 border-b border-slate-700/50">
                   <tr>
-                    {['Utilisateur', 'Type', 'Montant', 'Frais', 'Statut', 'Date'].map(h => (
+                    {['Utilisateur', 'Type', 'Montant', 'Frais', 'Statut', 'Réseau', 'Description', 'Date'].map(h => (
                       <th key={h} className="px-4 py-3 text-left font-semibold text-slate-300 text-xs">{h}</th>
                     ))}
                   </tr>
@@ -1351,17 +1385,21 @@ function FinancesTab() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-semibold ${txTypeColors[tx.type] ?? 'text-slate-400'}`}>
-                          {tx.direction === 'in' ? '↓' : '↑'} {tx.type}
+                          {tx.direction === 'credit' ? '↓' : '↑'} {tx.type}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-white text-xs font-mono">{parseFloat(tx.amount).toFixed(4)}</td>
                       <td className="px-4 py-3 text-slate-400 text-xs font-mono">{tx.fee ? parseFloat(tx.fee).toFixed(4) : '—'}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${txStatusColors[tx.status] ?? 'bg-slate-700 text-slate-400'}`}>
-                          {tx.status}
+                          {tx.status === 'success' ? 'Succès' : tx.status === 'pending' ? 'En attente' : tx.status === 'failed' ? 'Échoué' : tx.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{new Date(tx.created_at).toLocaleDateString('fr-FR')}</td>
+                      <td className="px-4 py-3 text-slate-400 text-xs">{tx.network || '—'}</td>
+                      <td className="px-4 py-3 text-slate-400 text-xs max-w-[140px] truncate" title={tx.description || tx.tx_hash || ''}>
+                        {tx.description || (tx.tx_hash ? `${tx.tx_hash.slice(0, 10)}…` : '—')}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(tx.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                     </tr>
                   ))}
                 </tbody>

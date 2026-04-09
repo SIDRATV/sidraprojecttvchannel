@@ -144,12 +144,12 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
       transition={{ duration: 0.3 }}
       className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 transition-colors"
     >
-      <div className="flex items-center justify-between px-4 lg:px-8 py-4">
+      <div className="flex items-center justify-between px-4 lg:px-8 py-2">
         {/* Logo */}
         <div className="flex items-center gap-3">
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="relative w-12 h-12 flex-shrink-0"
+            className="relative w-9 h-9 flex-shrink-0"
           >
             <Image
               src="/sidra-logo.webp"
@@ -160,7 +160,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
             />
           </motion.div>
           <div>
-            <h1 className="font-bold text-lg text-gray-950 dark:text-white">Sidra</h1>
+            <h1 className="font-bold text-base text-gray-950 dark:text-white">Sidra</h1>
             <p className="text-xs text-brand-500 dark:text-brand-400 font-medium">TV Channel</p>
           </div>
         </div>

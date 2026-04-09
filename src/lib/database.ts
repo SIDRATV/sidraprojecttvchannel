@@ -561,6 +561,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      site_settings: {
+        Row: {
+          key: string;
+          value: Record<string, any>;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          key: string;
+          value?: Record<string, any>;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          key?: string;
+          value?: Record<string, any>;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {

@@ -1206,23 +1206,34 @@ function FinancesTab() {
   const [walletSummary, setWalletSummary] = useState<any>(null);
   const [walletTxs, setWalletTxs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [txLoading, setTxLoading] = useState(false);
   const [txPage, setTxPage] = useState(1);
   const [txTotal, setTxTotal] = useState(0);
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const TX_LIMIT = 20;
+  const [filterUserSearch, setFilterUserSearch] = useState('');
+  const [filterUserInput, setFilterUserInput] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const TX_LIMIT = 10;
 
-  const loadData = useCallback(async () => {
+  const loadSummary = useCallback(async () => {
     if (!session?.access_token) return;
-    const token = session.access_token;
+    const fin = await adminFetch<any>('/api/admin/finances', session.access_token);
+    if (fin) setFinances(fin);
+    setLoading(false);
+  }, [session]);
+
+  const loadTransactions = useCallback(async () => {
+    if (!session?.access_token) return;
+    setTxLoading(true);
     const params = new URLSearchParams({ page: String(txPage), limit: String(TX_LIMIT) });
     if (filterType) params.set('type', filterType);
     if (filterStatus) params.set('status', filterStatus);
-    const [fin, wlt] = await Promise.all([
-      adminFetch<any>('/api/admin/finances', token),
-      adminFetch<any>(`/api/admin/hot-wallet?${params}`, token),
-    ]);
-    if (fin) setFinances(fin);
+    if (filterUserSearch) params.set('user_search', filterUserSearch);
+    if (filterDateFrom) params.set('date_from', filterDateFrom);
+    if (filterDateTo) params.set('date_to', filterDateTo);
+    const wlt = await adminFetch<any>(`/api/admin/hot-wallet?${params}`, session.access_token);
     if (wlt) {
       setWalletSummary(wlt.summary ?? { totalDeposited: '0', totalWithdrawn: '0', pendingTransactions: 0, netFlow: '0' });
       setWalletTxs(wlt.transactions ?? []);
@@ -1230,13 +1241,25 @@ function FinancesTab() {
     } else {
       setWalletSummary({ totalDeposited: '0', totalWithdrawn: '0', pendingTransactions: 0, netFlow: '0' });
     }
-    setLoading(false);
-  }, [session, txPage, filterType, filterStatus]);
+    setTxLoading(false);
+  }, [session, txPage, filterType, filterStatus, filterUserSearch, filterDateFrom, filterDateTo]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadSummary(); }, [loadSummary]);
+  useEffect(() => { loadTransactions(); }, [loadTransactions]);
 
   // Reset to page 1 when filters change
-  useEffect(() => { setTxPage(1); }, [filterType, filterStatus]);
+  useEffect(() => { setTxPage(1); }, [filterType, filterStatus, filterUserSearch, filterDateFrom, filterDateTo]);
+
+  const clearFilters = () => {
+    setFilterType('');
+    setFilterStatus('');
+    setFilterUserSearch('');
+    setFilterUserInput('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+  };
+
+  const hasActiveFilters = filterType || filterStatus || filterUserSearch || filterDateFrom || filterDateTo;
 
   const byPlanEntries = finances?.byPlan ? Object.entries(finances.byPlan) as [string, any][] : [];
   const planChartData = byPlanEntries.map(([plan, data]) => ({ name: plan, abonnés: data.count, revenus: data.revenue }));
@@ -1326,17 +1349,66 @@ function FinancesTab() {
       )}
 
       <Card className="overflow-hidden border border-slate-700/50 bg-slate-800/30">
-        <div className="px-6 py-4 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="font-bold text-white flex items-center gap-2">
-            <Wallet size={18} className="text-brand-400" />
-            Toutes les Transactions ({txTotal.toLocaleString()})
-          </h3>
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              <Wallet size={18} className="text-brand-400" />
+              Toutes les Transactions
+              <span className="text-xs text-slate-400 font-normal">({txTotal.toLocaleString()})</span>
+            </h3>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="text-xs text-orange-400 hover:text-orange-300 transition-colors px-2 py-1 rounded-lg hover:bg-orange-500/10">
+                  Effacer filtres
+                </button>
+              )}
+              <button onClick={loadTransactions} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white transition-all">
+                <RefreshCw size={16} className={txLoading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          </div>
+
+          {/* Filters row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            {/* User search */}
+            <div className="relative lg:col-span-2">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                value={filterUserInput}
+                onChange={(e) => setFilterUserInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') setFilterUserSearch(filterUserInput); }}
+                onBlur={() => setFilterUserSearch(filterUserInput)}
+                placeholder="Chercher par nom ou email..."
+                className="w-full bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:border-brand-500/50 placeholder-slate-500"
+              />
+            </div>
+            {/* Date from */}
+            <div className="relative">
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                className="w-full bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500/50 [color-scheme:dark]"
+                title="Date de début"
+              />
+            </div>
+            {/* Date to */}
+            <div className="relative">
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+                className="w-full bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500/50 [color-scheme:dark]"
+                title="Date de fin"
+              />
+            </div>
             {/* Type filter */}
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-500/50"
+              className="bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500/50"
             >
               <option value="">Tous les types</option>
               <option value="deposit">Dépôt</option>
@@ -1345,68 +1417,84 @@ function FinancesTab() {
               <option value="fee">Frais</option>
               <option value="adjustment">Ajustement</option>
             </select>
-            {/* Status filter */}
+            {/* Status filter — shown inline on large screens */}
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-500/50"
+              className="bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500/50 lg:hidden xl:block"
             >
               <option value="">Tous les statuts</option>
               <option value="pending">En attente</option>
               <option value="success">Succès</option>
               <option value="failed">Échoué</option>
             </select>
-            <button onClick={loadData} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white transition-all">
-              <RefreshCw size={16} />
-            </button>
+          </div>
+          {/* Status filter — separate row on medium screens */}
+          <div className="mt-2 hidden lg:block xl:hidden">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="bg-slate-700/50 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500/50"
+            >
+              <option value="">Tous les statuts</option>
+              <option value="pending">En attente</option>
+              <option value="success">Succès</option>
+              <option value="failed">Échoué</option>
+            </select>
           </div>
         </div>
-        {loading ? (
+
+        {txLoading ? (
           <div className="flex items-center justify-center py-12"><Loader2 size={28} className="animate-spin text-brand-400" /></div>
         ) : walletTxs.length === 0 ? (
-          <p className="text-slate-400 text-center py-10">Aucune transaction trouvée</p>
+          <p className="text-slate-400 text-center py-10 text-sm">
+            {hasActiveFilters ? 'Aucune transaction ne correspond à cette recherche' : 'Aucune transaction trouvée'}
+          </p>
         ) : (
           <>
+            {/* Scrollable table — max 10 rows visible */}
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-700/30 border-b border-slate-700/50">
-                  <tr>
-                    {['Utilisateur', 'Type', 'Montant', 'Frais', 'Statut', 'Réseau', 'Description', 'Date'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left font-semibold text-slate-300 text-xs">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/30">
-                  {walletTxs.map((tx: any) => (
-                    <tr key={tx.id} className="hover:bg-slate-700/20 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="text-white text-xs font-medium">{tx.users?.full_name || tx.users?.username || 'Inconnu'}</p>
-                        <p className="text-slate-500 text-xs">{tx.users?.email}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold ${txTypeColors[tx.type] ?? 'text-slate-400'}`}>
-                          {tx.direction === 'credit' ? '↓' : '↑'} {tx.type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-white text-xs font-mono">{parseFloat(tx.amount).toFixed(4)}</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs font-mono">{tx.fee ? parseFloat(tx.fee).toFixed(4) : '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${txStatusColors[tx.status] ?? 'bg-slate-700 text-slate-400'}`}>
-                          {tx.status === 'success' ? 'Succès' : tx.status === 'pending' ? 'En attente' : tx.status === 'failed' ? 'Échoué' : tx.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{tx.network || '—'}</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs max-w-[140px] truncate" title={tx.description || tx.tx_hash || tx.to_address || tx.from_address || ''}>
-                        {tx.description || (tx.tx_hash ? `${tx.tx_hash.slice(0, 10)}…` : tx.to_address ? `→ ${tx.to_address.slice(0, 8)}…` : tx.from_address ? `← ${tx.from_address.slice(0, 8)}…` : '—')}
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(tx.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+              <div className="overflow-y-auto" style={{ maxHeight: `${10 * 57}px` }}>
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-700/30 border-b border-slate-700/50 sticky top-0 z-10">
+                    <tr>
+                      {['Utilisateur', 'Type', 'Montant', 'Frais', 'Statut', 'Réseau', 'Description', 'Date'].map(h => (
+                        <th key={h} className="px-4 py-3 text-left font-semibold text-slate-300 text-xs bg-slate-800/90">{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/30">
+                    {walletTxs.map((tx: any) => (
+                      <tr key={tx.id} className="hover:bg-slate-700/20 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="text-white text-xs font-medium">{tx.users?.full_name || tx.users?.username || 'Inconnu'}</p>
+                          <p className="text-slate-500 text-xs">{tx.users?.email}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-semibold ${txTypeColors[tx.type] ?? 'text-slate-400'}`}>
+                            {tx.direction === 'credit' ? '↓' : '↑'} {tx.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-white text-xs font-mono">{parseFloat(tx.amount).toFixed(4)}</td>
+                        <td className="px-4 py-3 text-slate-400 text-xs font-mono">{tx.fee ? parseFloat(tx.fee).toFixed(4) : '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${txStatusColors[tx.status] ?? 'bg-slate-700 text-slate-400'}`}>
+                            {tx.status === 'success' ? 'Succès' : tx.status === 'pending' ? 'En attente' : tx.status === 'failed' ? 'Échoué' : tx.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-400 text-xs">{tx.network || '—'}</td>
+                        <td className="px-4 py-3 text-slate-400 text-xs max-w-[140px] truncate" title={tx.description || tx.tx_hash || tx.to_address || tx.from_address || ''}>
+                          {tx.description || (tx.tx_hash ? `${tx.tx_hash.slice(0, 10)}…` : tx.to_address ? `→ ${tx.to_address.slice(0, 8)}…` : tx.from_address ? `← ${tx.from_address.slice(0, 8)}…` : '—')}
+                        </td>
+                        <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(tx.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
             <div className="px-6 py-4 border-t border-slate-700/50 flex items-center justify-between">
-              <p className="text-slate-400 text-xs">Page {txPage} / {Math.max(1, Math.ceil(txTotal / TX_LIMIT))} — {txTotal} transactions</p>
+              <p className="text-slate-400 text-xs">Page {txPage} / {Math.max(1, Math.ceil(txTotal / TX_LIMIT))} — {txTotal} transaction{txTotal !== 1 ? 's' : ''}</p>
               <div className="flex gap-2">
                 <button disabled={txPage <= 1} onClick={() => setTxPage(p => p - 1)}
                   className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 disabled:opacity-30 transition-all"><ChevronLeft size={16} /></button>

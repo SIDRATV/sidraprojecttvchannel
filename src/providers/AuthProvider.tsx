@@ -103,6 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!s?.user) {
         lastUserIdRef.current = null;
         profileCache.clear();
+        // Remove uid cookie on sign-out
+        document.cookie = 'sidra_uid=; path=/; max-age=0; SameSite=Lax';
         if (!cancelled && rid === requestIdRef.current) {
           setUser(null);
           setSession(null);
@@ -111,6 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       lastUserIdRef.current = s.user.id;
+
+      // Set uid cookie for middleware maintenance exemption check
+      document.cookie = `sidra_uid=${s.user.id}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
 
       // 1) Immediately set user from auth metadata — no network wait
       const authUser = toAppUser(s.user);

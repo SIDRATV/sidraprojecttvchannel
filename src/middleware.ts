@@ -131,39 +131,20 @@ export async function middleware(request: NextRequest) {
   }
 
   // ============ MAINTENANCE MODE CHECK ============
-  // Skip maintenance for admin routes, maintenance page itself, and static assets
+  // Skip maintenance for admin routes, maintenance page itself, auth routes, and static assets
   const isMaintenancePage = pathname === '/maintenance';
+  const isAuthRoute = pathname === '/login' || pathname === '/signup';
   const isStaticAsset = pathname.startsWith('/_next/') || pathname.startsWith('/public/') || pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js)$/);
   
-  if (!isAdminRoute && !isMaintenancePage && !isStaticAsset) {
+  if (!isAdminRoute && !isMaintenancePage && !isAuthRoute && !isStaticAsset) {
     const maintenance = await checkMaintenanceMode();
     if (maintenance.enabled) {
-      // Check if user is exempt via Supabase auth cookie
+      // Check if user is exempt via sidra_uid cookie (set by AuthProvider)
       let isExempt = false;
       
-      // Check sb-*-auth-token cookies for user ID
-      const cookies = request.cookies.getAll();
-      for (const cookie of cookies) {
-        if (cookie.name.includes('-auth-token') && cookie.value) {
-          try {
-            // Supabase stores JWT in auth token cookie - decode the payload
-            const tokenValue = cookie.value.startsWith('base64-')
-              ? atob(cookie.value.replace('base64-', ''))
-              : cookie.value;
-            
-            // Try to parse as JWT (header.payload.signature)
-            const parts = tokenValue.split('.');
-            if (parts.length === 3) {
-              const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-              if (payload.sub && maintenance.exempt_user_ids.includes(payload.sub)) {
-                isExempt = true;
-                break;
-              }
-            }
-          } catch {
-            // Continue checking other cookies
-          }
-        }
+      const uidCookie = request.cookies.get('sidra_uid')?.value;
+      if (uidCookie && maintenance.exempt_user_ids.includes(uidCookie)) {
+        isExempt = true;
       }
 
       if (!isExempt) {

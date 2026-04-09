@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
 
   const url = new URL(request.url);
   const search = url.searchParams.get('search') || '';
+  const ids = url.searchParams.get('ids') || '';
   const limit = Math.min(Number(url.searchParams.get('limit') || '50'), 100);
 
   let query = supabase
@@ -38,7 +39,10 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (search) {
+  if (ids) {
+    const idList = ids.split(',').filter(Boolean);
+    query = query.in('id', idList);
+  } else if (search) {
     query = query.or(
       `email.ilike.%${search}%,full_name.ilike.%${search}%,username.ilike.%${search}%`,
     );

@@ -2,6 +2,55 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ADMIN_COOKIE = 'sidra_admin_session';
 
+// ============ MAINTENANCE MODE CACHE ============
+let maintenanceCache: { enabled: boolean; exempt_user_ids: string[]; ts: number } | null = null;
+const MAINTENANCE_CACHE_TTL = 10_000; // 10 seconds
+
+async function checkMaintenanceMode(): Promise<{ enabled: boolean; exempt_user_ids: string[] }> {
+  // Return cached result if fresh
+  if (maintenanceCache && Date.now() - maintenanceCache.ts < MAINTENANCE_CACHE_TTL) {
+    return { enabled: maintenanceCache.enabled, exempt_user_ids: maintenanceCache.exempt_user_ids };
+  }
+
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+    if (!supabaseUrl || !supabaseKey) {
+      return { enabled: false, exempt_user_ids: [] };
+    }
+
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/site_settings?key=eq.maintenance_mode&select=value`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      return { enabled: false, exempt_user_ids: [] };
+    }
+
+    const data = await res.json();
+    if (data?.[0]?.value) {
+      const val = data[0].value;
+      maintenanceCache = {
+        enabled: val.enabled ?? false,
+        exempt_user_ids: val.exempt_user_ids ?? [],
+        ts: Date.now(),
+      };
+      return { enabled: val.enabled ?? false, exempt_user_ids: val.exempt_user_ids ?? [] };
+    }
+  } catch {
+    // On error, don't block the site
+  }
+
+  return { enabled: false, exempt_user_ids: [] };
+}
+
 async function hmacSha256(key: string, message: string): Promise<string> {
   const enc = new TextEncoder();
   const cryptoKey = await crypto.subtle.importKey(
@@ -78,6 +127,49 @@ export async function middleware(request: NextRequest) {
       // For page routes, let the AdminKeyGate component handle the UI
       // (returning NextResponse.next() allows the page to render the gate)
       return NextResponse.next();
+    }
+  }
+
+  // ============ MAINTENANCE MODE CHECK ============
+  // Skip maintenance for admin routes, maintenance page itself, and static assets
+  const isMaintenancePage = pathname === '/maintenance';
+  const isStaticAsset = pathname.startsWith('/_next/') || pathname.startsWith('/public/') || pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js)$/);
+  
+  if (!isAdminRoute && !isMaintenancePage && !isStaticAsset) {
+    const maintenance = await checkMaintenanceMode();
+    if (maintenance.enabled) {
+      // Check if user is exempt via Supabase auth cookie
+      let isExempt = false;
+      
+      // Check sb-*-auth-token cookies for user ID
+      const cookies = request.cookies.getAll();
+      for (const cookie of cookies) {
+        if (cookie.name.includes('-auth-token') && cookie.value) {
+          try {
+            // Supabase stores JWT in auth token cookie - decode the payload
+            const tokenValue = cookie.value.startsWith('base64-')
+              ? atob(cookie.value.replace('base64-', ''))
+              : cookie.value;
+            
+            // Try to parse as JWT (header.payload.signature)
+            const parts = tokenValue.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+              if (payload.sub && maintenance.exempt_user_ids.includes(payload.sub)) {
+                isExempt = true;
+                break;
+              }
+            }
+          } catch {
+            // Continue checking other cookies
+          }
+        }
+      }
+
+      if (!isExempt) {
+        const maintenanceUrl = new URL('/maintenance', request.url);
+        return NextResponse.redirect(maintenanceUrl);
+      }
     }
   }
 

@@ -105,37 +105,42 @@ export function YouTubeFeaturedCarousel() {
   const renderBanner = (banner: SponsoredBanner) => {
     const isVideo = banner.media_type === 'video' && banner.video_url;
     const ytId = isVideo ? extractYouTubeId(banner.video_url) : null;
+    // Determine thumbnail: explicit image_url, or auto-generated YouTube thumbnail
+    const thumbnail = banner.image_url || (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : '');
 
     return (
       <>
-        {/* Background Media */}
-        {isVideo && ytId && banner.autoplay ? (
+        {/* Thumbnail layer — always visible as background/poster */}
+        {thumbnail ? (
+          <img src={thumbnail} alt={banner.title} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-brand-900 to-slate-900" />
+        )}
+
+        {/* Video layer — only for autoplay videos, overlays the thumbnail */}
+        {isVideo && banner.autoplay && ytId && (
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${muted ? 1 : 0}&loop=1&playlist=${ytId}&controls=0&showinfo=0&rel=0&modestbranding=1`}
             allow="autoplay; encrypted-media"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-[1]"
             style={{ border: 0 }}
           />
-        ) : isVideo && !ytId && banner.autoplay ? (
+        )}
+        {isVideo && banner.autoplay && !ytId && (
           <video
             ref={videoRef}
             src={banner.video_url}
+            poster={thumbnail}
             muted={muted}
             autoPlay
             loop
             playsInline
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover z-[1]"
           />
-        ) : banner.image_url ? (
-          <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
-        ) : isVideo && ytId ? (
-          <img src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`} alt={banner.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-brand-900 to-slate-900" />
         )}
 
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent z-[2]" />
 
         {/* Sponsored Badge */}
         <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1 bg-brand-500/20 backdrop-blur-md border border-brand-500/30 rounded-full">
@@ -154,7 +159,7 @@ export function YouTubeFeaturedCarousel() {
         )}
 
         {/* Content */}
-        <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12 z-[1]">
+        <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12 z-[3]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

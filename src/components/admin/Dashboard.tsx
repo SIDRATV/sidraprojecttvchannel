@@ -42,6 +42,7 @@ import {
   UserX,
   Bell,
   Send,
+  Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui';
@@ -67,9 +68,10 @@ import { AdminSurveyManager } from '@/components/admin/AdminSurveyManager';
 import { AdminVotingManager } from '@/components/admin/AdminVotingManager';
 import { AdminNewsManager } from '@/components/admin/AdminNewsManager';
 import { AdminPartnershipsManager } from '@/components/admin/AdminPartnershipsManager';
+import { AdminMaintenanceManager } from '@/components/admin/AdminMaintenanceManager';
 import type { Category } from '@/types';
 
-type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships';
+type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'maintenance';
 
 const COLORS = ['#0F7A5C', '#19C37D', '#D4AF37', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -117,6 +119,7 @@ export function AdminDashboard() {
     { id: 'voting', label: 'Projets de Vote', icon: Award },
     { id: 'news', label: 'Actualités', icon: Bell },
     { id: 'partnerships', label: 'Partenariats', icon: Award },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
   ] as const;
 
   return (
@@ -144,6 +147,7 @@ export function AdminDashboard() {
             const isPremiumTab = id === 'premium';
             const isVotingTab = id === 'voting';
             const isNewsTab = id === 'news';
+            const isMaintenanceTab = id === 'maintenance';
             const accent = isDanger
               ? isActive ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-slate-400 hover:bg-red-500/10 hover:text-red-300'
               : isFinance
@@ -156,6 +160,8 @@ export function AdminDashboard() {
               ? isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-300'
               : isNewsTab
               ? isActive ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-slate-400 hover:bg-orange-500/10 hover:text-orange-300'
+              : isMaintenanceTab
+              ? isActive ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-slate-400 hover:bg-amber-500/10 hover:text-amber-300'
               : isActive
               ? 'bg-gradient-to-r from-brand-500 to-brand-400 text-white shadow-lg shadow-brand-500/25'
               : 'text-slate-300 hover:bg-slate-800/50 hover:text-white';
@@ -287,6 +293,7 @@ export function AdminDashboard() {
             {activeTab === 'voting' && <VotingTab />}
             {activeTab === 'news' && <NewsTab />}
             {activeTab === 'partnerships' && <PartnershipsTab />}
+            {activeTab === 'maintenance' && <MaintenanceTab />}
           </motion.div>
         </div>
       </div>
@@ -1640,4 +1647,11 @@ function PartnershipsTab() {
   const { session } = useAuth();
   if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
   return <AdminPartnershipsManager token={session.access_token} />;
+}
+
+// ==================== MAINTENANCE TAB ====================
+function MaintenanceTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return <AdminMaintenanceManager token={session.access_token} />;
 }

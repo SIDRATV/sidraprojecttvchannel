@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   let txQuery = (supabase as any)
     .from('wallet_transactions')
     .select(
-      'id, type, direction, amount, fee, status, tx_hash, network, description, created_at, updated_at, user_id, currency, metadata',
+      'id, type, direction, amount, fee, status, tx_hash, network, description, to_address, from_address, deposit_address, created_at, updated_at, user_id, metadata',
       { count: 'exact' },
     )
     .order('created_at', { ascending: false })
@@ -53,6 +53,14 @@ export async function GET(request: NextRequest) {
 
   const allTxs = summaryRes.data ?? [];
   const rawTxs = txRes.data ?? [];
+
+  if (txRes.error) {
+    console.error('[hot-wallet] transaction query error:', txRes.error);
+    return NextResponse.json({ error: txRes.error.message }, { status: 500 });
+  }
+  if (summaryRes.error) {
+    console.error('[hot-wallet] summary query error:', summaryRes.error);
+  }
 
   // Enrich transactions with user info
   const userIds = [...new Set(rawTxs.map((t: any) => t.user_id).filter(Boolean))] as string[];

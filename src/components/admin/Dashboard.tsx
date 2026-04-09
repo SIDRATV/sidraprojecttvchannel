@@ -1396,8 +1396,8 @@ function FinancesTab() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-slate-400 text-xs">{tx.network || '—'}</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs max-w-[140px] truncate" title={tx.description || tx.tx_hash || ''}>
-                        {tx.description || (tx.tx_hash ? `${tx.tx_hash.slice(0, 10)}…` : '—')}
+                      <td className="px-4 py-3 text-slate-400 text-xs max-w-[140px] truncate" title={tx.description || tx.tx_hash || tx.to_address || tx.from_address || ''}>
+                        {tx.description || (tx.tx_hash ? `${tx.tx_hash.slice(0, 10)}…` : tx.to_address ? `→ ${tx.to_address.slice(0, 8)}…` : tx.from_address ? `← ${tx.from_address.slice(0, 8)}…` : '—')}
                       </td>
                       <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(tx.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                     </tr>

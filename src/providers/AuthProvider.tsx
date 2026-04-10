@@ -80,17 +80,41 @@ const getStorageKey = (): string => {
 };
 
 const OLD_STORAGE_KEY = 'sb-sidra-auth';
+const LAST_ACTIVE_KEY = 'sidra_last_active';
+const INACTIVITY_LIMIT_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 
 const readStoredSession = (): { user: User | null; session: Session | null } => {
   if (typeof window === 'undefined') return { user: null, session: null };
   try {
+    // Check inactivity: if user hasn't opened app in 5 days → treat as logged out
+    const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
+    if (lastActive && Date.now() - Number(lastActive) > INACTIVITY_LIMIT_MS) {
+      // Clear stale data
+      const key = getStorageKey();
+      if (key) localStorage.removeItem(key);
+      localStorage.removeItem(OLD_STORAGE_KEY);
+      localStorage.removeItem(LAST_ACTIVE_KEY);
+      return { user: null, session: null };
+    }
+
     const key = getStorageKey();
     // Try new key first, fall back to old custom key (for migration)
     const raw = (key ? localStorage.getItem(key) : null) || localStorage.getItem(OLD_STORAGE_KEY);
     if (!raw) return { user: null, session: null };
     const stored = JSON.parse(raw) as Session & { expires_at?: number } | null;
     if (!stored?.user) return { user: null, session: null };
-    // Accept even expired sessions optimistically — getSession() will refresh
+
+    // Check if the access token expired long ago (> 1 hour) — refresh will likely fail
+    if (stored.expires_at) {
+      const expiredMs = Date.now() / 1000 - stored.expires_at;
+      // If expired more than 7 days ago, refresh token is almost certainly dead
+      if (expiredMs > 7 * 24 * 60 * 60) {
+        return { user: null, session: null };
+      }
+    }
+
+    // Mark activity
+    localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
     return { user: toAppUser(stored.user), session: stored };
   } catch {
     return { user: null, session: null };
@@ -103,8 +127,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [user, setUser] = useState<User | null>(stored.user);
   const [session, setSession] = useState<Session | null>(stored.session);
-  const [loading, setLoading] = useState(!stored.user); // skip loading if already have user
-  const [initialized, setInitialized] = useState(!!stored.user); // instant if user in localStorage
+  // Always start ready — if no stored user, ProtectedRoute redirects instantly
+  // If stored user exists, dashboard renders immediately (getSession refreshes in bg)
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(true);
 
   const currentUserIdRef = useRef<string | null>(stored.user?.id ?? null);
   const requestIdRef = useRef(0);
@@ -146,7 +172,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       currentUserIdRef.current = s.user.id;
-      document.cookie = `sidra_uid=${s.user.id}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+      document.cookie = `sidra_uid=${s.user.id}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Lax`;
+      // Track activity for 5-day inactivity expiry
+      localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
 
       // Set immediately from token metadata (no DB wait)
       const authUser = toAppUser(s.user);

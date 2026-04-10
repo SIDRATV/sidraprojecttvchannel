@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
 interface ProtectedRouteProps {
@@ -12,48 +11,20 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading, initialized } = useAuth();
   const router = useRouter();
-  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    // Still resolving auth — clear any pending redirect
-    if (!initialized || loading) {
-      if (redirectTimerRef.current) {
-        clearTimeout(redirectTimerRef.current);
-        redirectTimerRef.current = null;
-      }
-      return;
-    }
-
-    // Auth resolved but no user → redirect to login after short grace period
-    if (!user) {
-      redirectTimerRef.current = setTimeout(() => {
-        router.replace('/login');
-      }, 200);
-      return () => {
-        if (redirectTimerRef.current) {
-          clearTimeout(redirectTimerRef.current);
-          redirectTimerRef.current = null;
-        }
-      };
-    }
-
-    // User exists — cancel any stale redirect
-    if (redirectTimerRef.current) {
-      clearTimeout(redirectTimerRef.current);
-      redirectTimerRef.current = null;
+    // Auth is ready and no user → redirect to login immediately
+    if (initialized && !loading && !user && !hasRedirected.current) {
+      hasRedirected.current = true;
+      router.replace('/login');
     }
   }, [initialized, user, loading, router]);
 
-  // Show spinner while auth is resolving
-  if (!initialized || loading || !user) {
+  // No user → blank screen (redirect is in flight)
+  if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 border-4 border-gray-800 border-t-brand-500 rounded-full"
-        />
-      </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-950" />
     );
   }
 

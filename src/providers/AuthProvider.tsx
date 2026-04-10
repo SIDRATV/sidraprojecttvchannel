@@ -79,12 +79,14 @@ const getStorageKey = (): string => {
   }
 };
 
+const OLD_STORAGE_KEY = 'sb-sidra-auth';
+
 const readStoredSession = (): { user: User | null; session: Session | null } => {
   if (typeof window === 'undefined') return { user: null, session: null };
   try {
     const key = getStorageKey();
-    if (!key) return { user: null, session: null };
-    const raw = localStorage.getItem(key);
+    // Try new key first, fall back to old custom key (for migration)
+    const raw = (key ? localStorage.getItem(key) : null) || localStorage.getItem(OLD_STORAGE_KEY);
     if (!raw) return { user: null, session: null };
     const stored = JSON.parse(raw) as Session & { expires_at?: number } | null;
     if (!stored?.user) return { user: null, session: null };
@@ -118,6 +120,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Migrate: copy old custom storageKey to new default key so Supabase finds the session
+    if (typeof window !== 'undefined') {
+      const newKey = getStorageKey();
+      if (newKey && !localStorage.getItem(newKey)) {
+        const old = localStorage.getItem(OLD_STORAGE_KEY);
+        if (old) {
+          localStorage.setItem(newKey, old);
+          localStorage.removeItem(OLD_STORAGE_KEY);
+        }
+      }
+    }
 
     const applySession = async (s: Session | null, rid: number) => {
       if (!s?.user) {

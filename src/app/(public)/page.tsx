@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Hero } from '@/components/Hero';
 import { CategoryBrowser } from '@/components/CategoryBrowser';
@@ -7,6 +9,7 @@ import { RecentVideosSection } from '@/components/RecentVideosSection';
 import { InspirationSection } from '@/components/InspirationSection';
 import { NewsletterSection } from '@/components/NewsletterSection';
 import { Sparkles } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const sectionFade = {
   hidden: { opacity: 0, y: 40 },
@@ -14,6 +17,19 @@ const sectionFade = {
 };
 
 export default function HomePage() {
+  const { user, initialized } = useAuth();
+  const router = useRouter();
+
+  // Redirect authenticated users straight to the app
+  useEffect(() => {
+    if (initialized && user) {
+      router.replace('/dashboard');
+    }
+  }, [initialized, user, router]);
+
+  // Blank while auth is resolving (only blocks if a session exists in localStorage)
+  if (!initialized && user) return null;
+
   return (
     <div className="bg-white dark:bg-gray-950 transition-colors" suppressHydrationWarning>
       {/* Hero Section */}

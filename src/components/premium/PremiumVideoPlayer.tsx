@@ -59,6 +59,8 @@ export function PremiumVideoPlayer({
   useEffect(() => { onStateChangeRef.current = onStateChange; }, [onStateChange]);
   // Track whether startTime has been applied (reset when streamUrl changes)
   const startTimeAppliedRef = useRef(false);
+  const startTimeRef = useRef(startTime);
+  useEffect(() => { startTimeRef.current = startTime; }, [startTime]);
   useEffect(() => { startTimeAppliedRef.current = false; }, [streamUrl]);
 
   const resetHideTimer = useCallback(() => {
@@ -87,9 +89,9 @@ export function PremiumVideoPlayer({
     const onCanPlay = () => {
       setIsLoading(false);
       // Seek to startTime once, right after the video is ready
-      if (!startTimeAppliedRef.current && startTime && startTime > 0) {
+      if (!startTimeAppliedRef.current && startTimeRef.current && startTimeRef.current > 0) {
         startTimeAppliedRef.current = true;
-        video.currentTime = startTime;
+        video.currentTime = startTimeRef.current;
       }
     };
     const onPlay = () => {

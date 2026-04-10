@@ -11,6 +11,8 @@ import {
   Settings,
   ArrowLeft,
   Loader2,
+  RotateCcw,
+  RotateCw,
 } from 'lucide-react';
 import { useRef, useState, useEffect, useCallback } from 'react';
 
@@ -176,6 +178,15 @@ export function PremiumVideoPlayer({
     videoRef.current.currentTime = pos * duration;
   };
 
+  const skip = (seconds: number) => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.min(
+      Math.max(videoRef.current.currentTime + seconds, 0),
+      duration || Infinity,
+    );
+    resetHideTimer();
+  };
+
   const formatTime = (s: number) => {
     if (!isFinite(s)) return '0:00';
     const m = Math.floor(s / 60);
@@ -273,13 +284,19 @@ export function PremiumVideoPlayer({
 
           {/* Control buttons */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-3">
+              <button onClick={() => skip(-10)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="-10s">
+                <RotateCcw size={18} className="text-white" />
+              </button>
               <button onClick={togglePlay} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
                 {isPlaying ? (
                   <Pause size={20} className="text-white" fill="white" />
                 ) : (
                   <Play size={20} className="text-white" fill="white" />
                 )}
+              </button>
+              <button onClick={() => skip(10)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="+10s">
+                <RotateCw size={18} className="text-white" />
               </button>
 
               <div className="flex items-center gap-2 group/vol">

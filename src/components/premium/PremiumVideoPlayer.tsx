@@ -47,14 +47,15 @@ export function PremiumVideoPlayer({
   const [volume, setVolume] = useState(1);
 
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout>>();
+  const isPlayingRef = useRef(false);
 
   const resetHideTimer = useCallback(() => {
     setShowControls(true);
     if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
-    if (isPlaying) {
+    if (isPlayingRef.current) {
       hideControlsTimer.current = setTimeout(() => setShowControls(false), 3000);
     }
-  }, [isPlaying]);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -69,8 +70,17 @@ export function PremiumVideoPlayer({
     };
     const onWaiting = () => setIsLoading(true);
     const onCanPlay = () => setIsLoading(false);
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
+    const onPlay = () => {
+      setIsPlaying(true);
+      isPlayingRef.current = true;
+      resetHideTimer();
+    };
+    const onPause = () => {
+      setIsPlaying(false);
+      isPlayingRef.current = false;
+      if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
+      setShowControls(true);
+    };
 
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('durationchange', onDurationChange);
@@ -155,7 +165,8 @@ export function PremiumVideoPlayer({
       ref={containerRef}
       className="relative bg-black rounded-2xl overflow-hidden group select-none"
       onMouseMove={resetHideTimer}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
+      onTouchStart={resetHideTimer}
+      onMouseLeave={() => isPlayingRef.current && setShowControls(false)}
     >
       {/* Video Element */}
       <video
@@ -197,7 +208,7 @@ export function PremiumVideoPlayer({
         className="absolute inset-0 flex flex-col justify-between pointer-events-none"
       >
         {/* Top bar */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-auto">
+        <div className={`flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent ${showControls ? 'pointer-events-auto' : 'pointer-events-none'}`}>
           {onBack && (
             <button onClick={onBack} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
               <ArrowLeft size={20} className="text-white" />
@@ -210,7 +221,7 @@ export function PremiumVideoPlayer({
         </div>
 
         {/* Bottom controls */}
-        <div className="p-4 bg-gradient-to-t from-black/80 to-transparent space-y-2 pointer-events-auto">
+        <div className={`p-4 bg-gradient-to-t from-black/80 to-transparent space-y-2 ${showControls ? 'pointer-events-auto' : 'pointer-events-none'}`}>
           {/* Progress bar */}
           <div
             ref={progressRef}

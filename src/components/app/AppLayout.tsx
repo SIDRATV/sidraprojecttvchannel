@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BottomNavBar } from '@/components/app/BottomNavBar';
 import { AppHeader } from '@/components/app/AppHeader';
 import { ProtectedRoute } from '@/components/app/ProtectedRoute';
@@ -8,6 +8,7 @@ import { BlockedUserScreen } from '@/components/app/BlockedUserScreen';
 import { usePathname, useRouter } from 'next/navigation';
 import { ProfileProvider } from '@/providers/ProfileProvider';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 
 const MAINTENANCE_POLL_MS = 30_000; // check every 30s
 
@@ -17,6 +18,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const showSearch = pathname === '/dashboard';
   const { user } = useAuth();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [maintenanceRedirecting, setMaintenanceRedirecting] = useState(false);
 
   // Client-side maintenance check — middleware only runs on hard navigations
   useEffect(() => {
@@ -24,17 +26,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
     const check = async () => {
       try {
-        const headers: HeadersInit = { 'Cache-Control': 'no-cache' };
-        // Send auth token so API can check exemption
-        const { data: { session: s } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
-        if (s?.access_token) {
-          headers['Authorization'] = `Bearer ${s.access_token}`;
-        }
+        const headers: HeadersInit = {};
+        // Send auth token so API can check exemption for admins
+        try {
+          const { data: { session: s } } = await supabase.auth.getSession();
+          if (s?.access_token) {
+            headers['Authorization'] = `Bearer ${s.access_token}`;
+          }
+        } catch { /* proceed without token */ }
+
         const res = await fetch('/api/maintenance', { cache: 'no-store', headers });
         if (!res.ok) return;
         const data = await res.json();
         if (active && data.enabled && !data.isExempt) {
-          router.replace('/maintenance');
+          setMaintenanceRedirecting(true);
+          // Use window.location for a hard redirect — ensures we leave the (app) layout
+          window.location.href = '/maintenance';
         }
       } catch { /* ignore network errors */ }
     };
@@ -49,7 +56,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       active = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [pathname, router]);
+  }, [pathname]);
+
+  // Show nothing while redirecting to maintenance
+  if (maintenanceRedirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-950">
+        <div className="w-12 h-12 border-4 border-gray-800 border-t-brand-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // Block banned users from accessing any page
   if (user?.is_blocked) {

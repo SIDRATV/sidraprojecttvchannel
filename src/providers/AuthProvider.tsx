@@ -5,15 +5,12 @@ import { supabase } from '@/lib/supabase';
 import type { User } from '@/types';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
-// Storage key must match supabase.ts
-const STORAGE_KEY = 'sb-sidra-auth';
-
-// ─── Public contract ────────────────────────────────────────────────
+// ─── Public contract ─────────────────────────────────────────────────────────
 export interface AuthContextValue {
   user: User | null;
   session: Session | null;
-  loading: boolean;       // true while first getSession() is in flight
-  initialized: boolean;   // true once first getSession() has resolved
+  loading: boolean;
+  initialized: boolean;
   refreshUser: () => Promise<void>;
 }
 
@@ -25,7 +22,7 @@ export const AuthContext = createContext<AuthContextValue>({
   refreshUser: async () => {},
 });
 
-// ─── Helpers (module-level, shared across renders) ─────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const profileCache = new Map<string, User>();
 
 const toAppUser = (authUser: SupabaseUser): User => ({
@@ -47,24 +44,17 @@ const toAppUser = (authUser: SupabaseUser): User => ({
 const fetchUserProfile = async (authUser: SupabaseUser): Promise<User> => {
   const userId = authUser.id;
   if (profileCache.has(userId)) return profileCache.get(userId)!;
-
   try {
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
-
-    if (error) {
-      console.error('[AuthProvider] Profile fetch error:', error.message);
-      return toAppUser(authUser);
-    }
-
+    if (error) return toAppUser(authUser);
     const profile = data || toAppUser(authUser);
     profileCache.set(userId, profile);
     return profile;
-  } catch (err) {
-    console.error('[AuthProvider] Profile fetch exception:', err);
+  } catch {
     return toAppUser(authUser);
   }
 };
@@ -76,62 +66,63 @@ const mergeProfile = (base: User, profile: User): User => ({
   full_name: profile.full_name || base.full_name,
 });
 
-// ─── Sync read from localStorage to avoid null-flash on reload ─────
-// Reads the raw Supabase session stored by the client without any async call.
+// ─── Sync read from localStorage — eliminates null flash on reload ────────────
+// Supabase JS v2 without custom storageKey uses: sb-{projectRef}-auth-token
+// We derive the key the same way to guarantee a match.
+const getStorageKey = (): string => {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const ref = new URL(url).hostname.split('.')[0];
+    return `sb-${ref}-auth-token`;
+  } catch {
+    return '';
+  }
+};
+
 const readStoredSession = (): { user: User | null; session: Session | null } => {
   if (typeof window === 'undefined') return { user: null, session: null };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = getStorageKey();
+    if (!key) return { user: null, session: null };
+    const raw = localStorage.getItem(key);
     if (!raw) return { user: null, session: null };
-    const stored = JSON.parse(raw) as Session | null;
+    const stored = JSON.parse(raw) as Session & { expires_at?: number } | null;
     if (!stored?.user) return { user: null, session: null };
-    // Only trust if token hasn't expired (with 10s buffer)
-    const expiresAt = (stored as Session & { expires_at?: number }).expires_at;
-    if (expiresAt && expiresAt < Math.floor(Date.now() / 1000) - 10) {
-      // Expired — but we still show the user optimistically while refresh occurs
-      // to avoid flash; getSession() / TOKEN_REFRESHED will update the token.
-    }
+    // Accept even expired sessions optimistically — getSession() will refresh
     return { user: toAppUser(stored.user), session: stored };
   } catch {
     return { user: null, session: null };
   }
 };
 
-// ─── Provider ──────────────────────────────────────────────────────
+// ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Initialise synchronously from localStorage — eliminates null-flash on reload
   const stored = useMemo(() => readStoredSession(), []);
 
   const [user, setUser] = useState<User | null>(stored.user);
   const [session, setSession] = useState<Session | null>(stored.session);
-  // If we already found a session in storage, skip the initial loading state
-  const [loading, setLoading] = useState(!stored.session);
+  const [loading, setLoading] = useState(!stored.user); // skip loading if already have user
   const [initialized, setInitialized] = useState(false);
 
-  const lastUserIdRef = useRef<string | null>(null);
+  const currentUserIdRef = useRef<string | null>(stored.user?.id ?? null);
   const requestIdRef = useRef(0);
 
-  // Refresh user profile from DB (clears cache)
   const refreshUser = useCallback(async () => {
-    const currentSession = session;
-    if (!currentSession?.user) return;
-    profileCache.delete(currentSession.user.id);
-    const profile = await fetchUserProfile(currentSession.user);
-    const authUser = toAppUser(currentSession.user);
-    setUser(mergeProfile(authUser, profile));
-  }, [session]);
+    const s = await supabase.auth.getSession();
+    const authUser = s.data.session?.user;
+    if (!authUser) return;
+    profileCache.delete(authUser.id);
+    const profile = await fetchUserProfile(authUser);
+    setUser(mergeProfile(toAppUser(authUser), profile));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
-    /** Apply a Supabase session → derive User immediately, then enrich from DB */
-    const applySession = async (s: Session | null) => {
-      const rid = ++requestIdRef.current;
-
+    const applySession = async (s: Session | null, rid: number) => {
       if (!s?.user) {
-        lastUserIdRef.current = null;
+        currentUserIdRef.current = null;
         profileCache.clear();
-        // Remove uid cookie on sign-out
         document.cookie = 'sidra_uid=; path=/; max-age=0; SameSite=Lax';
         if (!cancelled && rid === requestIdRef.current) {
           setUser(null);
@@ -140,84 +131,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      lastUserIdRef.current = s.user.id;
-
-      // Set uid cookie for middleware maintenance exemption check
+      currentUserIdRef.current = s.user.id;
       document.cookie = `sidra_uid=${s.user.id}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
 
-      // 1) Immediately set user from auth metadata — no network wait
+      // Set immediately from token metadata (no DB wait)
       const authUser = toAppUser(s.user);
       if (!cancelled && rid === requestIdRef.current) {
         setSession(s);
-        setUser((prev) =>
-          prev?.id === authUser.id ? mergeProfile(authUser, prev) : authUser,
-        );
+        setUser(prev => prev?.id === authUser.id ? mergeProfile(authUser, prev) : authUser);
       }
 
-      // 2) Enrich with DB profile (non-blocking for UI)
+      // Enrich from DB in background
       const profile = await fetchUserProfile(s.user);
       if (!cancelled && rid === requestIdRef.current) {
         setUser(mergeProfile(authUser, profile));
       }
     };
 
-    // Safety timeout — never block UI forever
+    // Safety net: never freeze the UI
     const safetyTimer = setTimeout(() => {
-      if (!cancelled) {
-        console.warn('[AuthProvider] Auth timeout — forcing initialized');
-        setLoading(false);
-        setInitialized(true);
-      }
-    }, 5_000);
+      if (!cancelled) { setLoading(false); setInitialized(true); }
+    }, 3_000);
 
-    // ── Step 1: Read persisted session (sync-like) ──
-    supabase.auth
-      .getSession()
-      .then(async ({ data: { session: s } }) => {
-        if (cancelled) return;
-        await applySession(s);
-        clearTimeout(safetyTimer);
-        if (!cancelled) {
-          setLoading(false);
-          setInitialized(true);
-        }
-      })
-      .catch((err) => {
-        console.error('[AuthProvider] getSession error:', err);
-        if (!cancelled) {
-          setUser(null);
-          setSession(null);
-          setLoading(false);
-          setInitialized(true);
-          clearTimeout(safetyTimer);
-        }
-      });
+    // Step 1: get confirmed session from Supabase (handles token refresh)
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      if (cancelled) return;
+      const rid = ++requestIdRef.current;
+      await applySession(s, rid);
+      clearTimeout(safetyTimer);
+      if (!cancelled) { setLoading(false); setInitialized(true); }
+    }).catch(() => {
+      if (!cancelled) { setLoading(false); setInitialized(true); clearTimeout(safetyTimer); }
+    });
 
-    // ── Step 2: Listen for real auth changes (sign-in / sign-out / other tab) ──
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, s) => {
+    // Step 2: react to auth events (sign in/out from other tabs, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       if (cancelled) return;
 
-      // Update session on token refresh without re-fetching the profile
+      // Token refreshed — just update session + ensure user is set
       if (event === 'TOKEN_REFRESHED') {
         if (s) {
-          lastUserIdRef.current = s.user.id;
+          currentUserIdRef.current = s.user.id;
           setSession(s);
-          // Restore user if it was cleared during the refresh cycle
           setUser(prev => prev ?? toAppUser(s.user));
         }
         return;
       }
-      if (event === 'USER_UPDATED') return;
 
-      // Skip if same user already loaded
-      if (s?.user && s.user.id === lastUserIdRef.current) return;
+      // Ignore non-state-changing events
+      if (event === 'USER_UPDATED' || event === 'INITIAL_SESSION') return;
 
-      await applySession(s);
-      if (!cancelled) {
-        setLoading(false);
-        setInitialized(true);
+      // For SIGNED_IN: only update if it's a different user
+      if (event === 'SIGNED_IN') {
+        if (s?.user && s.user.id === currentUserIdRef.current) return;
+        const rid = ++requestIdRef.current;
+        applySession(s, rid).then(() => {
+          if (!cancelled) { setLoading(false); setInitialized(true); }
+        });
+        return;
+      }
+
+      // For SIGNED_OUT: only clear if we actually have a user
+      if (event === 'SIGNED_OUT') {
+        if (!currentUserIdRef.current) return; // already signed out
+        const rid = ++requestIdRef.current;
+        applySession(null, rid);
+        return;
       }
     });
 
@@ -228,7 +207,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Stable context value — only changes when state changes
   const value = useMemo<AuthContextValue>(
     () => ({ user, session, loading, initialized, refreshUser }),
     [user, session, loading, initialized, refreshUser],

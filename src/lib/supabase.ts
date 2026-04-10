@@ -24,11 +24,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'sb-sidra-auth',
-    flowType: 'pkce',
-    // Keep session alive — access token refreshes silently before expiry
-    // Refresh token lifetime is controlled in Supabase Dashboard →
-    // Authentication → Sessions → "Refresh Token" (set to 172800s = 48h min)
+    // Do NOT set flowType: 'pkce' — it causes 30s delays and spurious SIGNED_OUT
+    // events in SPAs when sessionStorage PKCE verifiers are lost on navigation.
+    // Default implicit flow handles email/password and magic links correctly.
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
 });

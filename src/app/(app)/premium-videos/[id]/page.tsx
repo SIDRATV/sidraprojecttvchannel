@@ -32,11 +32,11 @@ export default function WatchPremiumVideoPage() {
   const params = useParams();
   const router = useRouter();
   const { user, session } = useAuth();
-  const { miniPlayer, startMiniPlayer, closeMiniPlayer } = useMiniPlayer();
+  const { miniPlayer, resumeData, animating, startMiniPlayer, closeMiniPlayer, expandMiniPlayer, consumeResumeData } = useMiniPlayer();
   const id = params.id as string;
 
-  // Read ?t= param for resume from mini-player
-  const [startTime] = useState(() => {
+  // Check for resume data from mini-player expand (takes priority over ?t=)
+  const [startTime, setStartTime] = useState(() => {
     if (typeof window === 'undefined') return 0;
     return parseInt(new URLSearchParams(window.location.search).get('t') ?? '0', 10) || 0;
   });
@@ -61,10 +61,20 @@ export default function WatchPremiumVideoPage() {
   useEffect(() => { streamUrlRef.current = streamUrl; }, [streamUrl]);
   useEffect(() => { videoDataRef.current = video; }, [video]);
 
-  // If coming back from mini-player for this video, close it immediately
+  // If coming back from mini-player via expand for this video, use its resume data
+  const resumeConsumedRef = useRef(false);
   useEffect(() => {
+    if (resumeConsumedRef.current) return;
+    // Close mini-player if it's still active for this video
     if (miniPlayer?.videoId === id) {
       closeMiniPlayer();
+    }
+    // If we have resumeData from expand, use streamUrl + currentTime directly
+    if (resumeData && resumeData.videoId === id) {
+      resumeConsumedRef.current = true;
+      setStreamUrl(resumeData.streamUrl);
+      setStartTime(resumeData.currentTime);
+      consumeResumeData();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -86,7 +96,6 @@ export default function WatchPremiumVideoPage() {
         });
       }
     };
-  // id is stable for the lifetime of this page instance
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -228,7 +237,12 @@ export default function WatchPremiumVideoPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors">
       {/* Video Player */}
-      <div className="w-full bg-black">
+      <motion.div
+        className="w-full bg-black"
+        initial={animating === 'expand' ? { scale: 0.3, opacity: 0, y: 200 } : false}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+      >
         <div className="max-w-6xl mx-auto">
           <PremiumVideoPlayer
             streamUrl={streamUrl}
@@ -241,7 +255,7 @@ export default function WatchPremiumVideoPage() {
             onStateChange={(state) => { playerStateRef.current = state; }}
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Video Info */}
       <motion.div

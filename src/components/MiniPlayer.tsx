@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useMiniPlayer } from '@/providers/MiniPlayerProvider';
 
 export function MiniPlayer() {
-  const { miniPlayer, closeMiniPlayer } = useMiniPlayer();
+  const { miniPlayer, closeMiniPlayer, expandMiniPlayer } = useMiniPlayer();
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -38,12 +38,17 @@ export function MiniPlayer() {
 
   const handleExpand = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const time = videoRef.current?.currentTime ?? 0;
-    const videoId = miniPlayer?.videoId;
+    // Capture current time from the actual video element
+    const currentTime = videoRef.current?.currentTime ?? 0;
     const video = videoRef.current;
     if (video) { video.pause(); }
-    closeMiniPlayer();
-    router.push(`/premium-videos/${videoId}?t=${Math.floor(time)}`);
+    // expandMiniPlayer stores resumeData (streamUrl + currentTime) in the provider
+    const data = expandMiniPlayer();
+    if (data) {
+      // Override with the live currentTime from the video element
+      data.currentTime = currentTime;
+    }
+    router.push(`/premium-videos/${miniPlayer?.videoId}`);
   };
 
   // Don't render anything when inactive
@@ -62,10 +67,10 @@ export function MiniPlayer() {
         }}
         dragElastic={0.05}
         dragMomentum={false}
-        initial={{ opacity: 0, y: 80, scale: 0.85 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 80, scale: 0.85 }}
-        transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+        initial={{ opacity: 0, scale: 0.3, y: -200 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.5, y: -100 }}
+        transition={{ type: 'spring', damping: 20, stiffness: 250 }}
         className="fixed bottom-20 right-3 sm:right-4 z-[9999] w-60 sm:w-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-slate-700/60 bg-black select-none"
         style={{ touchAction: 'none' }}
       >

@@ -10,118 +10,69 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// ── Constants ────────────────────────────────────────────────────────────────
+// Max times the prompt is shown PER SESSION (sessionStorage resets on tab close)
+const MAX_SHOWS_PER_SESSION = 3;
+// localStorage key — set to 'true' once the app is installed
+const LS_INSTALLED_KEY = 'pwaInstalled';
+// sessionStorage key — tracks how many times prompt was shown this session
+const SS_SHOWN_KEY = 'pwaShownCount';
+
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
-
-  // Store this in a ref to track state across renders
-  const [eventCaptured, setEventCaptured] = useState(false);
 
   useEffect(() => {
-    console.group('[PWA] Component Mount');
-    console.log('%c[PWA] PWAInstallPrompt component mounted', 'color: blue; font-weight: bold;');
-    
-    // Check if app is already installed
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    console.log('%c[PWA] Standalone mode:', isStandalone, 'color: orange');
-    
-    if (isStandalone) {
-      console.log('%c[PWA] ✅ App is already installed in standalone mode', 'color: green; font-weight: bold;');
-      setIsInstalled(true);
-      console.groupEnd();
-      return;
-    }
-    
-    console.log('%c[PWA] 📱 App NOT in standalone - checking reload counter', 'color: purple');
-    
-    // Track reloads and only show prompt every 10 reloads
-    const reloadCount = parseInt(localStorage.getItem('pwaReloadCount') || '0', 10);
-    const newCount = reloadCount + 1;
-    localStorage.setItem('pwaReloadCount', newCount.toString());
-    
-    // Only show prompt if counter is multiple of 10
-    if (newCount % 10 !== 0) {
-      console.log(`%c[PWA] Reload count: ${newCount} - not showing prompt yet`, 'color: orange');
-      setShowPrompt(false);
-      console.groupEnd();
-      // Don't return, still set up listeners but don't show
-    }
+    // Already installed — never show
+    if (
+      localStorage.getItem(LS_INSTALLED_KEY) === 'true' ||
+      window.matchMedia('(display-mode: standalone)').matches
+    ) return;
 
-    // Listen for beforeinstallprompt event - this is the main event
+    // Already shown MAX_SHOWS_PER_SESSION times this session — wait for next session
+    const shownCount = parseInt(sessionStorage.getItem(SS_SHOWN_KEY) ?? '0', 10);
+    if (shownCount >= MAX_SHOWS_PER_SESSION) return;
+
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('%c[PWA] ✅✅✅ beforeinstallprompt EVENT CAPTURED!', 'color: green; font-size: 16px; font-weight: bold;');
       e.preventDefault();
-      const event = e as BeforeInstallPromptEvent;
-      setDeferredPrompt(event);
-      setEventCaptured(true);
-      
-      // Only show prompt if reload count is multiple of 10
-      const reloadCount = parseInt(localStorage.getItem('pwaReloadCount') || '0', 10);
-      if (reloadCount % 10 === 0) {
-        console.log(`%c[PWA] Showing prompt (reload ${reloadCount})`, 'color: green');
-        setShowPrompt(true);
-      }
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setShowPrompt(true);
+      // Increment the session counter immediately when we decide to show
+      sessionStorage.setItem(SS_SHOWN_KEY, String(shownCount + 1));
     };
 
-    // Register the listener immediately
-    console.log('%c[PWA] 👂 Registering beforeinstallprompt listener...', 'color: blue');
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Also set up app installed listener
     const handleAppInstalled = () => {
-      console.log('%c[PWA] 🎉 App installed successfully!', 'color: green; font-size: 14px; font-weight: bold;');
-      setIsInstalled(true);
+      localStorage.setItem(LS_INSTALLED_KEY, 'true');
       setShowPrompt(false);
-      localStorage.removeItem('pwaPromptTime');
     };
 
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
-
-    console.groupEnd();
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [eventCaptured, deferredPrompt]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-
-    try {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('[PWA] User accepted installation');
-        setIsInstalled(true);
-        localStorage.removeItem('pwaReloadCount');
-      } else {
-        console.log('[PWA] User dismissed installation');
-      }
-    } catch (error) {
-      console.error('[PWA] Installation error:', error);
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      localStorage.setItem(LS_INSTALLED_KEY, 'true');
     }
-    
     setShowPrompt(false);
     setDeferredPrompt(null);
   };
 
   const handleDismiss = () => {
-    console.log('[PWA] User dismissed install prompt');
     setShowPrompt(false);
-    // No need to track dismissal - reload counter will manage when to show again
+    // deferredPrompt kept — browser may re-fire on next page load within same session
   };
 
-  if (isInstalled) {
-    return null;
-  }
-
-  // If no deferredPrompt, don't show anything
-  if (!deferredPrompt) {
-    return null;
-  }
+  if (!deferredPrompt) return null;
 
   return (
     <AnimatePresence>

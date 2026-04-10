@@ -4,8 +4,10 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, TrendingUp, Clock, Youtube, Play, X, Mic2, Star, Eye, Heart } from 'lucide-react';
+import { Search, Filter, TrendingUp, Clock, Youtube, Play, X, Mic2, Star, Eye, Heart, ThumbsUp } from 'lucide-react';
 import type { Podcast } from '@/services/podcasts';
+
+interface YTStats { id: string; viewCount: number; likeCount: number; }
 
 interface PageBanner {
   type: 'image' | 'video';
@@ -26,6 +28,14 @@ export default function PodcastPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [banner, setBanner] = useState<PageBanner | null>(null);
   const [activeVideo, setActiveVideo] = useState<(Podcast & { youtube_id?: string }) | null>(null);
+  const [ytStats, setYtStats] = useState<Record<string, YTStats>>({});
+
+  // Formats number: 1200 → "1.2K", 1500000 → "1.5M", 800 → "800"
+  const fmtNum = (n: number): string => {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(n);
+  };
 
   const ITEMS_PER_PAGE = 12;
 
@@ -45,6 +55,23 @@ export default function PodcastPage() {
   }, [viewType, selectedCategory]);
 
   useEffect(() => { fetchPodcasts(); }, [fetchPodcasts]);
+
+  // Fetch YouTube stats when podcasts change
+  useEffect(() => {
+    const ids = podcasts
+      .map(p => (p as any).youtube_id as string | undefined)
+      .filter((id): id is string => !!id)
+      .slice(0, 50);
+    if (ids.length === 0) return;
+    fetch(`/api/youtube-stats?ids=${ids.join(',')}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((stats: YTStats[]) => {
+        const map: Record<string, YTStats> = {};
+        stats.forEach(s => { map[s.id] = s; });
+        setYtStats(map);
+      })
+      .catch(() => {});
+  }, [podcasts]);
 
   useEffect(() => {
     fetch('/api/page-banner?page=podcast')
@@ -193,10 +220,24 @@ export default function PodcastPage() {
                         <span className="text-[11px] bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 px-2 py-0.5 rounded-full">{podcast.category}</span>
                         <span className="text-[11px] text-gray-400">{podcast.duration}</span>
                       </div>
-                      <div className="flex gap-3 text-[11px] text-gray-400 pt-1">
-                        <span className="flex items-center gap-1"><Eye size={11} /> {(podcast.views / 1000).toFixed(1)}K</span>
-                        <span className="flex items-center gap-1"><Heart size={11} /> {podcast.likes}</span>
-                      </div>
+                      {(() => {
+                        const ytId = (podcast as any).youtube_id as string | undefined;
+                        const yt = ytId ? ytStats[ytId] : null;
+                        const views = yt ? yt.viewCount : (podcast.views ?? 0);
+                        const likes = yt ? yt.likeCount : (podcast.likes ?? 0);
+                        return (
+                          <div className="flex gap-3 text-[11px] text-gray-400 pt-1">
+                            <span className="flex items-center gap-1 font-medium">
+                              <Eye size={11} className="text-blue-400" />
+                              {fmtNum(views)}
+                            </span>
+                            <span className="flex items-center gap-1 font-medium">
+                              <ThumbsUp size={11} className="text-rose-400" />
+                              {fmtNum(likes)}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </motion.div>
                 );

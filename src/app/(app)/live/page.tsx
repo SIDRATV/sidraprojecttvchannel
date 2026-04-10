@@ -2,10 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Flame, Radio, Play, X, Users, Image as ImageIcon, Video, Youtube, Wifi, WifiOff } from 'lucide-react';
 import type { LiveStream } from '@/services/live';
+
+interface YTStats { id: string; viewCount: number; likeCount: number; concurrentViewers?: number; }
 
 interface PageBanner {
   type: 'image' | 'video';
@@ -26,6 +28,15 @@ export default function LivePage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [banner, setBanner] = useState<PageBanner | null>(null);
   const [activeStream, setActiveStream] = useState<(LiveStream & { youtube_id?: string; stream_url?: string; stream_type?: string }) | null>(null);
+  // YouTube live viewer counts keyed by youtube_id
+  const [ytViewers, setYtViewers] = useState<Record<string, number | undefined>>({});
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval>>();
+
+  const fmtNum = (n: number): string => {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(n);
+  };
 
   const ITEMS_PER_PAGE = 12;
 
@@ -45,6 +56,30 @@ export default function LivePage() {
   }, [viewType, selectedCategory]);
 
   useEffect(() => { fetchStreams(); }, [fetchStreams]);
+
+  // Fetch YouTube concurrent viewers for live streams with a youtube_id
+  const fetchYtViewers = useCallback(() => {
+    const ids = streams
+      .filter(s => (s as any).youtube_id)
+      .map(s => (s as any).youtube_id as string)
+      .slice(0, 50);
+    if (ids.length === 0) return;
+    fetch(`/api/youtube-stats?ids=${ids.join(',')}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((stats: YTStats[]) => {
+        const map: Record<string, number | undefined> = {};
+        stats.forEach(s => { map[s.id] = s.concurrentViewers; });
+        setYtViewers(map);
+      })
+      .catch(() => {});
+  }, [streams]);
+
+  useEffect(() => {
+    fetchYtViewers();
+    // Auto-refresh concurrent viewers every 30s for active live streams
+    refreshTimerRef.current = setInterval(fetchYtViewers, 30_000);
+    return () => clearInterval(refreshTimerRef.current);
+  }, [fetchYtViewers]);
 
   useEffect(() => {
     fetch('/api/page-banner?page=live')
@@ -233,9 +268,19 @@ export default function LivePage() {
                       <p className="text-xs text-gray-500 dark:text-gray-400">{stream.streamer}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 px-2 py-0.5 rounded-full">{stream.category}</span>
-                        {stream.is_live && (
-                          <span className="text-[11px] text-gray-400 flex items-center gap-1"><Users size={10} /> {((stream.viewers ?? 0) / 1000).toFixed(1)}K</span>
-                        )}
+                        {stream.is_live && (() => {
+                          const ytId = (stream as any).youtube_id as string | undefined;
+                          const ytCount = ytId ? ytViewers[ytId] : undefined;
+                          // Prefer real YouTube concurrent viewers, fallback to DB viewers
+                          const count = ytCount ?? stream.viewers ?? 0;
+                          return (
+                            <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                              <Users size={10} className="text-red-400" />
+                              <span className="font-medium">{fmtNum(count)}</span>
+                              {ytCount !== undefined && <span className="text-red-400 font-bold">●</span>}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </motion.div>

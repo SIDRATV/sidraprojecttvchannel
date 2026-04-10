@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase';
 import type { User } from '@/types';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
+// Storage key must match supabase.ts
+const STORAGE_KEY = 'sb-sidra-auth';
+
 // ─── Public contract ────────────────────────────────────────────────
 export interface AuthContextValue {
   user: User | null;
@@ -73,11 +76,36 @@ const mergeProfile = (base: User, profile: User): User => ({
   full_name: profile.full_name || base.full_name,
 });
 
+// ─── Sync read from localStorage to avoid null-flash on reload ─────
+// Reads the raw Supabase session stored by the client without any async call.
+const readStoredSession = (): { user: User | null; session: Session | null } => {
+  if (typeof window === 'undefined') return { user: null, session: null };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { user: null, session: null };
+    const stored = JSON.parse(raw) as Session | null;
+    if (!stored?.user) return { user: null, session: null };
+    // Only trust if token hasn't expired (with 10s buffer)
+    const expiresAt = (stored as Session & { expires_at?: number }).expires_at;
+    if (expiresAt && expiresAt < Math.floor(Date.now() / 1000) - 10) {
+      // Expired — but we still show the user optimistically while refresh occurs
+      // to avoid flash; getSession() / TOKEN_REFRESHED will update the token.
+    }
+    return { user: toAppUser(stored.user), session: stored };
+  } catch {
+    return { user: null, session: null };
+  }
+};
+
 // ─── Provider ──────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialise synchronously from localStorage — eliminates null-flash on reload
+  const stored = useMemo(() => readStoredSession(), []);
+
+  const [user, setUser] = useState<User | null>(stored.user);
+  const [session, setSession] = useState<Session | null>(stored.session);
+  // If we already found a session in storage, skip the initial loading state
+  const [loading, setLoading] = useState(!stored.session);
   const [initialized, setInitialized] = useState(false);
 
   const lastUserIdRef = useRef<string | null>(null);
@@ -176,6 +204,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (s) {
           lastUserIdRef.current = s.user.id;
           setSession(s);
+          // Restore user if it was cleared during the refresh cycle
+          setUser(prev => prev ?? toAppUser(s.user));
         }
         return;
       }

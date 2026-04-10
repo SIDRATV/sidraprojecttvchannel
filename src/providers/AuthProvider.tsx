@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(stored.user);
   const [session, setSession] = useState<Session | null>(stored.session);
   const [loading, setLoading] = useState(!stored.user); // skip loading if already have user
-  const [initialized, setInitialized] = useState(false);
+  const [initialized, setInitialized] = useState(!!stored.user); // instant if user in localStorage
 
   const currentUserIdRef = useRef<string | null>(stored.user?.id ?? null);
   const requestIdRef = useRef(0);

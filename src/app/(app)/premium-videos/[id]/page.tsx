@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -13,10 +13,13 @@ import {
   ThumbsUp,
   Share2,
   Lock,
+  Play,
+  Clock,
 } from 'lucide-react';
 import { PremiumVideoPlayer } from '@/components/premium/PremiumVideoPlayer';
 import { premiumVideoService } from '@/services/premiumVideos';
 import { useAuth } from '@/hooks/useAuth';
+import { useMiniPlayer } from '@/providers/MiniPlayerProvider';
 import type { PremiumVideoWithRelations } from '@/types/premium';
 import Link from 'next/link';
 
@@ -29,7 +32,14 @@ export default function WatchPremiumVideoPage() {
   const params = useParams();
   const router = useRouter();
   const { user, session } = useAuth();
+  const { miniPlayer, startMiniPlayer, closeMiniPlayer } = useMiniPlayer();
   const id = params.id as string;
+
+  // Read ?t= param for resume from mini-player
+  const [startTime] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    return parseInt(new URLSearchParams(window.location.search).get('t') ?? '0', 10) || 0;
+  });
 
   const [video, setVideo] = useState<PremiumVideoWithRelations | null>(null);
   const [streamUrl, setStreamUrl] = useState('');
@@ -40,6 +50,45 @@ export default function WatchPremiumVideoPage() {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [liking, setLiking] = useState(false);
+  const [suggestions, setSuggestions] = useState<PremiumVideoWithRelations[]>([]);
+
+  // Refs to track player state for mini-player activation on navigation
+  const playerStateRef = useRef({ currentTime: 0, isPlaying: false });
+  const streamUrlRef = useRef('');
+  const videoDataRef = useRef<PremiumVideoWithRelations | null>(null);
+  const startMiniPlayerRef = useRef(startMiniPlayer);
+  useEffect(() => { startMiniPlayerRef.current = startMiniPlayer; }, [startMiniPlayer]);
+  useEffect(() => { streamUrlRef.current = streamUrl; }, [streamUrl]);
+  useEffect(() => { videoDataRef.current = video; }, [video]);
+
+  // If coming back from mini-player for this video, close it immediately
+  useEffect(() => {
+    if (miniPlayer?.videoId === id) {
+      closeMiniPlayer();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // On unmount: if video is playing, activate mini-player
+  useEffect(() => {
+    return () => {
+      if (
+        playerStateRef.current.isPlaying &&
+        streamUrlRef.current &&
+        videoDataRef.current
+      ) {
+        startMiniPlayerRef.current({
+          streamUrl: streamUrlRef.current,
+          title: videoDataRef.current.title,
+          thumbnail: videoDataRef.current.thumbnail_url ?? '',
+          videoId: id,
+          startTime: playerStateRef.current.currentTime,
+        });
+      }
+    };
+  // id is stable for the lifetime of this page instance
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // Premium: user must be logged in and have a premium_plan set
   const isPremiumUser = !!(user && user.premium_plan);
@@ -78,6 +127,15 @@ export default function WatchPremiumVideoPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isPremiumUser]);
+
+  // Fetch suggestions when video is loaded
+  useEffect(() => {
+    if (!video) return;
+    premiumVideoService
+      .getVideos(13, 0, video.category_id ?? undefined)
+      .then(all => setSuggestions(all.filter(v => v.id !== id).slice(0, 12)))
+      .catch(() => {});
+  }, [video, id]);
 
   const handleQualityChange = (newQuality: string) => {
     setLoading(true);
@@ -179,6 +237,8 @@ export default function WatchPremiumVideoPage() {
             availableQualities={availableQualities}
             onQualityChange={handleQualityChange}
             onBack={() => router.push('/premium-videos')}
+            startTime={startTime}
+            onStateChange={(state) => { playerStateRef.current = state; }}
           />
         </div>
       </div>
@@ -281,6 +341,81 @@ export default function WatchPremiumVideoPage() {
             <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-line">
               {video.description}
             </p>
+          </motion.div>
+        )}
+
+        {/* Suggestions */}
+        {suggestions.length > 0 && (
+          <motion.div variants={fadeUp} className="space-y-4 pb-8">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-gold-500" />
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Vidéos suggérées</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {suggestions.map(s => (
+                <motion.div
+                  key={s.id}
+                  whileHover={{ y: -3 }}
+                  className="cursor-pointer group"
+                  onClick={() => router.push(`/premium-videos/${s.id}`)}
+                >
+                  {/* Thumbnail */}
+                  <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-2">
+                    {s.thumbnail_url ? (
+                      <img
+                        src={s.thumbnail_url}
+                        alt={s.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Play size={28} className="text-gray-400" />
+                      </div>
+                    )}
+                    {/* Play overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200 flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/20 backdrop-blur-sm rounded-full p-2">
+                        <Play size={18} className="text-white fill-white" />
+                      </div>
+                    </div>
+                    {/* Plan badge */}
+                    {s.min_plan && (
+                      <span
+                        className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-white ${
+                          s.min_plan === 'vip'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600'
+                            : s.min_plan === 'premium'
+                            ? 'bg-gradient-to-r from-gold-500 to-gold-400'
+                            : 'bg-gradient-to-r from-brand-500 to-brand-400'
+                        }`}
+                      >
+                        {s.min_plan}
+                      </span>
+                    )}
+                    {/* Duration */}
+                    {s.duration && (
+                      <span className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 px-1.5 py-0.5 bg-black/70 rounded text-[10px] text-white font-medium">
+                        <Clock size={9} />
+                        {Math.floor(s.duration / 60)}:{String(s.duration % 60).padStart(2, '0')}
+                      </span>
+                    )}
+                  </div>
+                  {/* Info */}
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug group-hover:text-gold-500 transition-colors">
+                    {s.title}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {s.categories?.name && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{s.categories.name}</span>
+                    )}
+                    <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-0.5 ml-auto shrink-0">
+                      <Eye size={10} />
+                      {(s.views || 0).toLocaleString()}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         )}
       </motion.div>

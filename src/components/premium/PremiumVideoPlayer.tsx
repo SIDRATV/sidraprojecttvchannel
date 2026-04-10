@@ -21,6 +21,10 @@ interface PremiumVideoPlayerProps {
   availableQualities: string[];
   onQualityChange: (quality: string) => void;
   onBack?: () => void;
+  /** Seek to this timestamp (seconds) when the video first loads */
+  startTime?: number;
+  /** Called on every timeupdate and play/pause — update a ref, not state */
+  onStateChange?: (state: { currentTime: number; isPlaying: boolean }) => void;
 }
 
 export function PremiumVideoPlayer({
@@ -30,6 +34,8 @@ export function PremiumVideoPlayer({
   availableQualities,
   onQualityChange,
   onBack,
+  startTime,
+  onStateChange,
 }: PremiumVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +54,12 @@ export function PremiumVideoPlayer({
 
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout>>();
   const isPlayingRef = useRef(false);
+  // Keep a stable ref to the callback so event listeners never go stale
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => { onStateChangeRef.current = onStateChange; }, [onStateChange]);
+  // Track whether startTime has been applied (reset when streamUrl changes)
+  const startTimeAppliedRef = useRef(false);
+  useEffect(() => { startTimeAppliedRef.current = false; }, [streamUrl]);
 
   const resetHideTimer = useCallback(() => {
     setShowControls(true);
@@ -61,7 +73,10 @@ export function PremiumVideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
-    const onTimeUpdate = () => setCurrentTime(video.currentTime);
+    const onTimeUpdate = () => {
+      setCurrentTime(video.currentTime);
+      onStateChangeRef.current?.({ currentTime: video.currentTime, isPlaying: !video.paused });
+    };
     const onDurationChange = () => setDuration(video.duration || 0);
     const onProgress = () => {
       if (video.buffered.length > 0) {
@@ -69,17 +84,26 @@ export function PremiumVideoPlayer({
       }
     };
     const onWaiting = () => setIsLoading(true);
-    const onCanPlay = () => setIsLoading(false);
+    const onCanPlay = () => {
+      setIsLoading(false);
+      // Seek to startTime once, right after the video is ready
+      if (!startTimeAppliedRef.current && startTime && startTime > 0) {
+        startTimeAppliedRef.current = true;
+        video.currentTime = startTime;
+      }
+    };
     const onPlay = () => {
       setIsPlaying(true);
       isPlayingRef.current = true;
       resetHideTimer();
+      onStateChangeRef.current?.({ currentTime: video.currentTime, isPlaying: true });
     };
     const onPause = () => {
       setIsPlaying(false);
       isPlayingRef.current = false;
       if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
       setShowControls(true);
+      onStateChangeRef.current?.({ currentTime: video.currentTime, isPlaying: false });
     };
 
     video.addEventListener('timeupdate', onTimeUpdate);

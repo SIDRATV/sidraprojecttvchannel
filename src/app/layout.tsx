@@ -3,7 +3,9 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
+import { MiniPlayerProvider } from '@/providers/MiniPlayerProvider';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { MiniPlayer } from '@/components/MiniPlayer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -116,10 +118,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.className} bg-white dark:bg-gray-950 text-gray-950 dark:text-white transition-colors duration-300`}>
         <ThemeProvider>
-          <AuthProvider>
-            <PWAInstallPrompt />
-            {children}
-          </AuthProvider>
+          <MiniPlayerProvider>
+            <AuthProvider>
+              <PWAInstallPrompt />
+              {children}
+              <MiniPlayer />
+            </AuthProvider>
+          </MiniPlayerProvider>
         </ThemeProvider>
       </body>
     </html>

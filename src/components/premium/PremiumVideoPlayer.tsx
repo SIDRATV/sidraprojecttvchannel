@@ -178,6 +178,31 @@ export function PremiumVideoPlayer({
     videoRef.current.currentTime = pos * duration;
   };
 
+  // ─── Scrub (drag) on progress bar ────────────────────────
+  const isDraggingRef = useRef(false);
+
+  const seekToPointer = (clientX: number) => {
+    if (!progressRef.current || !videoRef.current) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const pos = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+    videoRef.current.currentTime = pos * duration;
+  };
+
+  const onScrubStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    seekToPointer(e.clientX);
+  };
+
+  const onScrubMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    seekToPointer(e.clientX);
+  };
+
+  const onScrubEnd = () => {
+    isDraggingRef.current = false;
+  };
+
   const skip = (seconds: number) => {
     if (!videoRef.current) return;
     videoRef.current.currentTime = Math.min(
@@ -259,11 +284,15 @@ export function PremiumVideoPlayer({
 
         {/* Bottom controls */}
         <div className={`p-4 bg-gradient-to-t from-black/80 to-transparent space-y-2 ${showControls ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-          {/* Progress bar */}
+          {/* Progress bar — click + drag to scrub */}
           <div
             ref={progressRef}
             onClick={handleProgressClick}
-            className="relative h-1.5 bg-white/20 rounded-full cursor-pointer group/progress hover:h-2.5 transition-all"
+            onPointerDown={onScrubStart}
+            onPointerMove={onScrubMove}
+            onPointerUp={onScrubEnd}
+            onPointerCancel={onScrubEnd}
+            className="relative h-1.5 bg-white/20 rounded-full cursor-pointer group/progress hover:h-2.5 transition-all touch-none"
           >
             {/* Buffered */}
             <div
@@ -277,29 +306,38 @@ export function PremiumVideoPlayer({
             />
             {/* Thumb */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md opacity-0 group-hover/progress:opacity-100 transition-opacity"
-              style={{ left: `calc(${progressPercent}% - 6px)` }}
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md scale-0 group-hover/progress:scale-100 transition-transform"
+              style={{ left: `calc(${progressPercent}% - 8px)` }}
             />
           </div>
 
           {/* Control buttons */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 sm:gap-3">
-              <button onClick={() => skip(-10)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="-10s">
-                <RotateCcw size={18} className="text-white" />
-              </button>
-              <button onClick={togglePlay} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-                {isPlaying ? (
-                  <Pause size={20} className="text-white" fill="white" />
-                ) : (
-                  <Play size={20} className="text-white" fill="white" />
-                )}
-              </button>
-              <button onClick={() => skip(10)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="+10s">
-                <RotateCw size={18} className="text-white" />
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Skip -10s (YouTube-style) */}
+              <button onClick={() => skip(-10)} className="relative p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="-10s">
+                <RotateCcw size={22} className="text-white" />
+                <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white mt-[1px]">10</span>
               </button>
 
-              <div className="flex items-center gap-2 group/vol">
+              <button onClick={togglePlay} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+                {isPlaying ? (
+                  <Pause size={22} className="text-white" fill="white" />
+                ) : (
+                  <Play size={22} className="text-white" fill="white" />
+                )}
+              </button>
+
+              {/* Skip +10s (YouTube-style) */}
+              <button onClick={() => skip(10)} className="relative p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="+10s">
+                <RotateCw size={22} className="text-white" />
+                <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white mt-[1px]">10</span>
+              </button>
+
+              {/* Separator */}
+              <div className="w-px h-5 bg-white/20 mx-1 hidden sm:block" />
+
+              <div className="flex items-center gap-1 group/vol">
                 <button onClick={toggleMute} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
                   {isMuted ? (
                     <VolumeX size={18} className="text-white" />
@@ -318,7 +356,10 @@ export function PremiumVideoPlayer({
                 />
               </div>
 
-              <span className="text-white/80 text-xs font-mono">
+              {/* Separator */}
+              <div className="w-px h-5 bg-white/20 mx-1 hidden sm:block" />
+
+              <span className="text-white/80 text-xs font-mono ml-1">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
             </div>

@@ -170,13 +170,13 @@ export function AdminLiveManager({ token }: Props) {
       </AnimatePresence>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
           { label: 'Total Lives', value: streams.length, color: 'text-red-400', bg: 'bg-red-500/10' },
           { label: 'En direct', value: liveCount, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
           { label: 'En vedette', value: streams.filter(s => s.is_featured).length, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
         ].map(stat => (
-          <Card key={stat.label} className={`p-4 ${stat.bg} border border-slate-700/50`}>
+          <Card key={stat.label} className={`p-3 sm:p-4 ${stat.bg} border border-slate-700/50`}>
             <p className="text-slate-400 text-xs">{stat.label}</p>
             <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
           </Card>
@@ -225,7 +225,7 @@ export function AdminLiveManager({ token }: Props) {
           {bannerEdit && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               className="mt-4 pt-4 border-t border-slate-700/50 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Type de bannière</label>
                   <select value={bannerForm.type} onChange={e => setBannerForm(f => ({ ...f, type: e.target.value as any }))}
@@ -240,7 +240,7 @@ export function AdminLiveManager({ token }: Props) {
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Titre</label>
                   <input value={bannerForm.title} onChange={e => setBannerForm(f => ({ ...f, title: e.target.value }))}
@@ -269,8 +269,8 @@ export function AdminLiveManager({ token }: Props) {
 
       {/* ── STREAM LIST ── */}
       <Card className="overflow-hidden border border-slate-700/50 bg-slate-800/30">
-        <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between gap-3">
-          <h3 className="font-bold text-white flex items-center gap-2">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-700/50 flex flex-wrap items-center gap-3">
+          <h3 className="font-bold text-white flex items-center gap-2 flex-wrap">
             <Radio size={18} className="text-red-400" />
             Lives ({streams.length})
             {liveCount > 0 && (
@@ -280,11 +280,11 @@ export function AdminLiveManager({ token }: Props) {
               </span>
             )}
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..."
-                className="pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500/50 w-40" />
+                className="pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500/50 w-32 sm:w-40" />
             </div>
             <button onClick={load} className="p-2 hover:bg-slate-700 rounded-lg transition-all text-slate-400">
               <RefreshCw size={14} />
@@ -338,7 +338,7 @@ export function AdminLiveManager({ token }: Props) {
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div className="flex items-end gap-4">
+                <div className="flex flex-wrap items-end gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={createForm.is_live} onChange={e => setCreateForm(f => ({ ...f, is_live: e.target.checked }))}
                       className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-red-500" />
@@ -434,8 +434,8 @@ export function AdminLiveManager({ token }: Props) {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-4 px-6 py-4 hover:bg-slate-700/20 transition-all group">
-                    <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-slate-700">
+                  <div className="flex items-center gap-3 px-3 sm:px-6 py-3 sm:py-4 hover:bg-slate-700/20 transition-all group">
+                    <div className="relative w-16 h-11 sm:w-20 sm:h-14 rounded-lg overflow-hidden flex-shrink-0 bg-slate-700">
                       {s.image ? (
                         <img src={s.image} alt={s.title} className="w-full h-full object-cover" />
                       ) : (
@@ -461,7 +461,7 @@ export function AdminLiveManager({ token }: Props) {
                         {s.stream_url ? s.stream_url.substring(0, 40) + '...' : 'Aucun lien'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button onClick={() => toggleLive(s)} title={s.is_live ? 'Arrêter le live' : 'Démarrer le live'}
                         className={`p-2 rounded-lg transition-all ${s.is_live ? 'text-red-400 hover:bg-red-500/10' : 'text-slate-400 hover:bg-slate-700'}`}>
                         {s.is_live ? <Wifi size={14} /> : <WifiOff size={14} />}

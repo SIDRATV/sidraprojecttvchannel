@@ -200,7 +200,7 @@ export function AdminPodcastManager({ token }: Props) {
           {bannerEdit && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               className="mt-4 pt-4 border-t border-slate-700/50 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Type de bannière</label>
                   <select value={bannerForm.type} onChange={e => setBannerForm(f => ({ ...f, type: e.target.value as any }))}
@@ -215,7 +215,7 @@ export function AdminPodcastManager({ token }: Props) {
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500/50" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Titre</label>
                   <input value={bannerForm.title} onChange={e => setBannerForm(f => ({ ...f, title: e.target.value }))}
@@ -244,16 +244,16 @@ export function AdminPodcastManager({ token }: Props) {
 
       {/* ── PODCAST LIST ── */}
       <Card className="overflow-hidden border border-slate-700/50 bg-slate-800/30">
-        <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between gap-3">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-700/50 flex flex-wrap items-center gap-3">
           <h3 className="font-bold text-white flex items-center gap-2">
             <Mic2 size={18} className="text-purple-400" />
             Podcasts ({podcasts.length})
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..."
-                className="pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500/50 w-40" />
+                className="pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500/50 w-32 sm:w-40" />
             </div>
             <button onClick={load} className="p-2 hover:bg-slate-700 rounded-lg transition-all text-slate-400">
               <RefreshCw size={14} />
@@ -383,8 +383,8 @@ export function AdminPodcastManager({ token }: Props) {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-4 px-6 py-4 hover:bg-slate-700/20 transition-all group">
-                    <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-slate-700">
+                  <div className="flex items-center gap-3 px-3 sm:px-6 py-3 sm:py-4 hover:bg-slate-700/20 transition-all group">
+                    <div className="relative w-16 h-11 sm:w-20 sm:h-14 rounded-lg overflow-hidden flex-shrink-0 bg-slate-700">
                       <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
                       {p.youtube_id && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -400,7 +400,7 @@ export function AdminPodcastManager({ token }: Props) {
                       <p className="text-slate-400 text-xs">{p.creator} · {p.category} · {p.duration}</p>
                       <p className="text-slate-500 text-xs">{p.views?.toLocaleString()} vues · {p.likes?.toLocaleString()} likes</p>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       {p.youtube_id && (
                         <a href={`https://youtube.com/watch?v=${p.youtube_id}`} target="_blank" rel="noopener noreferrer"
                           className="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-all">

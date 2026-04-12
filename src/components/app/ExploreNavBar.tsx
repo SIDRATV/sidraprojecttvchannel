@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Wallet, TrendingUp, Users, Newspaper } from 'lucide-react';
+import { Wallet, TrendingUp, Users, Newspaper, Megaphone } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -13,6 +13,7 @@ const navItems: NavItem[] = [
   { href: '/explore/wallet', label: 'Wallet' },
   { href: '/explore/voting-project', label: 'Voting' },
   { href: '/explore/partenariat', label: 'Partners' },
+  { href: '/explore/publicite', label: 'Publicité' },
   { href: '/explore/actualiter', label: 'News' },
 ];
 
@@ -21,7 +22,7 @@ export function ExploreNavBar() {
   const isActive = (href: string) => pathname.startsWith(href);
 
   const getIconComponent = (index: number) => {
-    const icons = [Wallet, TrendingUp, Users, Newspaper];
+    const icons = [Wallet, TrendingUp, Users, Megaphone, Newspaper];
     const Icon = icons[index];
     return Icon ? <Icon size={20} /> : null;
   };

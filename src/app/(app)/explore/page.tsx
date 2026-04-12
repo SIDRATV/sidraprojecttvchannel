@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
-import { Wallet, TrendingUp, Users, Newspaper } from 'lucide-react';
+import { Wallet, TrendingUp, Users, Newspaper, Megaphone } from 'lucide-react';
 
 interface ExploreCard {
   href: string;
@@ -40,6 +40,14 @@ const exploreCards: ExploreCard[] = [
     icon: Users,
     gradient: 'from-pink-500 to-rose-500',
     stats: '45+ Countries',
+  },
+  {
+    href: '/explore/publicite',
+    title: 'Publicité',
+    description: 'Diffusez vos annonces auprès de la communauté Sidra — bannières, pop-ups et vidéos',
+    icon: Megaphone,
+    gradient: 'from-purple-500 to-pink-500',
+    stats: 'Bannières & Vidéos',
   },
   {
     href: '/explore/actualiter',

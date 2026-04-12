@@ -39,17 +39,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       project_name, owner_name, owner_email, partnership_type,
-      domain, redirect_link, benefits, countries,
+      whatsapp, domain, redirect_link, description, audience_size,
+      collaboration_proposal, benefits, countries,
       sda_amount, has_team_in_5_countries, has_sda_2000_plus,
-      duration_type, payment_currency,
+      duration_type, payment_currency, logo_url,
     } = body;
 
     if (!project_name || !owner_name || !owner_email || !partnership_type) {
       return NextResponse.json({ error: 'project_name, owner_name, owner_email, and partnership_type are required' }, { status: 400 });
     }
 
-    if (!['advertising', 'project'].includes(partnership_type)) {
-      return NextResponse.json({ error: 'partnership_type must be advertising or project' }, { status: 400 });
+    const validTypes = ['project', 'affiliation', 'fournisseur', 'createur', 'investisseur', 'autre'];
+    if (!validTypes.includes(partnership_type)) {
+      return NextResponse.json({ error: `partnership_type must be one of: ${validTypes.join(', ')}` }, { status: 400 });
     }
 
     if (!duration_type || !['weekly', 'monthly', 'yearly'].includes(duration_type)) {
@@ -60,11 +62,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'payment_currency (sidra, sptc, visa) is required' }, { status: 400 });
     }
 
-    // 1. Look up pricing
+    // 1. Look up pricing (all partnership types use 'project' pricing)
     const { data: pricing, error: pricingErr } = await (supabase as any)
       .from('partnership_pricing')
       .select('*')
-      .eq('partnership_type', partnership_type)
+      .eq('partnership_type', 'project')
       .eq('duration_type', duration_type)
       .eq('is_active', true)
       .single();
@@ -143,8 +145,12 @@ export async function POST(request: NextRequest) {
         owner_name,
         owner_email,
         partnership_type,
+        whatsapp: whatsapp || '',
         domain: domain || '',
         redirect_link: redirect_link || '',
+        description: description || '',
+        audience_size: audience_size || '',
+        collaboration_proposal: collaboration_proposal || '',
         benefits: benefits || [],
         countries: countries || [],
         sda_amount: sda_amount || 0,
@@ -156,6 +162,7 @@ export async function POST(request: NextRequest) {
         duration_type,
         payment_currency,
         payment_amount: paymentAmount,
+        logo_url: logo_url || '',
       })
       .select()
       .single();

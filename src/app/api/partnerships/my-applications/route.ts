@@ -46,7 +46,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, project_name, owner_name, owner_email, domain, redirect_link,
+    const { id, project_name, owner_name, owner_email, whatsapp, domain, redirect_link,
+            description, audience_size, collaboration_proposal,
             benefits, countries, sda_amount, has_team_in_5_countries, has_sda_2000_plus } = body;
 
     if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
@@ -67,7 +68,8 @@ export async function PATCH(request: NextRequest) {
     const { data, error } = await (supabase as any)
       .from('partnership_applications')
       .update({
-        project_name, owner_name, owner_email, domain, redirect_link,
+        project_name, owner_name, owner_email, whatsapp, domain, redirect_link,
+        description, audience_size, collaboration_proposal,
         benefits, countries, sda_amount, has_team_in_5_countries, has_sda_2000_plus,
         status: 'pending', // Reset to pending after correction
         correction_note: null,

@@ -920,17 +920,17 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                         <div className="space-y-3">
                           <div>
                             <label className="text-[10px] text-slate-500 uppercase tracking-wide">Sidra (SDA)</label>
-                            <input type="number" value={p.price_sidra} onChange={(e) => handlePricingUpdate(p.id, 'price_sidra', Number(e.target.value))}
+                            <input type="number" step="0.01" min="0" value={p.price_sidra} onChange={(e) => handlePricingUpdate(p.id, 'price_sidra', parseFloat(e.target.value) || 0)}
                               className="w-full mt-1 bg-white/[0.06] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500/50" />
                           </div>
                           <div>
                             <label className="text-[10px] text-slate-500 uppercase tracking-wide">SPTC</label>
-                            <input type="number" value={p.price_sptc} onChange={(e) => handlePricingUpdate(p.id, 'price_sptc', Number(e.target.value))}
+                            <input type="number" step="0.01" min="0" value={p.price_sptc} onChange={(e) => handlePricingUpdate(p.id, 'price_sptc', parseFloat(e.target.value) || 0)}
                               className="w-full mt-1 bg-white/[0.06] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500/50" />
                           </div>
                           <div>
                             <label className="text-[10px] text-slate-500 uppercase tracking-wide">USD (Visa)</label>
-                            <input type="number" value={p.price_usd} onChange={(e) => handlePricingUpdate(p.id, 'price_usd', Number(e.target.value))}
+                            <input type="number" step="0.01" min="0" value={p.price_usd} onChange={(e) => handlePricingUpdate(p.id, 'price_usd', parseFloat(e.target.value) || 0)}
                               className="w-full mt-1 bg-white/[0.06] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500/50" />
                           </div>
                         </div>

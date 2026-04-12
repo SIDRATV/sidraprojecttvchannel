@@ -325,11 +325,11 @@ export default function PartenariatPage() {
             <Sparkles size={14} /> Réseau de Partenaires
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            <span className="bg-gradient-to-r from-white via-brand-100 to-white bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-gray-900 via-brand-600 to-gray-900 dark:from-white dark:via-brand-100 dark:to-white bg-clip-text text-transparent">
               Nos Partenariats
             </span>
           </h1>
-          <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto">
+          <p className="text-gray-500 dark:text-slate-400 text-base md:text-lg max-w-2xl mx-auto">
             Découvrez nos partenaires stratégiques et rejoignez l&#39;écosystème Sidra
           </p>
         </motion.div>
@@ -354,7 +354,7 @@ export default function PartenariatPage() {
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all border backdrop-blur-xl ${
                   activeView === tab.id
                     ? 'bg-brand-500/20 text-brand-400 border-brand-500/40 shadow-lg shadow-brand-500/10'
-                    : 'bg-white/[0.04] text-slate-400 border-white/[0.08] hover:bg-white/[0.08] hover:text-white'
+                    : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-slate-400 border-gray-200 dark:border-white/[0.08] hover:bg-gray-200 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <Icon size={16} />
@@ -396,7 +396,7 @@ export default function PartenariatPage() {
                   placeholder="Rechercher un partenaire..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+                  className="w-full bg-gray-50 dark:bg-white/[0.04] backdrop-blur-xl border border-gray-200 dark:border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 transition-colors"
                 />
               </div>
             </div>
@@ -409,7 +409,7 @@ export default function PartenariatPage() {
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                     !selectedCategory
                       ? 'bg-brand-500/20 text-brand-400 border-brand-500/40'
-                      : 'bg-white/[0.04] text-slate-500 border-white/[0.08] hover:text-white'
+                      : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-slate-500 border-gray-200 dark:border-white/[0.08] hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   Tous
@@ -421,7 +421,7 @@ export default function PartenariatPage() {
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                       selectedCategory === cat
                         ? 'bg-brand-500/20 text-brand-400 border-brand-500/40'
-                        : 'bg-white/[0.04] text-slate-500 border-white/[0.08] hover:text-white'
+                        : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-slate-500 border-gray-200 dark:border-white/[0.08] hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     {cat}
@@ -453,15 +453,15 @@ export default function PartenariatPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="bg-white/[0.03] backdrop-blur-xl rounded-xl p-4 border border-white/[0.08]"
+                      className="bg-white shadow-sm dark:shadow-none dark:bg-white/[0.03] backdrop-blur-xl rounded-xl p-4 border border-gray-200 dark:border-white/[0.08]"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider">{stat.label}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-slate-500 uppercase tracking-wider">{stat.label}</span>
                         <div className={`w-7 h-7 bg-gradient-to-br ${stat.gradient} rounded-lg flex items-center justify-center`}>
                           <Icon size={13} className="text-white" />
                         </div>
                       </div>
-                      <p className="text-xl font-bold text-white">{stat.value}</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                     </motion.div>
                   );
                 })}
@@ -474,7 +474,7 @@ export default function PartenariatPage() {
             {/* Featured Partners */}
             {featuredPartners.length > 0 && (
               <div>
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Star size={18} className="text-gold-400" />
                   Partenaires en Vedette
                 </h2>
@@ -490,12 +490,12 @@ export default function PartenariatPage() {
                       className="group bg-gradient-to-br from-gold-500/[0.08] to-transparent backdrop-blur-xl rounded-2xl border border-gold-500/20 p-6 cursor-pointer hover:border-gold-500/40 hover:shadow-lg hover:shadow-gold-500/10 transition-all"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 bg-white/[0.06] rounded-xl flex items-center justify-center text-3xl flex-shrink-0 group-hover:scale-110 transition-transform">
+                        <div className="w-14 h-14 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-3xl flex-shrink-0 group-hover:scale-110 transition-transform">
                           {partner.logo_emoji || '🏢'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-bold text-white truncate">{partner.name}</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">{partner.name}</h3>
                             <span className="px-2 py-0.5 bg-gold-500/20 border border-gold-500/30 rounded-md text-[10px] font-bold text-gold-400 flex-shrink-0">
                               ★ VEDETTE
                             </span>
@@ -526,7 +526,7 @@ export default function PartenariatPage() {
             {/* Regular Partners */}
             {regularPartners.length > 0 && (
               <div>
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Building2 size={18} className="text-brand-400" />
                   Tous les Partenaires
                 </h2>
@@ -539,19 +539,19 @@ export default function PartenariatPage() {
                       transition={{ delay: i * 0.05 }}
                       whileHover={{ y: -3 }}
                       onClick={() => setSelectedPartner(partner)}
-                      className="group bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/[0.08] p-5 cursor-pointer hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-500/5 transition-all"
+                      className="group bg-white shadow-sm dark:shadow-none dark:bg-white/[0.03] backdrop-blur-xl rounded-xl border border-gray-200 dark:border-white/[0.08] p-5 cursor-pointer hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-500/5 transition-all"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-11 h-11 bg-white/[0.06] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
+                        <div className="w-11 h-11 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
                           {partner.logo_emoji || '🏢'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-white truncate">{partner.name}</h3>
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{partner.name}</h3>
                           <p className="text-xs text-slate-500 mt-0.5">{partner.category}</p>
                         </div>
                       </div>
                       <p className="text-xs text-slate-400 line-clamp-2 mt-3">{partner.description}</p>
-                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/[0.06] text-[11px] text-slate-500">
+                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-white/[0.06] text-[11px] text-slate-500">
                         <span className="flex items-center gap-1"><Star size={11} className="text-gold-400" /> {partner.rating?.toFixed(1)}</span>
                         <span className="flex items-center gap-1"><Users size={11} /> {(partner.followers_count || 0).toLocaleString('fr-FR')}</span>
                         {partner.website_url && (
@@ -567,11 +567,11 @@ export default function PartenariatPage() {
             {/* Empty State */}
             {!loading && filteredPartners.length === 0 && (
               <div className="text-center py-20">
-                <div className="w-20 h-20 bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/[0.08]">
-                  <Building2 size={32} className="text-slate-600" />
+                <div className="w-20 h-20 bg-gray-100 dark:bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-gray-200 dark:border-white/[0.08]">
+                  <Building2 size={32} className="text-gray-400 dark:text-slate-600" />
                 </div>
-                <p className="text-slate-400 font-medium text-lg">Aucun partenaire trouvé</p>
-                <p className="text-slate-600 text-sm mt-1">Revenez bientôt ou modifiez vos filtres</p>
+                <p className="text-gray-600 dark:text-slate-400 font-medium text-lg">Aucun partenaire trouvé</p>
+                <p className="text-gray-400 dark:text-slate-600 text-sm mt-1">Revenez bientôt ou modifiez vos filtres</p>
               </div>
             )}
           </motion.div>
@@ -587,41 +587,41 @@ export default function PartenariatPage() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                     appStep >= step
                       ? 'bg-gradient-to-br from-brand-500 to-emerald-400 text-white shadow-lg shadow-brand-500/25'
-                      : 'bg-white/[0.06] text-slate-600 border border-white/[0.1]'
+                      : 'bg-gray-100 dark:bg-white/[0.06] text-gray-400 dark:text-slate-600 border border-gray-200 dark:border-white/[0.1]'
                   }`}>
                     {appStep > step ? <Check size={14} /> : step}
                   </div>
-                  {step < 4 && <div className={`w-10 h-0.5 rounded-full transition-all ${appStep > step ? 'bg-brand-500' : 'bg-white/[0.08]'}`} />}
+                  {step < 4 && <div className={`w-10 h-0.5 rounded-full transition-all ${appStep > step ? 'bg-brand-500' : 'bg-gray-200 dark:bg-white/[0.08]'}`} />}
                 </div>
               ))}
             </div>
 
-            <div className="bg-white/[0.03] backdrop-blur-2xl rounded-2xl border border-white/[0.08] p-6 md:p-8">
+            <div className="bg-white shadow-sm dark:shadow-none dark:bg-white/[0.03] backdrop-blur-2xl rounded-2xl border border-gray-200 dark:border-white/[0.08] p-6 md:p-8">
               {/* Step 1: Basic Info */}
               {appStep === 1 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1">Informations du Projet</h3>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Informations du Projet</h3>
                     <p className="text-sm text-slate-400">Décrivez votre projet ou entreprise</p>
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom du projet *</label>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Nom du projet *</label>
                     <input type="text" value={appForm.project_name}
                       onChange={(e) => setAppForm({ ...appForm, project_name: e.target.value })}
                       placeholder="Ex: Mon Entreprise Tech"
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                      className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                   </div>
 
                   {/* Logo URL */}
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5 block">
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 flex items-center gap-1.5 block">
                       <ImageIcon size={12} /> Logo de votre projet (URL)
                     </label>
                     <input type="url" value={appForm.logo_url}
                       onChange={(e) => setAppForm({ ...appForm, logo_url: e.target.value })}
                       placeholder="https://exemple.com/logo.png"
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                      className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     {appForm.logo_url && (
                       <div className="mt-2 flex items-center gap-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -633,23 +633,23 @@ export default function PartenariatPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom du propriétaire *</label>
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Nom du propriétaire *</label>
                       <input type="text" value={appForm.owner_name}
                         onChange={(e) => setAppForm({ ...appForm, owner_name: e.target.value })}
                         placeholder="Votre nom"
-                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Email *</label>
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Email *</label>
                       <input type="email" value={appForm.owner_email}
                         onChange={(e) => setAppForm({ ...appForm, owner_email: e.target.value })}
                         placeholder="email@exemple.com"
-                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-2 block">Type de partenariat</label>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-2 block">Type de partenariat</label>
                     <div className="grid grid-cols-2 gap-3">
                       {([
                         { id: 'project' as const, label: 'Projet / Collaboration', emoji: '🤝', desc: 'Développement conjoint, intégration technique' },
@@ -661,11 +661,11 @@ export default function PartenariatPage() {
                           className={`text-left p-4 rounded-xl border transition-all ${
                             appForm.partnership_type === type.id
                               ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/5'
-                              : 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15]'
+                              : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/[0.08] hover:border-gray-300 dark:hover:border-white/[0.15]'
                           }`}
                         >
                           <span className="text-2xl mb-2 block">{type.emoji}</span>
-                          <p className="text-sm font-semibold text-white">{type.label}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{type.label}</p>
                           <p className="text-[11px] text-slate-500 mt-0.5">{type.desc}</p>
                         </button>
                       ))}
@@ -687,37 +687,37 @@ export default function PartenariatPage() {
               {appStep === 2 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1">Détails Complémentaires</h3>
-                    <p className="text-sm text-slate-400">Informations techniques et géographiques</p>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Détails Complémentaires</h3>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">Informations techniques et géographiques</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Domaine / Site web</label>
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Domaine / Site web</label>
                       <input type="text" value={appForm.domain}
                         onChange={(e) => setAppForm({ ...appForm, domain: e.target.value })}
                         placeholder="exemple.com"
-                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Lien de redirection</label>
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Lien de redirection</label>
                       <input type="text" value={appForm.redirect_link}
                         onChange={(e) => setAppForm({ ...appForm, redirect_link: e.target.value })}
                         placeholder="https://..."
-                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Montant SDA disponible</label>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Montant SDA disponible</label>
                     <input type="number" value={appForm.sda_amount || ''}
                       onChange={(e) => setAppForm({ ...appForm, sda_amount: Number(e.target.value) })}
                       placeholder="0"
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                      className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-2 block">Pays d&#39;opération</label>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-2 block">Pays d&#39;opération</label>
                     <div className="flex flex-wrap gap-2">
                       {COUNTRIES_LIST.map((country) => (
                         <button
@@ -731,7 +731,7 @@ export default function PartenariatPage() {
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                             appForm.countries.includes(country)
                               ? 'bg-brand-500/20 text-brand-400 border-brand-500/40'
-                              : 'bg-white/[0.04] text-slate-500 border-white/[0.08] hover:text-white'
+                              : 'bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-slate-500 border-gray-200 dark:border-white/[0.08] hover:text-gray-900 dark:hover:text-white'
                           }`}
                         >
                           {country}
@@ -742,35 +742,35 @@ export default function PartenariatPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                      appForm.has_team_in_5_countries ? 'bg-brand-500/10 border-brand-500/40' : 'bg-white/[0.03] border-white/[0.08]'
+                      appForm.has_team_in_5_countries ? 'bg-brand-500/10 border-brand-500/40' : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/[0.08]'
                     }`}>
                       <input type="checkbox" checked={appForm.has_team_in_5_countries}
                         onChange={(e) => setAppForm({ ...appForm, has_team_in_5_countries: e.target.checked })}
                         className="sr-only" />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                        appForm.has_team_in_5_countries ? 'bg-brand-500 border-brand-500' : 'border-slate-600'
+                        appForm.has_team_in_5_countries ? 'bg-brand-500 border-brand-500' : 'border-gray-300 dark:border-slate-600'
                       }`}>
                         {appForm.has_team_in_5_countries && <Check size={12} className="text-white" />}
                       </div>
                       <span className="text-xs text-slate-300">Équipe dans 5+ pays</span>
                     </label>
                     <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                      appForm.has_sda_2000_plus ? 'bg-brand-500/10 border-brand-500/40' : 'bg-white/[0.03] border-white/[0.08]'
+                      appForm.has_sda_2000_plus ? 'bg-brand-500/10 border-brand-500/40' : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/[0.08]'
                     }`}>
                       <input type="checkbox" checked={appForm.has_sda_2000_plus}
                         onChange={(e) => setAppForm({ ...appForm, has_sda_2000_plus: e.target.checked })}
                         className="sr-only" />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                        appForm.has_sda_2000_plus ? 'bg-brand-500 border-brand-500' : 'border-slate-600'
+                        appForm.has_sda_2000_plus ? 'bg-brand-500 border-brand-500' : 'border-gray-300 dark:border-slate-600'
                       }`}>
                         {appForm.has_sda_2000_plus && <Check size={12} className="text-white" />}
                       </div>
-                      <span className="text-xs text-slate-300">2000+ SDA</span>
+                      <span className="text-xs text-gray-600 dark:text-slate-300">2000+ SDA</span>
                     </label>
                   </div>
 
                   <div className="flex justify-between pt-2">
-                    <button onClick={() => setAppStep(1)} className="px-5 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
+                    <button onClick={() => setAppStep(1)} className="px-5 py-2.5 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                       ← Retour
                     </button>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -786,12 +786,12 @@ export default function PartenariatPage() {
               {appStep === 3 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1">Plan & Paiement</h3>
-                    <p className="text-sm text-slate-400">Choisissez la durée et le mode de paiement</p>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Plan & Paiement</h3>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">Choisissez la durée et le mode de paiement</p>
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-2 block">Durée du partenariat</label>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-2 block">Durée du partenariat</label>
                     <div className="grid grid-cols-3 gap-3">
                       {([
                         { id: 'weekly' as const, label: 'Hebdomadaire', desc: 'Par semaine', badge: '' },
@@ -804,7 +804,7 @@ export default function PartenariatPage() {
                           className={`relative text-left p-4 rounded-xl border transition-all ${
                             appForm.duration_type === dur.id
                               ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/5'
-                              : 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15]'
+                              : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/[0.08] hover:border-gray-300 dark:hover:border-white/[0.15]'
                           }`}
                         >
                           {dur.badge && (
@@ -812,7 +812,7 @@ export default function PartenariatPage() {
                               {dur.badge}
                             </span>
                           )}
-                          <p className="text-sm font-semibold text-white">{dur.label}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{dur.label}</p>
                           <p className="text-[11px] text-slate-500 mt-0.5">{dur.desc}</p>
                         </button>
                       ))}
@@ -820,7 +820,7 @@ export default function PartenariatPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-2 block">Mode de paiement</label>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-2 block">Mode de paiement</label>
                     <div className="grid grid-cols-3 gap-3">
                       {([
                         { id: 'sidra' as const, label: 'Sidra', emoji: '🪙', desc: 'Sidra Coin', available: true },
@@ -833,17 +833,17 @@ export default function PartenariatPage() {
                           onClick={() => curr.available && setAppForm({ ...appForm, payment_currency: curr.id })}
                           className={`relative text-left p-4 rounded-xl border transition-all ${
                             !curr.available
-                              ? 'bg-white/[0.02] border-white/[0.05] opacity-40 cursor-not-allowed'
+                              ? 'bg-gray-50 dark:bg-white/[0.02] border-gray-200 dark:border-white/[0.05] opacity-40 cursor-not-allowed'
                               : appForm.payment_currency === curr.id
                               ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/5'
-                              : 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15]'
+                              : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/[0.08] hover:border-gray-300 dark:hover:border-white/[0.15]'
                           }`}
                         >
                           {!curr.available && (
-                            <span className="absolute -top-2 right-2 px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-[8px] font-bold text-slate-400">BIENTÔT</span>
+                            <span className="absolute -top-2 right-2 px-1.5 py-0.5 bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-[8px] font-bold text-slate-400">BIENTÔT</span>
                           )}
                           <span className="text-2xl mb-1 block">{curr.emoji}</span>
-                          <p className="text-sm font-semibold text-white">{curr.label}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{curr.label}</p>
                           <p className="text-[11px] text-slate-500 mt-0.5">{curr.desc}</p>
                         </button>
                       ))}
@@ -865,8 +865,8 @@ export default function PartenariatPage() {
                       <div className="bg-gradient-to-br from-brand-500/10 to-emerald-500/10 rounded-xl border border-brand-500/30 p-5">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-xs text-slate-400 mb-1">Montant à payer</p>
-                            <p className="text-3xl font-bold text-white">
+                            <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Montant à payer</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">
                               {amt.toLocaleString('fr-FR')} <span className="text-lg text-brand-400">{cl}</span>
                             </p>
                             <p className="text-xs text-slate-500 mt-1">par {dl}</p>
@@ -875,7 +875,7 @@ export default function PartenariatPage() {
                             <DollarSign size={28} className="text-brand-400" />
                           </div>
                         </div>
-                        <div className="mt-3 pt-3 border-t border-white/[0.08]">
+                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/[0.08]">
                           <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
                             <Info size={12} />
                             {appForm.payment_currency === 'visa'
@@ -892,7 +892,7 @@ export default function PartenariatPage() {
                   })()}
 
                   <div className="flex justify-between pt-2">
-                    <button onClick={() => setAppStep(2)} className="px-5 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
+                    <button onClick={() => setAppStep(2)} className="px-5 py-2.5 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                       ← Retour
                     </button>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -908,7 +908,7 @@ export default function PartenariatPage() {
               {appStep === 4 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1">Avantages & Confirmation</h3>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Avantages & Confirmation</h3>
                     <p className="text-sm text-slate-400">Sélectionnez vos avantages et confirmez votre candidature</p>
                   </div>
 
@@ -929,7 +929,7 @@ export default function PartenariatPage() {
                         }`}
                       >
                         <div className={`w-4 h-4 rounded-sm border flex-shrink-0 flex items-center justify-center transition-all ${
-                          appForm.benefits.includes(benefit) ? 'bg-brand-500 border-brand-500' : 'border-slate-600'
+                          appForm.benefits.includes(benefit) ? 'bg-brand-500 border-brand-500' : 'border-gray-300 dark:border-slate-600'
                         }`}>
                           {appForm.benefits.includes(benefit) && <Check size={10} className="text-white" />}
                         </div>
@@ -939,9 +939,9 @@ export default function PartenariatPage() {
                   </div>
 
                   {/* Summary */}
-                  <div className="bg-white/[0.03] rounded-xl border border-white/[0.08] p-4 space-y-2">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Récapitulatif</p>
-                    <div className="text-sm text-slate-300 space-y-1">
+                  <div className="bg-gray-50 dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.08] p-4 space-y-2">
+                    <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Récapitulatif</p>
+                    <div className="text-sm text-gray-600 dark:text-slate-300 space-y-1">
                       <p><span className="text-slate-500">Projet:</span> {appForm.project_name || '—'}</p>
                       <p><span className="text-slate-500">Contact:</span> {appForm.owner_name} ({appForm.owner_email})</p>
                       <p><span className="text-slate-500">Type:</span> {appForm.partnership_type === 'advertising' ? '📢 Publicité' : '🤝 Projet'}</p>
@@ -964,7 +964,7 @@ export default function PartenariatPage() {
                   </div>
 
                   <div className="flex justify-between pt-2">
-                    <button onClick={() => setAppStep(3)} className="px-5 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
+                    <button onClick={() => setAppStep(3)} className="px-5 py-2.5 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                       ← Retour
                     </button>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -986,18 +986,18 @@ export default function PartenariatPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto space-y-4">
             {!session?.access_token ? (
               <div className="text-center py-16">
-                <div className="w-16 h-16 bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/[0.08]">
-                  <AlertCircle size={28} className="text-slate-600" />
+                <div className="w-16 h-16 bg-gray-100 dark:bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-gray-200 dark:border-white/[0.08]">
+                  <AlertCircle size={28} className="text-gray-400 dark:text-slate-600" />
                 </div>
-                <p className="text-slate-400 font-medium">Connectez-vous pour voir vos candidatures</p>
+                <p className="text-gray-600 dark:text-slate-400 font-medium">Connectez-vous pour voir vos candidatures</p>
               </div>
             ) : myApps.length === 0 ? (
               <div className="text-center py-16">
-                <div className="w-16 h-16 bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/[0.08]">
-                  <FileText size={28} className="text-slate-600" />
+                <div className="w-16 h-16 bg-gray-100 dark:bg-white/[0.04] rounded-2xl mx-auto mb-4 flex items-center justify-center border border-gray-200 dark:border-white/[0.08]">
+                  <FileText size={28} className="text-gray-400 dark:text-slate-600" />
                 </div>
-                <p className="text-slate-400 font-medium">Aucune candidature</p>
-                <p className="text-slate-600 text-sm mt-1">Soumettez votre première candidature de partenariat</p>
+                <p className="text-gray-600 dark:text-slate-400 font-medium">Aucune candidature</p>
+                <p className="text-gray-400 dark:text-slate-600 text-sm mt-1">Soumettez votre première candidature de partenariat</p>
                 <button onClick={() => setActiveView('apply')} className="mt-4 px-5 py-2.5 bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-xl text-sm font-medium hover:bg-brand-500/30 transition-colors">
                   Postuler maintenant
                 </button>
@@ -1020,12 +1020,12 @@ export default function PartenariatPage() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06 }}
-                    className="bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/[0.08] p-5 hover:border-white/[0.15] transition-colors"
+                    className="bg-white shadow-sm dark:shadow-none dark:bg-white/[0.03] backdrop-blur-xl rounded-xl border border-gray-200 dark:border-white/[0.08] p-5 hover:border-gray-300 dark:hover:border-white/[0.15] transition-colors"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-base font-semibold text-white">{app.project_name}</h3>
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-white">{app.project_name}</h3>
                           <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${status.color}`}>
                             <StatusIcon size={10} /> {status.label}
                           </span>
@@ -1191,39 +1191,39 @@ export default function PartenariatPage() {
                 )}
                 <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom du projet *</label>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Nom du projet *</label>
                     <input type="text" value={editForm.project_name}
                       onChange={(e) => setEditForm({ ...editForm, project_name: e.target.value })}
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                      className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom du propriétaire *</label>
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Nom du propriétaire *</label>
                       <input type="text" value={editForm.owner_name}
                         onChange={(e) => setEditForm({ ...editForm, owner_name: e.target.value })}
-                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Email *</label>
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Email *</label>
                       <input type="email" value={editForm.owner_email}
                         onChange={(e) => setEditForm({ ...editForm, owner_email: e.target.value })}
-                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Domaine / Site web</label>
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Domaine / Site web</label>
                       <input type="text" value={editForm.domain}
                         onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
                         placeholder="exemple.com"
-                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Lien de redirection</label>
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5 block">Lien de redirection</label>
                       <input type="text" value={editForm.redirect_link}
                         onChange={(e) => setEditForm({ ...editForm, redirect_link: e.target.value })}
                         placeholder="https://..."
-                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                     </div>
                   </div>
                 </div>

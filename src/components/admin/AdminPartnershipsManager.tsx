@@ -1005,7 +1005,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                         <span>📅 {new Date(banner.starts_at).toLocaleDateString('fr-FR')} → {new Date(banner.ends_at).toLocaleDateString('fr-FR')}</span>
                         <span>👁 {banner.impressions} impressions</span>
                         <span>🖱 {banner.clicks} clics</span>
-                        <span>⭐ Priorité: {banner.priority}</span>
+                        <span>⭐ Priorité: {banner.priority ?? 0}</span>
                         <span>⏱ {banner.display_duration}s</span>
                       </div>
                     </div>
@@ -1035,7 +1035,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                           banner_type: banner.banner_type,
                           starts_at: banner.starts_at.split('T')[0],
                           ends_at: banner.ends_at.split('T')[0],
-                          priority: banner.priority,
+                          priority: banner.priority ?? 0,
                           partner_id: banner.partner_id || '',
                         });
                         setShowBannerModal(true);
@@ -1189,7 +1189,8 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                   </div>
                   <div>
                     <label className="text-xs font-medium text-slate-400 mb-1.5 block">Priorité</label>
-                    <input type="number" value={bannerForm.priority} onChange={(e) => setBannerForm({ ...bannerForm, priority: Number(e.target.value) })}
+                    <input type="number" min={0} step={1} value={bannerForm.priority ?? 0}
+                      onChange={(e) => setBannerForm(prev => ({ ...prev, priority: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0) }))}
                       className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
                   </div>
                   <div>

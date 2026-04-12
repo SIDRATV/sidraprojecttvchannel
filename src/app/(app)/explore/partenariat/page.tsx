@@ -34,8 +34,11 @@ import {
   RefreshCcw,
   Info,
   DollarSign,
+  Edit3,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { PartnerLogosStrip } from '@/components/app/PartnerLogosStrip';
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -85,6 +88,7 @@ interface Application {
   payment_currency?: string;
   duration_type?: string;
   correction_note?: string;
+  logo_url?: string;
 }
 
 /* ── Helpers ───────────────────────────────────────────── */
@@ -128,6 +132,9 @@ export default function PartenariatPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'browse' | 'apply' | 'my-apps'>('browse');
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [editingApp, setEditingApp] = useState<Application | null>(null);
+  const [editForm, setEditForm] = useState({ project_name: '', owner_name: '', owner_email: '', domain: '', redirect_link: '', benefits: [] as string[], countries: [] as string[], sda_amount: 0, has_team_in_5_countries: false, has_sda_2000_plus: false });
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Application form state
   const [appStep, setAppStep] = useState(1);
@@ -148,6 +155,7 @@ export default function PartenariatPage() {
     has_sda_2000_plus: false,
     duration_type: 'monthly' as 'weekly' | 'monthly' | 'yearly',
     payment_currency: 'sidra' as 'sidra' | 'sptc' | 'visa',
+    logo_url: '',
   });
 
   /* ── Data Fetching ─── */
@@ -211,6 +219,48 @@ export default function PartenariatPage() {
   const featuredPartners = filteredPartners.filter((p) => p.status === 'featured');
   const regularPartners = filteredPartners.filter((p) => p.status !== 'featured');
 
+  /* ── Submit Correction ─── */
+
+  const openEdit = (app: Application) => {
+    setEditingApp(app);
+    setEditForm({
+      project_name: app.project_name,
+      owner_name: app.owner_name,
+      owner_email: app.owner_email,
+      domain: app.domain || '',
+      redirect_link: app.redirect_link || '',
+      benefits: app.benefits || [],
+      countries: app.countries || [],
+      sda_amount: app.sda_amount || 0,
+      has_team_in_5_countries: app.has_team_in_5_countries || false,
+      has_sda_2000_plus: app.has_sda_2000_plus || false,
+    });
+  };
+
+  const handleSubmitCorrection = async () => {
+    if (!session?.access_token || !editingApp) return;
+    setEditSubmitting(true);
+    try {
+      const res = await fetch('/api/partnerships/my-applications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ id: editingApp.id, ...editForm }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSubmitMessage({ type: 'success', text: 'Candidature mise à jour et renvoyée pour examen !' });
+        setEditingApp(null);
+        await fetchMyApps();
+      } else {
+        setSubmitMessage({ type: 'error', text: data.error || 'Erreur lors de la mise à jour' });
+      }
+    } catch {
+      setSubmitMessage({ type: 'error', text: 'Erreur réseau' });
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   /* ── Submit Application ─── */
 
   const handleSubmitApplication = async () => {
@@ -239,7 +289,7 @@ export default function PartenariatPage() {
           project_name: '', owner_name: '', owner_email: '', partnership_type: 'project',
           domain: '', redirect_link: '', benefits: [], countries: [],
           sda_amount: 0, has_team_in_5_countries: false, has_sda_2000_plus: false,
-          duration_type: 'monthly', payment_currency: 'sidra',
+          duration_type: 'monthly', payment_currency: 'sidra', logo_url: '',
         });
         setAppStep(1);
         setTimeout(() => { setActiveView('my-apps'); setSubmitMessage(null); }, 2000);
@@ -256,7 +306,7 @@ export default function PartenariatPage() {
   /* ── Render ─── */
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative overflow-hidden">
       {/* Animated Background Orbs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-20 -left-32 w-96 h-96 bg-brand-500/8 rounded-full blur-3xl animate-float" />
@@ -418,6 +468,9 @@ export default function PartenariatPage() {
               </div>
             )}
 
+            {/* Partner Logos Strip */}
+            <PartnerLogosStrip />
+
             {/* Featured Partners */}
             {featuredPartners.length > 0 && (
               <div>
@@ -558,6 +611,24 @@ export default function PartenariatPage() {
                       onChange={(e) => setAppForm({ ...appForm, project_name: e.target.value })}
                       placeholder="Ex: Mon Entreprise Tech"
                       className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                  </div>
+
+                  {/* Logo URL */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5 block">
+                      <ImageIcon size={12} /> Logo de votre projet (URL)
+                    </label>
+                    <input type="url" value={appForm.logo_url}
+                      onChange={(e) => setAppForm({ ...appForm, logo_url: e.target.value })}
+                      placeholder="https://exemple.com/logo.png"
+                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    {appForm.logo_url && (
+                      <div className="mt-2 flex items-center gap-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={appForm.logo_url} alt="Logo preview" className="w-8 h-8 rounded-lg object-cover border border-white/10" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <span className="text-[11px] text-slate-500">Aperçu du logo</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -752,19 +823,25 @@ export default function PartenariatPage() {
                     <label className="text-xs font-medium text-slate-400 mb-2 block">Mode de paiement</label>
                     <div className="grid grid-cols-3 gap-3">
                       {([
-                        { id: 'sidra' as const, label: 'Sidra', emoji: '🪙', desc: 'Sidra Coin' },
-                        { id: 'sptc' as const, label: 'SPTC', emoji: '💎', desc: 'Pièce native' },
-                        { id: 'visa' as const, label: 'Visa', emoji: '💳', desc: 'Carte bancaire' },
+                        { id: 'sidra' as const, label: 'Sidra', emoji: '🪙', desc: 'Sidra Coin', available: true },
+                        { id: 'sptc' as const, label: 'SPTC', emoji: '💎', desc: 'Bientôt disponible', available: false },
+                        { id: 'visa' as const, label: 'Visa', emoji: '💳', desc: 'Bientôt disponible', available: false },
                       ]).map((curr) => (
                         <button
                           key={curr.id}
-                          onClick={() => setAppForm({ ...appForm, payment_currency: curr.id })}
-                          className={`text-left p-4 rounded-xl border transition-all ${
-                            appForm.payment_currency === curr.id
+                          disabled={!curr.available}
+                          onClick={() => curr.available && setAppForm({ ...appForm, payment_currency: curr.id })}
+                          className={`relative text-left p-4 rounded-xl border transition-all ${
+                            !curr.available
+                              ? 'bg-white/[0.02] border-white/[0.05] opacity-40 cursor-not-allowed'
+                              : appForm.payment_currency === curr.id
                               ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/5'
                               : 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15]'
                           }`}
                         >
+                          {!curr.available && (
+                            <span className="absolute -top-2 right-2 px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-[8px] font-bold text-slate-400">BIENTÔT</span>
+                          )}
                           <span className="text-2xl mb-1 block">{curr.emoji}</span>
                           <p className="text-sm font-semibold text-white">{curr.label}</p>
                           <p className="text-[11px] text-slate-500 mt-0.5">{curr.desc}</p>
@@ -967,10 +1044,20 @@ export default function PartenariatPage() {
                         <span className="flex items-center gap-1 text-emerald-400"><RefreshCcw size={11} /> Remboursé</span>
                       )}
                     </div>
-                    {app.status === 'correction_needed' && app.correction_note && (
-                      <div className="mt-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                        <p className="text-xs font-semibold text-orange-400 mb-1 flex items-center gap-1"><Info size={12} /> Note de correction</p>
-                        <p className="text-xs text-orange-300/80">{app.correction_note}</p>
+                    {app.status === 'correction_needed' && (
+                      <div className="mt-3 space-y-2">
+                        {app.correction_note && (
+                          <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                            <p className="text-xs font-semibold text-orange-400 mb-1 flex items-center gap-1"><Info size={12} /> Note de correction</p>
+                            <p className="text-xs text-orange-300/80">{app.correction_note}</p>
+                          </div>
+                        )}
+                        <motion.button
+                          whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                          onClick={() => { openEdit(app); }}
+                          className="flex items-center gap-2 w-full px-4 py-2.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 rounded-lg text-xs text-orange-300 font-medium transition-colors">
+                          <Edit3 size={13} /> Modifier et renvoyer ma candidature
+                        </motion.button>
                       </div>
                     )}
                     {app.status === 'pending' && (
@@ -1073,6 +1160,82 @@ export default function PartenariatPage() {
                       <ExternalLink size={16} /> Visiter le site web
                     </a>
                   )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+          {/* Edit Application Modal */}
+          {editingApp && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setEditingApp(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-lg bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-white/[0.1] shadow-2xl overflow-hidden"
+              >
+                <div className="flex items-center justify-between p-5 border-b border-white/[0.08]">
+                  <div>
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2"><Edit3 size={18} className="text-orange-400" /> Modifier la candidature</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Apportez les corrections demandées par l&apos;admin</p>
+                  </div>
+                  <button onClick={() => setEditingApp(null)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400"><X size={18} /></button>
+                </div>
+                {editingApp.correction_note && (
+                  <div className="mx-5 mt-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                    <p className="text-xs font-semibold text-orange-400 mb-1 flex items-center gap-1"><Info size={12} /> Note de l&apos;admin</p>
+                    <p className="text-xs text-orange-300/80">{editingApp.correction_note}</p>
+                  </div>
+                )}
+                <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom du projet *</label>
+                    <input type="text" value={editForm.project_name}
+                      onChange={(e) => setEditForm({ ...editForm, project_name: e.target.value })}
+                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom du propriétaire *</label>
+                      <input type="text" value={editForm.owner_name}
+                        onChange={(e) => setEditForm({ ...editForm, owner_name: e.target.value })}
+                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Email *</label>
+                      <input type="email" value={editForm.owner_email}
+                        onChange={(e) => setEditForm({ ...editForm, owner_email: e.target.value })}
+                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Domaine / Site web</label>
+                      <input type="text" value={editForm.domain}
+                        onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
+                        placeholder="exemple.com"
+                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Lien de redirection</label>
+                      <input type="text" value={editForm.redirect_link}
+                        onChange={(e) => setEditForm({ ...editForm, redirect_link: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 border-t border-white/[0.08] flex justify-end gap-3">
+                  <button onClick={() => setEditingApp(null)} className="px-5 py-2.5 bg-white/[0.05] border border-white/[0.1] rounded-xl text-sm text-slate-300 hover:bg-white/[0.1] transition-colors">Annuler</button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    disabled={editSubmitting || !editForm.project_name || !editForm.owner_name || !editForm.owner_email}
+                    onClick={handleSubmitCorrection}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-400 text-white rounded-xl text-sm font-semibold shadow-lg disabled:opacity-40 disabled:cursor-not-allowed">
+                    {editSubmitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                    Renvoyer la candidature
+                  </motion.button>
                 </div>
               </motion.div>
             </motion.div>

@@ -121,7 +121,7 @@ const APP_STATUS = [
 ];
 
 export function AdminPartnershipsManager({ token }: { token: string }) {
-  const [tab, setTab] = useState<'partners' | 'applications' | 'pricing' | 'banners'>('partners');
+  const [tab, setTab] = useState<'partners' | 'applications' | 'pricing' | 'banners' | 'logos'>('partners');
   const [partners, setPartners] = useState<Partner[]>([]);
   const [applications, setApplications] = useState<PartnerApplication[]>([]);
   const [pricing, setPricing] = useState<PricingItem[]>([]);
@@ -458,6 +458,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
           { key: 'applications' as const, label: `Candidatures (${applications.length})` },
           { key: 'pricing' as const, label: `Tarification (${pricing.length})` },
           { key: 'banners' as const, label: `Bannières (${banners.length})` },
+          { key: 'logos' as const, label: 'Logos Strip' },
         ]).map((t) => (
           <button
             key={t.key}
@@ -858,6 +859,19 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                     placeholder="https://..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                 </div>
                 <div>
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">URL du logo (affiché dans la bande défilante)</label>
+                  <input type="url" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
+                    placeholder="https://exemple.com/logo.png" className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                  {form.logo_url && (
+                    <div className="mt-2 flex items-center gap-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={form.logo_url} alt="Logo preview" className="w-8 h-8 rounded-lg object-contain border border-white/10 bg-white/5"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <span className="text-[11px] text-slate-500">Aperçu du logo</span>
+                    </div>
+                  )}
+                </div>
+                <div>
                   <label className="text-xs font-medium text-slate-400 mb-1.5 block">Avantages (séparés par virgule)</label>
                   <input type="text" value={form.benefits} onChange={(e) => setForm({ ...form, benefits: e.target.value })}
                     placeholder="Avantage 1, Avantage 2..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
@@ -1238,6 +1252,45 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* LOGOS STRIP TAB */}
+      {tab === 'logos' && (
+        <div className="space-y-5">
+          <div>
+            <p className="text-sm text-slate-400">Gérez les logos affichés dans la bande défilante des partenaires.</p>
+            <p className="text-xs text-slate-500 mt-1">Pour chaque partenaire, mettez à jour son URL de logo via le bouton &quot;Modifier&quot;.</p>
+          </div>
+          <div className="grid gap-3">
+            {partners.map((p) => (
+              <div key={p.id} className="flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.08] rounded-xl">
+                <div className="w-12 h-12 flex-shrink-0 bg-white/[0.06] rounded-xl flex items-center justify-center overflow-hidden border border-white/[0.08]">
+                  {p.logo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.logo_url} alt={p.name} className="w-full h-full object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  ) : (
+                    <span className="text-2xl">{p.logo_emoji || '🏢'}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{p.name}</p>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">{p.logo_url || 'Aucun logo URL'}</p>
+                </div>
+                <button
+                  onClick={() => { setEditingPartner(p); setForm({ name: p.name, description: p.description || '', category: p.category || 'Technologie', logo_emoji: p.logo_emoji || '🏢', logo_url: p.logo_url || '', website_url: p.website_url || '', status: p.status || 'active', benefits: (p.benefits || []).join(', ') }); setShowModal(true); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] rounded-lg text-xs text-slate-300 transition-colors"
+                >
+                  ✏️ Modifier le logo
+                </button>
+              </div>
+            ))}
+            {partners.length === 0 && (
+              <div className="text-center py-12"><p className="text-slate-400 font-medium">Aucun partenaire</p></div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

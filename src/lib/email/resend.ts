@@ -150,12 +150,12 @@ export async function getTemplate(slug: string): Promise<EmailTemplate | null> {
 // ─── Core send function ──────────────────────────────────
 export async function sendEmail(opts: SendEmailOptions): Promise<{ success: boolean; resendId?: string; error?: string }> {
   const settings = await getEmailSettings();
-  const resend = getResend();
 
   const from = `${settings.sender_name} <${settings.sender_email}>`;
   const replyTo = opts.replyTo || settings.reply_to_email || undefined;
 
   try {
+    const resend = getResend();
     const { data, error } = await resend.emails.send({
       from,
       to: [opts.to],
@@ -249,13 +249,38 @@ export async function sendPasswordResetEmail(
   }
 
   const appName = settings.sender_name || 'Sidra TV';
+  const name = userName || 'Utilisateur';
+  const vars = { 'user.name': name, 'user.email': email, 'app.name': appName, resetLink };
 
-  return sendTemplatedEmail('password_reset', email, {
-    'user.name': userName || 'Utilisateur',
-    'user.email': email,
-    'app.name': appName,
-    resetLink,
-  }, { toUserId: userId });
+  // Try DB template, fall back to hardcoded HTML (works even before SQL migration)
+  const template = await getTemplate('password_reset');
+
+  const subject = template
+    ? renderTemplate(template.subject, vars)
+    : `Réinitialisez votre mot de passe - ${appName}`;
+
+  const html = template
+    ? renderTemplate(template.html_body, vars)
+    : `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:40px 20px;">
+  <h1 style="color:#19C37D;font-size:28px;">${appName}</h1>
+  <div style="background:#f9fafb;border-radius:16px;padding:32px;border:1px solid #e5e7eb;">
+    <h2 style="color:#111827;">Réinitialisation de mot de passe</h2>
+    <p style="color:#6b7280;">Bonjour ${name},<br><br>Cliquez sur le bouton ci-dessous pour réinitialiser votre mot de passe :</p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${resetLink}" style="background:#19C37D;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:600;">Réinitialiser mon mot de passe</a>
+    </div>
+    <p style="color:#9ca3af;font-size:13px;">Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+  </div>
+  <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:24px;">© 2025 ${appName}. Tous droits réservés.</p>
+</div>`;
+
+  return sendEmail({
+    to: email,
+    subject,
+    html,
+    templateSlug: 'password_reset',
+    toUserId: userId,
+  });
 }
 
 export async function sendPasswordChangedEmail(

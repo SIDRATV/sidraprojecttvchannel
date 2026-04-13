@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // Send the email through Resend
+    // Send the email through Resend (non-blocking failure — always return success)
     const result = await sendPasswordResetEmail(
       cleanEmail,
       linkData.properties.action_link,
@@ -58,10 +58,7 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       console.error('[Password Reset] Email send error:', result.error);
-      return NextResponse.json(
-        { error: 'Erreur lors de l\'envoi de l\'email. Veuillez réessayer.' },
-        { status: 500 }
-      );
+      // Return success anyway — don't expose internal email failures
     }
 
     return NextResponse.json({ success: true });

@@ -89,7 +89,7 @@ export async function getEmailSettings(): Promise<EmailSettings> {
     return {
       id: '',
       sender_name: 'Sidra TV',
-      sender_email: 'noreply@sidratv.com',
+      sender_email: 'onboarding@resend.dev',
       reply_to_email: null,
       event_password_reset: true,
       event_password_changed: true,

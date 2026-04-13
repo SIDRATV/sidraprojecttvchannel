@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS email_settings (
 
 -- Insert default settings row
 INSERT INTO email_settings (sender_name, sender_email)
-VALUES ('Sidra TV', 'noreply@sidratv.com')
+VALUES ('Sidra TV', 'onboarding@resend.dev')
 ON CONFLICT DO NOTHING;
 
 -- 2. Email Templates

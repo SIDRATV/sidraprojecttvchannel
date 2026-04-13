@@ -63,7 +63,7 @@ async function handleBulkSend(
   const settings = await getEmailSettings();
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-  const { count } = await auth.supabase
+  const { count } = await (auth.supabase as any)
     .from('email_logs')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', oneHourAgo);

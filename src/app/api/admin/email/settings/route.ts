@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await (auth.supabase as any)
     .from('email_settings')
     .select('*')
     .limit(1)
@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest) {
   }
 
   // Get the settings row ID
-  const { data: current } = await auth.supabase
+  const { data: current } = await (auth.supabase as any)
     .from('email_settings')
     .select('id')
     .limit(1)
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Settings not found' }, { status: 404 });
   }
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await (auth.supabase as any)
     .from('email_settings')
     .update(updates)
     .eq('id', current.id)

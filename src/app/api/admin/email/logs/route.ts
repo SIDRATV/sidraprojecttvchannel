@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
   if (statsOnly) {
     // Return aggregate stats
     const [totalRes, sentRes, failedRes, todayRes] = await Promise.all([
-      auth.supabase.from('email_logs').select('id', { count: 'exact', head: true }),
-      auth.supabase.from('email_logs').select('id', { count: 'exact', head: true }).eq('status', 'sent'),
-      auth.supabase.from('email_logs').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
-      auth.supabase.from('email_logs').select('id', { count: 'exact', head: true })
+      (auth.supabase as any).from('email_logs').select('id', { count: 'exact', head: true }),
+      (auth.supabase as any).from('email_logs').select('id', { count: 'exact', head: true }).eq('status', 'sent'),
+      (auth.supabase as any).from('email_logs').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
+      (auth.supabase as any).from('email_logs').select('id', { count: 'exact', head: true })
         .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
     ]);
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  let query = auth.supabase
+  let query = (auth.supabase as any)
     .from('email_logs')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })

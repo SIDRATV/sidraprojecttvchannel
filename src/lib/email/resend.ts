@@ -78,7 +78,7 @@ export async function getEmailSettings(): Promise<EmailSettings> {
     return _settingsCache.data;
   }
   const supabase = createServerClient();
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('email_settings')
     .select('*')
     .limit(1)
@@ -136,7 +136,7 @@ function escapeRegex(str: string): string {
 // ─── Get template by slug ────────────────────────────────
 export async function getTemplate(slug: string): Promise<EmailTemplate | null> {
   const supabase = createServerClient();
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('email_templates')
     .select('*')
     .eq('slug', slug)
@@ -169,7 +169,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ success: bool
     const status = error ? 'failed' : 'sent';
 
     // Log the email
-    await supabase.from('email_logs').insert({
+    await (supabase as any).from('email_logs').insert({
       to_email: opts.to,
       to_user_id: opts.toUserId || null,
       from_email: settings.sender_email,
@@ -194,7 +194,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ success: bool
 
     // Log failure
     const supabase = createServerClient();
-    await supabase.from('email_logs').insert({
+    await (supabase as any).from('email_logs').insert({
       to_email: opts.to,
       to_user_id: opts.toUserId || null,
       from_email: settings.sender_email,

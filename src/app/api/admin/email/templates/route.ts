@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await (auth.supabase as any)
     .from('email_templates')
     .select('*')
     .order('is_system', { ascending: false })
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Slug must contain only lowercase letters, numbers, and underscores' }, { status: 400 });
   }
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await (auth.supabase as any)
     .from('email_templates')
     .insert({
       slug,
@@ -81,7 +81,7 @@ export async function PUT(request: NextRequest) {
   if (variables !== undefined) updates.variables = variables;
   if (is_active !== undefined) updates.is_active = is_active;
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await (auth.supabase as any)
     .from('email_templates')
     .update(updates)
     .eq('id', id)
@@ -108,7 +108,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   // Check it's not a system template
-  const { data: template } = await auth.supabase
+  const { data: template } = await (auth.supabase as any)
     .from('email_templates')
     .select('is_system')
     .eq('id', id)
@@ -118,7 +118,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Cannot delete system templates' }, { status: 403 });
   }
 
-  const { error } = await auth.supabase
+  const { error } = await (auth.supabase as any)
     .from('email_templates')
     .delete()
     .eq('id', id);

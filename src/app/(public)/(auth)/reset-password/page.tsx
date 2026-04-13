@@ -78,12 +78,12 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-400 to-brand-500 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-400/30 dark:bg-brand-400/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gold-500/20 dark:bg-gold-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-300/10 dark:bg-brand-400/5 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-400/10 dark:bg-brand-400/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gold-500/5 dark:bg-gold-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-300/5 dark:bg-brand-400/5 rounded-full blur-3xl" />
       </div>
 
       <motion.div
@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
               transition={{ duration: 0.4 }}
               className="relative w-24 h-24 mx-auto mb-6"
             >
-              <div className="absolute inset-0 bg-brand-400/20 dark:bg-brand-400/10 rounded-full blur-xl animate-pulse-glow" />
+              <div className="absolute inset-0 bg-brand-400/10 dark:bg-brand-400/10 rounded-full blur-xl animate-pulse-glow" />
               <Image
                 src="/sidra-logo.webp"
                 alt="Sidra Logo"
@@ -110,15 +110,15 @@ export default function ResetPasswordPage() {
                 priority
               />
             </motion.div>
-            <h1 className="text-3xl font-bold text-white dark:text-white mb-2">Nouveau mot de passe</h1>
-            <p className="text-white/70 dark:text-gray-400">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Nouveau mot de passe</h1>
+            <p className="text-gray-500 dark:text-gray-400">
               Choisissez votre nouveau mot de passe
             </p>
           </div>
 
           {checking ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 size={32} className="animate-spin text-white/60" />
+              <Loader2 size={32} className="animate-spin text-gray-400 dark:text-white/60" />
             </div>
           ) : success ? (
             <motion.div
@@ -129,13 +129,13 @@ export default function ResetPasswordPage() {
               <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle size={32} className="text-emerald-400" />
               </div>
-              <h2 className="text-xl font-semibold text-white">Mot de passe modifié !</h2>
-              <p className="text-white/70 dark:text-gray-400 text-sm">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Mot de passe modifié !</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
                 Votre mot de passe a été mis à jour avec succès. Vous allez être redirigé vers la page de connexion...
               </p>
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 mt-4 text-sm text-gold-300 dark:text-brand-400 hover:text-gold-200 dark:hover:text-brand-300 font-medium"
+                className="inline-flex items-center gap-2 mt-4 text-sm text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 font-medium"
               >
                 <ArrowLeft size={16} /> Aller à la connexion
               </Link>
@@ -145,13 +145,13 @@ export default function ResetPasswordPage() {
               <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">
                 <AlertCircle size={32} className="text-amber-400" />
               </div>
-              <h2 className="text-lg font-semibold text-white">Lien invalide ou expiré</h2>
-              <p className="text-white/70 dark:text-gray-400 text-sm">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lien invalide ou expiré</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
                 Ce lien de réinitialisation n&apos;est plus valide. Veuillez demander un nouveau lien.
               </p>
               <Link
                 href="/forgot-password"
-                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-white/10 border border-white/20 rounded-xl text-sm text-white font-medium hover:bg-white/20 transition-colors"
+                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/20 rounded-xl text-sm text-gray-700 dark:text-white font-medium hover:bg-gray-200 dark:hover:bg-white/20 transition-colors"
               >
                 Demander un nouveau lien
               </Link>
@@ -163,68 +163,68 @@ export default function ResetPasswordPage() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-red-500/10 border border-red-400/30 rounded-2xl flex items-center gap-2"
+                  className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-400/30 rounded-2xl flex items-center gap-2"
                 >
-                  <AlertCircle size={20} className="text-red-300 shrink-0" />
-                  <span className="text-sm text-red-200">{error}</span>
+                  <AlertCircle size={20} className="text-red-500 dark:text-red-300 shrink-0" />
+                  <span className="text-sm text-red-600 dark:text-red-200">{error}</span>
                 </motion.div>
               )}
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white/80 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Nouveau mot de passe
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 text-white/40 dark:text-gray-500" size={20} />
+                    <Lock className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       autoComplete="new-password"
-                      className="w-full pl-10 pr-12 py-2.5 bg-white/10 dark:bg-gray-900 border border-white/20 dark:border-gray-700 rounded-xl text-white dark:text-white placeholder-white/40 dark:placeholder-gray-500 focus:outline-none focus:border-brand-300 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-300/50 dark:focus:ring-brand-400/50 backdrop-blur-sm transition-all"
+                      className="w-full pl-10 pr-12 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-500/30 dark:focus:ring-brand-400/50 transition-all"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-white/40 dark:text-gray-500 hover:text-white/70 dark:hover:text-gray-300"
+                      className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                     >
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
-                  <p className="text-xs text-white/40 dark:text-gray-500 mt-1.5">Minimum 6 caractères</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Minimum 6 caractères</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white/80 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Confirmer le mot de passe
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 text-white/40 dark:text-gray-500" size={20} />
+                    <Lock className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={20} />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       autoComplete="new-password"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white/10 dark:bg-gray-900 border border-white/20 dark:border-gray-700 rounded-xl text-white dark:text-white placeholder-white/40 dark:placeholder-gray-500 focus:outline-none focus:border-brand-300 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-300/50 dark:focus:ring-brand-400/50 backdrop-blur-sm transition-all"
+                      className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-500/30 dark:focus:ring-brand-400/50 transition-all"
                       required
                       minLength={6}
                     />
                   </div>
                   {confirmPassword && password !== confirmPassword && (
-                    <p className="text-xs text-red-300 mt-1.5">Les mots de passe ne correspondent pas</p>
+                    <p className="text-xs text-red-500 dark:text-red-300 mt-1.5">Les mots de passe ne correspondent pas</p>
                   )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading || password.length < 6 || password !== confirmPassword}
-                  className="w-full mt-6 py-3 px-6 bg-white dark:bg-gradient-to-r dark:from-brand-500 dark:to-brand-400 text-brand-500 dark:text-white font-semibold rounded-xl hover:shadow-glow transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full mt-6 py-3 px-6 bg-brand-500 hover:bg-brand-600 dark:bg-gradient-to-r dark:from-brand-500 dark:to-brand-400 text-white font-semibold rounded-xl hover:shadow-glow transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <>

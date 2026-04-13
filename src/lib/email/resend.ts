@@ -269,7 +269,7 @@ export async function sendPasswordResetEmail(
     <div style="text-align:center;margin:28px 0;">
       <a href="${resetLink}" style="background:#19C37D;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:600;">Réinitialiser mon mot de passe</a>
     </div>
-    <p style="color:#9ca3af;font-size:13px;">Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+    <p style="color:#9ca3af;font-size:13px;">Ce lien expire dans 10 minutes. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
   </div>
   <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:24px;">© 2025 ${appName}. Tous droits réservés.</p>
 </div>`;

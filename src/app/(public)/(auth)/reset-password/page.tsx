@@ -20,8 +20,8 @@ export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Supabase automatically picks up the recovery token from the URL hash
-    // when the user clicks the email link. We need to wait for the session.
+    // Only show the form when Supabase fires PASSWORD_RECOVERY event.
+    // A regular session (already logged in) must NOT unlock this form.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setSessionReady(true);
@@ -29,16 +29,12 @@ export default function ResetPasswordPage() {
       }
     });
 
-    // Also check if there's already a session (user might have already been authenticated)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setSessionReady(true);
-      }
-      setChecking(false);
-    });
+    // Safety timeout: if no event after 4s, stop the spinner and show "invalid link"
+    const timeout = setTimeout(() => setChecking(false), 4000);
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(timeout);
     };
   }, []);
 

@@ -66,7 +66,7 @@ INSERT INTO email_templates (slug, name, subject, html_body, description, variab
       </a>
     </div>
     <p style="color:#9ca3af;font-size:13px;line-height:1.5;">
-      Si vous n''avez pas fait cette demande, ignorez cet email. Ce lien expire dans 1 heure.
+      Si vous n''avez pas fait cette demande, ignorez cet email. Ce lien expire dans 10 minutes.
     </p>
   </div>
   <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:24px;">

@@ -109,7 +109,7 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = ['/dashboard', '/explore', '/profile', '/settings', '/watchlist', '/watch'];
 
   // Public auth routes
-  const publicAuthRoutes = ['/login', '/signup'];
+  const publicAuthRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
 
   // Check if the current path is protected
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));

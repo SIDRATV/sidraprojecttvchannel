@@ -3,48 +3,57 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, AlertCircle, Loader2, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/useAuth';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const { isPasswordRecovery, session } = useAuth();
+  const searchParams = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [verifying, setVerifying] = useState(true);
+  const [verified, setVerified] = useState(false);
 
-  // The AuthProvider handles PASSWORD_RECOVERY event and sets isPasswordRecovery=true.
-  // We also listen directly as a fallback in case the event fires after mount.
   useEffect(() => {
-    if (isPasswordRecovery) {
-      setChecking(false);
-      return;
+    // Read token_hash and type from query params (sent by our API route)
+    const tokenHash = searchParams.get('token_hash');
+    const type = searchParams.get('type');
+
+    if (!tokenHash || type !== 'recovery') {
+      // No token in URL — check if Supabase already fired PASSWORD_RECOVERY
+      // (handles legacy links or hash-based redirects)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setVerified(true);
+          setVerifying(false);
+        }
+      });
+
+      const timeout = setTimeout(() => setVerifying(false), 4000);
+      return () => { subscription.unsubscribe(); clearTimeout(timeout); };
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setChecking(false);
-      }
-    });
-
-    // Safety timeout: show "invalid link" if nothing fires in 5s
-    const timeout = setTimeout(() => setChecking(false), 5000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
-  }, [isPasswordRecovery]);
-
-  // Determine if form should show: AuthProvider detected recovery
-  const sessionReady = isPasswordRecovery;
+    // Verify the token with Supabase — this creates a session + fires PASSWORD_RECOVERY
+    supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+      .then(({ error }) => {
+        if (error) {
+          console.error('[Reset] Token verification failed:', error.message);
+          setVerified(false);
+        } else {
+          setVerified(true);
+        }
+        setVerifying(false);
+      })
+      .catch(() => {
+        setVerifying(false);
+      });
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +133,7 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          {checking ? (
+          {verifying ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 size={32} className="animate-spin text-gray-400 dark:text-white/60" />
             </div>
@@ -148,7 +157,7 @@ export default function ResetPasswordPage() {
                 <ArrowLeft size={16} /> Aller à la connexion
               </Link>
             </motion.div>
-          ) : !sessionReady ? (
+          ) : !verified ? (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">
                 <AlertCircle size={32} className="text-amber-400" />

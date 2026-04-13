@@ -123,11 +123,18 @@ const readStoredSession = (): { user: User | null; session: Session | null } => 
   }
 };
 
-// ─── Detect recovery hash before any render ──────────────────────────────────
-const detectRecoveryHash = (): boolean => {
+// ─── Detect recovery mode before any render ─────────────────────────────────
+const detectRecoveryMode = (): boolean => {
   if (typeof window === 'undefined') return false;
+  // Check URL hash (legacy Supabase redirect: /reset-password#type=recovery&access_token=...)
   const hash = window.location.hash;
-  return hash.includes('type=recovery') || hash.includes('type=magiclink');
+  if (hash.includes('type=recovery')) return true;
+  // Check query params (our new direct link: /reset-password?token_hash=xxx&type=recovery)
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('type') === 'recovery' && params.get('token_hash')) return true;
+  // Check if we're on the reset-password page at all
+  if (window.location.pathname.includes('/reset-password')) return true;
+  return false;
 };
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
@@ -140,8 +147,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // If stored user exists, dashboard renders immediately (getSession refreshes in bg)
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(true);
-  // Detect recovery mode from URL hash immediately (before onAuthStateChange fires)
-  const [isPasswordRecovery, setIsPasswordRecovery] = useState(detectRecoveryHash);
+  // Detect recovery mode from URL immediately (before onAuthStateChange fires)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(detectRecoveryMode);
 
   const currentUserIdRef = useRef<string | null>(stored.user?.id ?? null);
   const requestIdRef = useRef(0);

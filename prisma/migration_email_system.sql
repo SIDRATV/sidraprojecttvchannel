@@ -181,14 +181,17 @@ ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_logs ENABLE ROW LEVEL SECURITY;
 
 -- Only service role can access these tables (backend only)
+DROP POLICY IF EXISTS "Service role full access on email_settings" ON email_settings;
 CREATE POLICY "Service role full access on email_settings"
   ON email_settings FOR ALL
   USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access on email_templates" ON email_templates;
 CREATE POLICY "Service role full access on email_templates"
   ON email_templates FOR ALL
   USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access on email_logs" ON email_logs;
 CREATE POLICY "Service role full access on email_logs"
   ON email_logs FOR ALL
   USING (auth.role() = 'service_role');
@@ -202,10 +205,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS email_settings_updated_at ON email_settings;
 CREATE TRIGGER email_settings_updated_at
   BEFORE UPDATE ON email_settings
   FOR EACH ROW EXECUTE FUNCTION update_email_updated_at();
 
+DROP TRIGGER IF EXISTS email_templates_updated_at ON email_templates;
 CREATE TRIGGER email_templates_updated_at
   BEFORE UPDATE ON email_templates
   FOR EACH ROW EXECUTE FUNCTION update_email_updated_at();

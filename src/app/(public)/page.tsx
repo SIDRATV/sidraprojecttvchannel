@@ -17,15 +17,16 @@ const sectionFade = {
 };
 
 export default function HomePage() {
-  const { user, initialized } = useAuth();
+  const { user, initialized, isPasswordRecovery } = useAuth();
   const router = useRouter();
 
   // Redirect authenticated users straight to the app
+  // But NOT during password recovery flow (user has a session but needs to reset)
   useEffect(() => {
-    if (initialized && user) {
+    if (initialized && user && !isPasswordRecovery) {
       router.replace('/dashboard');
     }
-  }, [initialized, user, router]);
+  }, [initialized, user, isPasswordRecovery, router]);
 
   // Blank while auth is resolving (only blocks if a session exists in localStorage)
   if (!initialized && user) return null;

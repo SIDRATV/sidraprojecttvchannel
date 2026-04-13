@@ -7,43 +7,51 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, AlertCircle, Loader2, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const { isPasswordRecovery, session } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sessionReady, setSessionReady] = useState(false);
   const [checking, setChecking] = useState(true);
 
+  // The AuthProvider handles PASSWORD_RECOVERY event and sets isPasswordRecovery=true.
+  // We also listen directly as a fallback in case the event fires after mount.
   useEffect(() => {
-    // Only show the form when Supabase fires PASSWORD_RECOVERY event.
-    // A regular session (already logged in) must NOT unlock this form.
+    if (isPasswordRecovery) {
+      setChecking(false);
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
-        setSessionReady(true);
         setChecking(false);
       }
     });
 
-    // Safety timeout: if no event after 4s, stop the spinner and show "invalid link"
-    const timeout = setTimeout(() => setChecking(false), 4000);
+    // Safety timeout: show "invalid link" if nothing fires in 5s
+    const timeout = setTimeout(() => setChecking(false), 5000);
 
     return () => {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, []);
+  }, [isPasswordRecovery]);
+
+  // Determine if form should show: AuthProvider detected recovery
+  const sessionReady = isPasswordRecovery;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
+    if (password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères');
       return;
     }
 
@@ -56,8 +64,12 @@ export default function ResetPasswordPage() {
 
     try {
       const { error } = await supabase.auth.updateUser({ password });
-
       if (error) throw error;
+
+      // Sign out immediately — do NOT keep the recovery session active.
+      // User must log in with their new password.
+      await supabase.auth.signOut();
+
       setSuccess(true);
 
       // Redirect to login after 3 seconds
@@ -182,7 +194,7 @@ export default function ResetPasswordPage() {
                       autoComplete="new-password"
                       className="w-full pl-10 pr-12 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-500/30 dark:focus:ring-brand-400/50 transition-all"
                       required
-                      minLength={6}
+                      minLength={8}
                     />
                     <button
                       type="button"
@@ -192,7 +204,7 @@ export default function ResetPasswordPage() {
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Minimum 6 caractères</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Minimum 8 caractères</p>
                 </div>
 
                 <div>
@@ -209,7 +221,7 @@ export default function ResetPasswordPage() {
                       autoComplete="new-password"
                       className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-brand-500 dark:focus:border-brand-400 focus:ring-1 focus:ring-brand-500/30 dark:focus:ring-brand-400/50 transition-all"
                       required
-                      minLength={6}
+                      minLength={8}
                     />
                   </div>
                   {confirmPassword && password !== confirmPassword && (
@@ -219,7 +231,7 @@ export default function ResetPasswordPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || password.length < 6 || password !== confirmPassword}
+                  disabled={loading || password.length < 8 || password !== confirmPassword}
                   className="w-full mt-6 py-3 px-6 bg-brand-500 hover:bg-brand-600 dark:bg-gradient-to-r dark:from-brand-500 dark:to-brand-400 text-white font-semibold rounded-xl hover:shadow-glow transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (

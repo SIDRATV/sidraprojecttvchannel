@@ -11,6 +11,7 @@ export interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   initialized: boolean;
+  isPasswordRecovery: boolean;
   refreshUser: () => Promise<void>;
 }
 
@@ -19,6 +20,7 @@ export const AuthContext = createContext<AuthContextValue>({
   session: null,
   loading: true,
   initialized: false,
+  isPasswordRecovery: false,
   refreshUser: async () => {},
 });
 
@@ -121,6 +123,13 @@ const readStoredSession = (): { user: User | null; session: Session | null } => 
   }
 };
 
+// ─── Detect recovery hash before any render ──────────────────────────────────
+const detectRecoveryHash = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash;
+  return hash.includes('type=recovery') || hash.includes('type=magiclink');
+};
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const stored = useMemo(() => readStoredSession(), []);
@@ -131,6 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // If stored user exists, dashboard renders immediately (getSession refreshes in bg)
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(true);
+  // Detect recovery mode from URL hash immediately (before onAuthStateChange fires)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(detectRecoveryHash);
 
   const currentUserIdRef = useRef<string | null>(stored.user?.id ?? null);
   const requestIdRef = useRef(0);
@@ -223,6 +234,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore non-state-changing events
       if (event === 'USER_UPDATED' || event === 'INITIAL_SESSION') return;
 
+      // PASSWORD_RECOVERY: user clicked a reset link. Set the flag so the app
+      // does NOT treat them as fully signed-in (prevents redirect to dashboard).
+      // The reset-password page reads `isPasswordRecovery` to show the form.
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        if (s) {
+          setSession(s);
+        }
+        return;
+      }
+
       // For SIGNED_IN: only update if it's a different user
       if (event === 'SIGNED_IN') {
         if (s?.user && s.user.id === currentUserIdRef.current) return;
@@ -250,8 +272,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, loading, initialized, refreshUser }),
-    [user, session, loading, initialized, refreshUser],
+    () => ({ user, session, loading, initialized, isPasswordRecovery, refreshUser }),
+    [user, session, loading, initialized, isPasswordRecovery, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -46,6 +46,7 @@ import {
   Mic2,
   Radio,
   Megaphone,
+  Mail,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui';
@@ -75,9 +76,10 @@ import { AdminMaintenanceManager } from '@/components/admin/AdminMaintenanceMana
 import { AdminPodcastManager } from '@/components/admin/AdminPodcastManager';
 import { AdminLiveManager } from '@/components/admin/AdminLiveManager';
 import AdminAdsManager from '@/components/admin/AdminAdsManager';
+import AdminEmailManager from '@/components/admin/AdminEmailManager';
 import type { Category } from '@/types';
 
-type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'advertisements' | 'maintenance' | 'podcast' | 'live';
+type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'advertisements' | 'email' | 'maintenance' | 'podcast' | 'live';
 
 const COLORS = ['#0F7A5C', '#19C37D', '#D4AF37', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -126,6 +128,7 @@ export function AdminDashboard() {
     { id: 'news', label: 'Actualités', icon: Bell },
     { id: 'partnerships', label: 'Partenariats', icon: Award },
     { id: 'advertisements', label: 'Publicités', icon: Megaphone },
+    { id: 'email', label: 'Emails', icon: Mail },
     { id: 'podcast', label: 'Podcasts', icon: Mic2 },
     { id: 'live', label: 'Lives', icon: Radio },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
@@ -303,6 +306,7 @@ export function AdminDashboard() {
             {activeTab === 'news' && <NewsTab />}
             {activeTab === 'partnerships' && <PartnershipsTab />}
             {activeTab === 'advertisements' && <AdvertisementsTab />}
+            {activeTab === 'email' && <EmailTab />}
             {activeTab === 'podcast' && <PodcastTab />}
             {activeTab === 'live' && <LiveTab />}
             {activeTab === 'maintenance' && <MaintenanceTab />}
@@ -1792,6 +1796,13 @@ function PartnershipsTab() {
 // ==================== ADVERTISEMENTS TAB ====================
 function AdvertisementsTab() {
   return <AdminAdsManager />;
+}
+
+// ==================== EMAIL TAB ====================
+function EmailTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return <AdminEmailManager token={session.access_token} />;
 }
 
 // ==================== MAINTENANCE TAB ====================

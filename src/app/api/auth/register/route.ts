@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { provisionUserWallet } from '@/lib/wallet';
+import { sendWelcomeEmail } from '@/lib/email/resend';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 
@@ -98,6 +99,15 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase().trim(),
       password,
     });
+
+    // Send welcome email (non-blocking)
+    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    sendWelcomeEmail(
+      email.toLowerCase().trim(),
+      fullName.trim(),
+      origin,
+      authData.user.id
+    ).catch((err) => console.error('Welcome email failed (non-fatal):', err));
 
     if (signInError || !signInData?.session) {
       // Account created but auto sign-in failed — user can log in manually

@@ -32,13 +32,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a password reset link using Supabase Admin API
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    // Use NEXT_PUBLIC_SITE_URL (production domain) as the canonical base
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      request.headers.get('origin') ||
+      'http://localhost:3000';
+    const redirectTo = `${siteUrl.replace(/\/$/, '')}/reset-password`;
 
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: cleanEmail,
       options: {
-        redirectTo: `${origin}/reset-password`,
+        redirectTo,
       },
     });
 

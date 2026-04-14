@@ -309,7 +309,7 @@ export default function WalletPage() {
                     <h3 className="text-xl font-bold text-white">Transfer History</h3>
                   </div>
                   <WalletErrorBoundary title="Transaction History">
-                    <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+                    <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-violet-500/40 hover:scrollbar-thumb-violet-500/60 transition-all">
                       <TransactionHistory
                         walletAddress={null}
                         transactionType="internal"
@@ -405,7 +405,7 @@ export default function WalletPage() {
                     <h3 className="text-xl font-bold text-white">On-Chain Activity</h3>
                   </div>
                   <WalletErrorBoundary title="On-Chain Activity">
-                    <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+                    <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-orange-500/40 hover:scrollbar-thumb-orange-500/60 transition-all">
                       <TransactionHistory
                         walletAddress={null}
                         transactionType="internal"

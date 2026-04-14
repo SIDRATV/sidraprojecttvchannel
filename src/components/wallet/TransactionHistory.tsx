@@ -50,7 +50,7 @@ export function TransactionHistory({
     if ((transactionType === 'all' || transactionType === 'internal') && authToken) {
       fetchInternalTransactions();
     }
-  }, [walletAddress, authToken, transactionType]);
+  }, [walletAddress, authToken, transactionType, limit]);
 
   const fetchInternalTransactions = async () => {
     if (!authToken) return;

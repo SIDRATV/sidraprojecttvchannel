@@ -243,25 +243,52 @@ export default function SettingsPage() {
         title="Notifications"
         description="Control how and when you're notified"
       >
-        <SettingToggle
-          label="Push notifications"
-          description="Receive notifications on your device"
-          defaultValue={true}
-          storageKey="settings_push_notifications"
-          onChange={updateNotificationsEnabled}
-        />
-        <SettingToggle
-          label="Email notifications"
-          description="Receive email updates about new content"
-          defaultValue={true}
-          storageKey="settings_email_notifications"
-        />
-        <SettingToggle
-          label="New video alerts"
-          description="Get notified when channels you follow post new videos"
-          defaultValue={true}
-          storageKey="settings_new_video_alerts"
-        />
+        <div className="space-y-4">
+          <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-lg p-3">
+            <p className="text-xs text-brand-700 dark:text-brand-300">
+              💡 Les notifications internes apparaissent dans l'app avec un badge rouge et disparaissent après consultation.
+            </p>
+          </div>
+          
+          <SettingToggle
+            label="Notifications internes activées"
+            description="Activer/désactiver toutes les notifications internes dans l'app"
+            defaultValue={true}
+            storageKey="settings_push_notifications"
+            onChange={updateNotificationsEnabled}
+          />
+          
+          <div className="pt-3 border-t border-gray-300 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-950 dark:text-white mb-3">Types de notifications:</p>
+            <SettingToggle
+              label="Nouvelles vidéos"
+              description="Soyez averti quand une nouvelle vidéo est uploadée"
+              defaultValue={true}
+              storageKey="settings_notif_new_video"
+            />
+          </div>
+
+          <SettingToggle
+            label="Transactions du portefeuille"
+            description="Notifications pour les dépôts, retraits et paiements"
+            defaultValue={true}
+            storageKey="settings_notif_transactions"
+          />
+
+          <SettingToggle
+            label="Abonnements premium"
+            description="Notifications d'activation, expiration et renouvellement d'abonnement"
+            defaultValue={true}
+            storageKey="settings_notif_subscriptions"
+          />
+
+          <SettingToggle
+            label="Alertes système"
+            description="Notifications importantes du système et de sécurité"
+            defaultValue={true}
+            storageKey="settings_notif_system"
+          />
+        </div>
       </SettingsSection>
 
       {/* Privacy */}

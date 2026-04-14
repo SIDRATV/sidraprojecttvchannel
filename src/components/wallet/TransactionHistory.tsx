@@ -154,7 +154,7 @@ export function TransactionHistory({
 
         {!isLoading && !error && activeTab === 'onchain' && (
           <div className="space-y-3">
-            {blockchainTxs.map((tx) => (
+            {blockchainTxs.slice(0, limit).map((tx) => (
               <TransactionRow key={tx.hash} tx={tx} type="onchain" />
             ))}
           </div>
@@ -162,7 +162,7 @@ export function TransactionHistory({
 
         {!isLoading && !error && activeTab === 'internal' && (
           <div className="space-y-3">
-            {internalTxs.map((tx) => (
+            {internalTxs.slice(0, limit).map((tx) => (
               <TransactionRow key={tx.id} tx={tx} type="internal" />
             ))}
           </div>

@@ -43,7 +43,7 @@ BEGIN
   END IF;
 
   -- Determine notification based on transaction direction
-  IF NEW.direction = 'in' THEN
+  IF NEW.direction IN ('in', 'credit') THEN
     -- Incoming transaction (RECEPTION)
     v_icon := 'arrow-down-left';
     v_title := 'Vous avez reçu ' || NEW.amount::TEXT || ' SIDRA';
@@ -62,7 +62,7 @@ BEGIN
       '/wallet'
     );
 
-  ELSIF NEW.direction = 'out' THEN
+  ELSIF NEW.direction IN ('out', 'debit') THEN
     -- Outgoing transaction (ENVOI/PAIEMENT)
     v_icon := 'arrow-up-right';
     v_title := 'Vous avez envoyé ' || NEW.amount::TEXT || ' SIDRA';

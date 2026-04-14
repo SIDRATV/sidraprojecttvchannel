@@ -10,6 +10,7 @@ import { useProfile } from '@/providers/ProfileProvider';
 import { authService } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface Notification {
   id: string;
@@ -39,10 +40,12 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const router = useRouter();
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const { playSound, showBrowserNotification } = useNotificationSound();
 
   // Real notifications from DB
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const previousUnreadCount = useRef(0);
 
   const fetchNotifications = useCallback(async () => {
     if (!session?.access_token) return;
@@ -52,11 +55,31 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
       });
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.unreadCount || 0);
+        const newUnreadCount = data.unreadCount || 0;
+        const newNotifications = data.notifications || [];
+        
+        // Play sound and show browser notification if new notifications arrived
+        if (newUnreadCount > previousUnreadCount.current && previousUnreadCount.current > 0) {
+          playSound();
+          
+          // Show browser notification for the latest notification
+          if (newNotifications.length > 0) {
+            const latestNotif = newNotifications[0];
+            showBrowserNotification(latestNotif.title, {
+              body: latestNotif.message,
+              badge: '/images/favicon.ico',
+              icon: '/images/favicon.ico',
+              tag: `notification-${latestNotif.id}`,
+            });
+          }
+        }
+        
+        previousUnreadCount.current = newUnreadCount;
+        setNotifications(newNotifications);
+        setUnreadCount(newUnreadCount);
       }
     } catch {}
-  }, [session?.access_token]);
+  }, [session?.access_token, playSound, showBrowserNotification]);
 
   // Fetch on mount + poll every 30s
   useEffect(() => {

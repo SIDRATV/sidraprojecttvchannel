@@ -45,7 +45,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   // Real notifications from DB
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const previousUnreadCount = useRef(0);
+  const previousUnreadCount = useRef<number | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     if (!session?.access_token) return;
@@ -58,8 +58,10 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
         const newUnreadCount = data.unreadCount || 0;
         const newNotifications = data.notifications || [];
         
-        // Play sound and show browser notification if new notifications arrived
-        if (newUnreadCount > previousUnreadCount.current && previousUnreadCount.current > 0) {
+        // Play sound and show browser notification if:
+        // 1. This is NOT the first fetch (previousUnreadCount is not null)
+        // 2. New unread count is higher than before
+        if (previousUnreadCount.current !== null && newUnreadCount > previousUnreadCount.current) {
           playSound();
           
           // Show browser notification for the latest notification
@@ -74,18 +76,41 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
           }
         }
         
-        previousUnreadCount.current = newUnreadCount;
+        // Set initial count on first fetch
+        if (previousUnreadCount.current === null) {
+          previousUnreadCount.current = newUnreadCount;
+        } else {
+          previousUnreadCount.current = newUnreadCount;
+        }
+        
         setNotifications(newNotifications);
         setUnreadCount(newUnreadCount);
       }
     } catch {}
   }, [session?.access_token, playSound, showBrowserNotification]);
 
-  // Fetch on mount + poll every 30s
+  // Fetch on mount + poll with adaptive interval (fast at start, then slower)
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    
+    // Fast polling for first 2 minutes (every 3 seconds)
+    let fastPollingTimeout: NodeJS.Timeout | null = null;
+    let slowPollingInterval: NodeJS.Timeout | null = null;
+    let fastPollingTimer: NodeJS.Timeout | null = null;
+    
+    fastPollingTimeout = setInterval(fetchNotifications, 3000);
+    
+    // After 2 minutes, switch to slow polling (30 seconds)
+    fastPollingTimer = setTimeout(() => {
+      if (fastPollingTimeout) clearInterval(fastPollingTimeout);
+      slowPollingInterval = setInterval(fetchNotifications, 30000);
+    }, 120000);
+    
+    return () => {
+      if (fastPollingTimeout) clearInterval(fastPollingTimeout);
+      if (slowPollingInterval) clearInterval(slowPollingInterval);
+      if (fastPollingTimer) clearTimeout(fastPollingTimer);
+    };
   }, [fetchNotifications]);
 
   const markAllRead = async () => {

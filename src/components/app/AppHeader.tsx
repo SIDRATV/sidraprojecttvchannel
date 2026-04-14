@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck, Loader2 } from 'lucide-react';
+import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck, Loader2, Download } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +11,7 @@ import { authService } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 interface Notification {
   id: string;
@@ -41,6 +42,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const { playSound, showBrowserNotification } = useNotificationSound();
+  const { isInstallable, installApp } = usePWAInstall();
 
   // Real notifications from DB
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -403,6 +405,20 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                         <span>Settings</span>
                       </button>
                     </Link>
+
+                    {/* Install App Button - Only show if installable */}
+                    {isInstallable && (
+                      <button
+                        onClick={() => {
+                          installApp();
+                          setProfileOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-4 py-2 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors text-sm font-medium"
+                      >
+                        <Download size={16} />
+                        <span>Installer l'app</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Logout Button */}

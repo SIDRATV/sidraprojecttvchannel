@@ -1,12 +1,7 @@
 import { useCallback, useEffect } from 'react';
 
 export function useNotificationSound() {
-  // Request notification permission on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-  }, []);
+  // Do NOT request permission on mount - let usePWAInstall handle this
 
   const playSound = useCallback(() => {
     try {

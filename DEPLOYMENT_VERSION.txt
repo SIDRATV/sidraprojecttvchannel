@@ -1,3 +1,11 @@
+Version 1.7.5 deployed: 2026-04-15
+- In-app notifications system with real-time updates
+- Notification sound (Web Audio API) with system browser notifications
+- PWA install button in profile dropdown
+- Transaction history with scrollable support (max 3 visible)
+- Improved scrollbar styling with theme colors
+- Notification preferences (enabled by default)
+
 Last deployment: 2026-03-14 with wallet SDA improvements
 - SDALogo component with local image
 - BalanceCard with SDA symbol and logo display

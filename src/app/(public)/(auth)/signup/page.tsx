@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, AtSign, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, AtSign, AlertCircle, Loader2, Gift } from 'lucide-react';
 import { authService } from '@/services/auth';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -17,6 +18,19 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
+
+  useEffect(() => {
+    // Read ?ref= from URL, fallback to localStorage (set by /ref/[code] redirect page)
+    const paramCode = searchParams?.get('ref') || '';
+    const storedCode = typeof window !== 'undefined' ? (localStorage.getItem('referral_code') || '') : '';
+    const code = paramCode || storedCode;
+    if (code) {
+      setReferralCode(code);
+      // Persist in case user navigates away and comes back
+      localStorage.setItem('referral_code', code);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +54,11 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      await authService.signUp(email, password, fullName, username);
-      
-      // Wait longer to ensure session is persisted to localStorage
-      // and client is ready to make authenticated API calls
+      await authService.signUp(email, password, fullName, username, referralCode || undefined);
+      // Clear referral code after use
+      localStorage.removeItem('referral_code');
+      // Wait to ensure session is persisted
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
@@ -89,6 +102,12 @@ export default function SignupPage() {
             </motion.div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Join Sidra</h1>
             <p className="text-gray-500 dark:text-gray-400">Create your premium account</p>
+            {referralCode && (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 border border-brand-500/30 rounded-full text-xs text-brand-600 dark:text-brand-400 font-medium">
+                <Gift size={13} />
+                Invitation via parrainage
+              </div>
+            )}
           </div>
 
           {/* Error Alert */}

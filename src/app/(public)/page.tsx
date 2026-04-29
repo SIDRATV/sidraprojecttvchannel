@@ -28,8 +28,8 @@ export default function HomePage() {
     }
   }, [initialized, user, isPasswordRecovery, router]);
 
-  // Blank while auth is resolving (only blocks if a session exists in localStorage)
-  if (!initialized && user) return null;
+  // Blank while auth is resolving — prevents flash of public page for logged-in users
+  if (!initialized) return null;
 
   return (
     <div className="bg-white dark:bg-gray-950 transition-colors" suppressHydrationWarning>

@@ -183,10 +183,10 @@ export default function DashboardPage() {
         <motion.div variants={fadeInUp}>
           <LazySection>
             <YouTubeSection
-              title="Educational Content"
-              description="Learn new skills and concepts"
-              query="education tutorial learning"
-              maxResults={12}
+              title="Contenu Éducatif"
+              description="Apprenez de nouvelles compétences et découvrez de nouveaux concepts"
+              query="education tutoriel apprentissage formation"
+              maxResults={5}
               icon="book"
             />
           </LazySection>
@@ -196,10 +196,10 @@ export default function DashboardPage() {
         <motion.div variants={fadeInUp}>
           <LazySection>
             <YouTubeSection
-              title="Business & Entrepreneurship"
-              description="Insights for founders and business leaders"
-              query="startup business entrepreneurship investor"
-              maxResults={12}
+              title="Business & Entrepreneuriat"
+              description="Conseils pour entrepreneurs et dirigeants"
+              query="startup entrepreneuriat business investissement france"
+              maxResults={5}
               icon="briefcase"
             />
           </LazySection>
@@ -216,10 +216,10 @@ export default function DashboardPage() {
         <motion.div variants={fadeInUp}>
           <LazySection>
             <YouTubeSection
-              title="Trending Now"
-              description="What's popular this week"
-              query="trending viral"
-              maxResults={12}
+              title="Tendances du Moment"
+              description="Ce qui est populaire cette semaine en France"
+              query="tendance actualité france"
+              maxResults={5}
               icon="trending"
             />
           </LazySection>
@@ -229,10 +229,10 @@ export default function DashboardPage() {
         <motion.div variants={fadeInUp}>
           <LazySection>
             <YouTubeSection
-              title="Technology Deep Dives"
-              description="In-depth explorations of tech topics"
-              query="blockchain cryptocurrency AI machine learning"
-              maxResults={12}
+              title="Technologies & Innovation"
+              description="Blockchain, IA et innovations technologiques"
+              query="blockchain cryptomonnaie intelligence artificielle technologie"
+              maxResults={5}
               icon="cpu"
             />
           </LazySection>
@@ -242,10 +242,10 @@ export default function DashboardPage() {
         <motion.div variants={fadeInUp}>
           <LazySection>
             <YouTubeSection
-              title="Community & Culture"
-              description="Stories that inspire and unite"
-              query="community culture inspiration"
-              maxResults={8}
+              title="Communauté & Culture"
+              description="Histoires qui inspirent et rassemblent"
+              query="culture société inspiration france"
+              maxResults={5}
               icon="users"
             />
           </LazySection>

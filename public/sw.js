@@ -103,4 +103,37 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+
+  // Show notification via Service Worker (works on mobile/Android PWA)
+  if (event.data?.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    self.registration.showNotification(title, {
+      icon: '/images/logo.png',
+      badge: '/images/logo.png',
+      tag: 'sidra-notification',
+      requireInteraction: false,
+      ...options,
+    });
+  }
 });
+
+// Handle notification click — open the app or a specific link
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const link = event.notification.data?.link || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus existing window if open
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.focus();
+          if (link !== '/') client.navigate(link);
+          return;
+        }
+      }
+      // Otherwise open new window
+      if (clients.openWindow) return clients.openWindow(link);
+    })
+  );
+});
+

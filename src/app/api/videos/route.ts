@@ -53,8 +53,8 @@ export async function GET(req: Request) {
 
     console.log(`🔍 Cache miss for query: ${q} - fetching from YouTube API`);
 
-    // 1) Search for videos to get IDs
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(q)}&maxResults=${maxResults}&key=${key}`;
+    // 1) Search for videos to get IDs (French content, FR region)
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(q)}&maxResults=${maxResults}&relevanceLanguage=fr&regionCode=FR&key=${key}`;
     
     // Cache YouTube API response for 9 hours (32400 seconds)
     const searchRes = await fetch(searchUrl, { next: { revalidate: 32400 } });
@@ -89,12 +89,13 @@ export async function GET(req: Request) {
       id: v.id,
       title: v.snippet?.title,
       description: v.snippet?.description,
+      channelTitle: v.snippet?.channelTitle,
       image:
         v.snippet?.thumbnails?.maxres?.url || v.snippet?.thumbnails?.high?.url || v.snippet?.thumbnails?.default?.url || '',
       duration: parseISODuration(v.contentDetails?.duration),
       url: `https://www.youtube.com/watch?v=${v.id}`,
-      views: v.statistics?.viewCount,
-      publishedAt: v.snippet?.publishedAt,
+      views: v.statistics?.viewCount ? Number(v.statistics.viewCount).toLocaleString('fr-FR') : undefined,
+      publishedAt: v.snippet?.publishedAt ? new Date(v.snippet.publishedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined,
     }));
 
     // Store in cache for 10 hours

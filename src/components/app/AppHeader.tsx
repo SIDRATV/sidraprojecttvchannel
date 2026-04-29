@@ -74,6 +74,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
               badge: '/images/favicon.ico',
               icon: '/images/favicon.ico',
               tag: `notification-${latestNotif.id}`,
+              link: latestNotif.link || '/',
             });
           }
         }

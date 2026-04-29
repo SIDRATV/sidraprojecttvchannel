@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
-import { User, Mail, Calendar, Trophy, Clock, Edit2, Package, Save, X, Upload, Settings, Bell, Lock, LogOut } from 'lucide-react';
+import { User, Mail, Calendar, Trophy, Clock, Edit2, Package, Save, X, Upload, Settings, Bell, Lock, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBuildInfo } from '@/hooks/useBuildInfo';
 import { authService } from '@/services/auth';
@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { ContentSection } from '@/components/app/ContentSection';
 import { useProfile } from '@/providers/ProfileProvider';
+import { supabase } from '@/lib/supabase';
 
 
 interface ProfileData {
@@ -34,6 +35,13 @@ export default function ProfilePage() {
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorStep, setTwoFactorStep] = useState<'idle' | 'enrolling'>('idle');
+  const [twoFactorQR, setTwoFactorQR] = useState('');
+  const [twoFactorFactorId, setTwoFactorFactorId] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [twoFactorError, setTwoFactorError] = useState('');
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: user?.full_name || 'User',
     bio: user?.bio || '',
@@ -65,6 +73,18 @@ export default function ProfilePage() {
       setProfileData(data);
       setEditData(data);
     }
+  }, [user]);
+
+  // Check 2FA status
+  useEffect(() => {
+    async function check2FA() {
+      const { data } = await supabase.auth.mfa.listFactors();
+      if (data?.totp && data.totp.length > 0) {
+        setTwoFactorEnabled(true);
+        setTwoFactorFactorId(data.totp[0].id);
+      }
+    }
+    if (user) check2FA();
   }, [user]);
 
   // Save profile to Supabase
@@ -151,6 +171,35 @@ export default function ProfilePage() {
       setShowPasswordChange(false);
       setPasswordSuccess('');
     }, 2000);
+  };
+
+  const handleEnable2FA = async () => {
+    setTwoFactorError('');
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+    if (error || !data) { setTwoFactorError("Erreur lors de l'activation. Réessayez."); return; }
+    setTwoFactorFactorId(data.id);
+    setTwoFactorQR(data.totp.qr_code);
+    setTwoFactorStep('enrolling');
+  };
+
+  const handleVerify2FA = async () => {
+    setTwoFactorError('');
+    const { data: challengeData, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId: twoFactorFactorId });
+    if (challengeErr || !challengeData) { setTwoFactorError('Erreur de vérification. Réessayez.'); return; }
+    const { error: verifyErr } = await supabase.auth.mfa.verify({ factorId: twoFactorFactorId, challengeId: challengeData.id, code: twoFactorCode });
+    if (verifyErr) { setTwoFactorError('Code incorrect. Réessayez.'); return; }
+    setTwoFactorEnabled(true);
+    setTwoFactorStep('idle');
+    setShowTwoFactor(false);
+    setTwoFactorCode('');
+  };
+
+  const handleDisable2FA = async () => {
+    const { error } = await supabase.auth.mfa.unenroll({ factorId: twoFactorFactorId });
+    if (error) { setTwoFactorError('Erreur lors de la désactivation.'); return; }
+    setTwoFactorEnabled(false);
+    setTwoFactorFactorId('');
+    setShowTwoFactor(false);
   };
 
   const stats = [
@@ -403,11 +452,13 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + index * 0.05 }}
             whileHover={{ y: -5 }}
-            className={`p-6 bg-gradient-to-br ${stat.color} rounded-lg text-white shadow-lg`}
+            className={`p-3 bg-gradient-to-br ${stat.color} rounded-lg text-white shadow-md flex items-center gap-3`}
           >
-            <div className="text-3xl mb-3">{stat.icon}</div>
-            <p className="text-sm opacity-90">{stat.label}</p>
-            <p className="text-2xl font-bold mt-1">{stat.value}</p>
+            <div className="text-xl flex-shrink-0">{stat.icon}</div>
+            <div>
+              <p className="text-xs opacity-80">{stat.label}</p>
+              <p className="text-sm font-bold leading-tight">{stat.value}</p>
+            </div>
           </motion.div>
         ))}
       </motion.div>
@@ -563,7 +614,17 @@ export default function ProfilePage() {
               className="w-full p-3 text-left font-semibold text-gray-950 dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
             >
               <Lock size={18} />
-              Change Password
+              <span className="flex-1">Changer le mot de passe</span>
+            </button>
+            <button
+              onClick={() => setShowTwoFactor(true)}
+              className="w-full p-3 text-left font-semibold text-gray-950 dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Shield size={18} className="text-purple-500" />
+              <span className="flex-1">Authentification 2FA</span>
+              {twoFactorEnabled && (
+                <span className="text-xs bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">Activé</span>
+              )}
             </button>
             <button
               onClick={() => setShowLogoutConfirm(true)}
@@ -714,6 +775,102 @@ export default function ProfilePage() {
       )}
 
       {/* Watch history will be shown here when viewing history table is available */}
+
+      {/* 2FA Modal */}
+      {showTwoFactor && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => { setShowTwoFactor(false); setTwoFactorStep('idle'); setTwoFactorError(''); setTwoFactorCode(''); }}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', bounce: 0.3 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-sm w-full border border-gray-200 dark:border-gray-800"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Shield size={20} className="text-purple-500" />
+                <h3 className="text-xl font-bold text-gray-950 dark:text-white">Authentification 2FA</h3>
+              </div>
+              <button
+                onClick={() => { setShowTwoFactor(false); setTwoFactorStep('idle'); setTwoFactorError(''); setTwoFactorCode(''); }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {twoFactorEnabled ? (
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
+                  <Shield size={32} className="text-green-500" />
+                </div>
+                <p className="text-gray-700 dark:text-gray-300">La 2FA est <strong className="text-green-600">activée</strong> sur votre compte.</p>
+                {twoFactorError && <p className="text-sm text-red-500">{twoFactorError}</p>}
+                <button
+                  onClick={handleDisable2FA}
+                  className="w-full py-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded-lg font-semibold hover:bg-red-100 transition-colors"
+                >
+                  Désactiver la 2FA
+                </button>
+              </div>
+            ) : twoFactorStep === 'idle' ? (
+              <div className="space-y-4">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Renforcez la sécurité de votre compte avec une application d'authentification (Google Authenticator, Authy...).
+                </p>
+                <button
+                  onClick={handleEnable2FA}
+                  className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors"
+                >
+                  Activer la 2FA
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Scannez ce QR code avec votre application d'authentification :</p>
+                {twoFactorQR && (
+                  <div className="flex justify-center p-4 bg-white rounded-xl border border-gray-200">
+                    <img src={twoFactorQR} alt="QR Code 2FA" className="w-40 h-40" />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">Code de vérification</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-center text-2xl font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="000000"
+                  />
+                </div>
+                {twoFactorError && <p className="text-sm text-red-500">{twoFactorError}</p>}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setTwoFactorStep('idle'); setTwoFactorError(''); }}
+                    className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-950 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleVerify2FA}
+                    disabled={twoFactorCode.length !== 6}
+                    className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors"
+                  >
+                    Vérifier
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

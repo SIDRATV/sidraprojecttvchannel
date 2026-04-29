@@ -8,7 +8,7 @@ const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, fullName, username } = body;
+    const { email, password, fullName, username, referralCode } = body;
 
     if (!email || !password || !fullName || !username) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -92,6 +92,32 @@ export async function POST(request: NextRequest) {
       // The wallet will be auto-provisioned on first wallet page visit.
       // Do NOT roll back user creation — the account is usable without a wallet.
       console.error('Wallet provisioning failed during registration (non-fatal):', walletError?.message);
+    }
+
+    // Process referral if a code was provided
+    if (referralCode && typeof referralCode === 'string' && referralCode.trim()) {
+      try {
+        const trimmedCode = referralCode.trim().toLowerCase();
+        // Use untyped client because new tables are not yet in the generated Supabase types
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const anySupabase = supabase as unknown as Record<string, any>;
+        const refResult = await anySupabase['from']('referral_codes')
+          ['select']('user_id')
+          ['eq']('code', trimmedCode)
+          ['maybeSingle']();
+
+        const referrerId = refResult?.data?.user_id;
+        if (referrerId && referrerId !== authData.user.id) {
+          // Register the referral (status = pending until they subscribe to premium)
+          await anySupabase['from']('referrals')['insert']({
+            referrer_id: referrerId,
+            referred_id: authData.user.id,
+            status: 'pending',
+          });
+        }
+      } catch (refErr: any) {
+        console.error('Referral tracking failed (non-fatal):', refErr?.message);
+      }
     }
 
     // Auto sign-in after registration so the client gets a session

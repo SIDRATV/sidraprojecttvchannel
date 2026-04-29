@@ -9,12 +9,13 @@ export const authService = {
     email: string,
     password: string,
     fullName: string,
-    username: string
+    username: string,
+    referralCode?: string
   ) {
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, fullName, username }),
+      body: JSON.stringify({ email, password, fullName, username, referralCode }),
     });
 
     const data = await response.json();

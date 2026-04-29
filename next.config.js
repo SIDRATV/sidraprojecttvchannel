@@ -1,11 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  generateBuildId: async () => `build-${Date.now().toString(36)}`,
   reactStrictMode: false, // Disabled to prevent double API calls in development
   staticPageGenerationTimeout: 120,
   onDemandEntries: {
-    maxInactiveAge: 60 * 1000, // 60 seconds - reasonable invalidation
-    pagesBufferLength: 5,
+    maxInactiveAge: 25 * 1000 * 60, // 25 minutes - keep pages in memory longer
+    pagesBufferLength: 10,
+  },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', 'recharts'],
   },
   images: {
     unoptimized: true,
@@ -74,11 +76,7 @@ const nextConfig = {
       },
     ];
   },
-  experimental: {
-    esmExternals: true,
-    serverMinification: true,
-    serverBodySizeLimit: '500mb',
-  },
+
 };
 
 module.exports = nextConfig;

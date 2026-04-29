@@ -102,7 +102,7 @@ async function verifyAdminCookie(token: string): Promise<boolean> {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Protected routes that require authentication
@@ -175,6 +175,8 @@ export async function middleware(request: NextRequest) {
   // Users will be redirected to /login by the ProtectedRoute component if not authenticated
   return response;
 }
+
+export default proxy;
 
 export const config = {
   matcher: [

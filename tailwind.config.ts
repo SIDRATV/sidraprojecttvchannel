@@ -63,6 +63,7 @@ const config: Config = {
         "gradient-shift": "gradientShift 3s ease infinite",
         shimmer: "shimmer 2s infinite",
         float: "float 3s ease-in-out infinite",
+        marquee: "marquee 30s linear infinite",
       },
       keyframes: {
         fadeIn: {
@@ -89,6 +90,10 @@ const config: Config = {
         float: {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%": { transform: "translateY(-10px)" },
+        },
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-33.333%)" },
         },
       },
       backgroundImage: {

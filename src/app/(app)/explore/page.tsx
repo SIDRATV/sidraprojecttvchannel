@@ -59,6 +59,17 @@ const exploreCards: ExploreCard[] = [
   },
 ];
 
+const partnerLogos = [
+  { name: 'Sidra Chain', abbr: 'SC', color: 'from-brand-500 to-brand-400' },
+  { name: 'BSC', abbr: 'BSC', color: 'from-yellow-500 to-amber-400' },
+  { name: 'Binance', abbr: 'BNB', color: 'from-yellow-400 to-orange-400' },
+  { name: 'Ethereum', abbr: 'ETH', color: 'from-blue-500 to-purple-500' },
+  { name: 'Polygon', abbr: 'POL', color: 'from-purple-600 to-violet-500' },
+  { name: 'USDT', abbr: 'USDT', color: 'from-emerald-500 to-teal-500' },
+  { name: 'Sidra TV', abbr: 'STV', color: 'from-brand-600 to-cyan-500' },
+  { name: 'Web3', abbr: 'W3', color: 'from-pink-500 to-rose-500' },
+];
+
 export default function ExplorePage() {
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -73,8 +84,30 @@ export default function ExplorePage() {
     visible: { opacity: 1, y: 0 },
   };
 
+  // Duplicate logos for infinite scroll effect
+  const allLogos = [...partnerLogos, ...partnerLogos, ...partnerLogos];
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
+
+      {/* ── Scrolling Partners Bar ── */}
+      <div className="w-full overflow-hidden border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 py-4">
+        <div className="flex gap-8 animate-marquee whitespace-nowrap">
+          {allLogos.map((logo, index) => (
+            <div
+              key={index}
+              className="inline-flex items-center gap-2.5 flex-shrink-0"
+            >
+              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${logo.color} flex items-center justify-center shadow-sm`}>
+                <span className="text-white text-[9px] font-extrabold tracking-tight">{logo.abbr}</span>
+              </div>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{logo.name}</span>
+              <span className="text-gray-300 dark:text-gray-700 ml-4">•</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Main Features Section */}
       <section className="py-12 md:py-20 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">

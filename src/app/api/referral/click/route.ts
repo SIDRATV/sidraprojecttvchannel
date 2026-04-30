@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid code' }, { status: 400 });
     }
     const supabase = createServerClient();
-    await supabase.rpc('increment_referral_clicks', { p_code: code.trim().toLowerCase() });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).rpc('increment_referral_clicks', { p_code: code.trim().toLowerCase() });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ ok: false });

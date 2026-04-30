@@ -63,12 +63,21 @@ export const authService = {
 
     if (error) throw error;
 
+    // Check if MFA upgrade is required (user has enrolled + verified TOTP)
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+      // Find the verified TOTP factor
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factors?.totp?.find((f) => f.status === 'verified') ?? null;
+      return { ...data, needsMFA: true, mfaFactorId: totpFactor?.id ?? null };
+    }
+
     const { data: verifyData, error: verifyError } = await supabase.auth.getSession();
     if (verifyError || !verifyData.session?.access_token) {
       throw new Error('Failed to establish session');
     }
 
-    return data;
+    return { ...data, needsMFA: false, mfaFactorId: null };
   },
 
 

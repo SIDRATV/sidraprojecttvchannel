@@ -449,41 +449,44 @@ async function confirmPendingDeposits(network, provider, chain) {
         .eq('id', ptx.id);
 
       if (confirmations >= chain.minConfirmations) {
-        // Enough confirmations — confirm deposit
-        await supabase
-          .from('wallet_transactions')
-          .update({
-            status: 'success',
-            description: 'On-chain deposit credited',
-            metadata: {
+        // Enough confirmations — use wallet_credit_deposit RPC for atomic credit
+        // (same path used by creditDeposit; handles duplicate detection safely)
+        try {
+          const { error: creditError } = await supabase.rpc('wallet_credit_deposit', {
+            p_user_id: ptx.user_id,
+            p_amount: roundAmount(Number(ptx.amount)),
+            p_tx_hash: ptx.tx_hash,
+            p_network: network,
+            p_deposit_address: ptx.deposit_address,
+            p_confirmations: confirmations,
+            p_metadata: {
               ...(ptx.metadata || {}),
               confirmations,
               confirmed_at: new Date().toISOString(),
-              credited_by: 'github-actions-scanner',
+              credited_by: 'vps-scanner-pending-confirm',
             },
-          })
-          .eq('id', ptx.id);
+          });
 
-        // Credit user balance
-        // Ensure wallet_accounts exists (include network to avoid NOT NULL violation)
-        await supabase.from('wallet_accounts').upsert(
-          { user_id: ptx.user_id, balance: 0, currency: 'SIDRA' },
-          { onConflict: 'user_id', ignoreDuplicates: true }
-        );
-
-        // Increment balance
-        const { data: account } = await supabase
-          .from('wallet_accounts')
-          .select('balance')
-          .eq('user_id', ptx.user_id)
-          .single();
-
-        if (account) {
-          const newBalance = Number(account.balance) + Number(ptx.amount);
-          await supabase
-            .from('wallet_accounts')
-            .update({ balance: newBalance })
-            .eq('user_id', ptx.user_id);
+          if (creditError) {
+            if (creditError.message?.includes('already credited')) {
+              log('info', 'scanner', `Pending deposit already credited (duplicate): ${ptx.tx_hash}`, { network });
+              confirmed++;
+              confirmedHashes.push(ptx.tx_hash);
+            } else {
+              log('error', 'scanner', `Failed to credit pending deposit: ${creditError.message}`, { network, txHash: ptx.tx_hash });
+              stillPending++;
+            }
+            continue;
+          }
+        } catch (creditErr) {
+          if (creditErr?.message?.includes('already credited') || creditErr?.message?.includes('duplicate')) {
+            confirmed++;
+            confirmedHashes.push(ptx.tx_hash);
+            continue;
+          }
+          log('error', 'scanner', `Error crediting pending deposit: ${creditErr?.message}`, { network, txHash: ptx.tx_hash });
+          stillPending++;
+          continue;
         }
 
         confirmed++;
@@ -507,14 +510,14 @@ async function confirmPendingDeposits(network, provider, chain) {
           log('warn', 'scanner', `Sweep after pending confirm failed: ${sweepErr.message}`, { network });
         }
 
-        // Audit log
+        // Audit log (wallet_credit_deposit RPC already logs internally; this is supplemental)
         supabase.from('wallet_audit_logs').insert({
           actor_user_id: ptx.user_id,
           action: 'wallet.deposit.confirmed',
           target_id: ptx.tx_hash,
           details: {
             amount: Number(ptx.amount), confirmations, network,
-            credited_by: 'github-actions-scanner',
+            credited_by: 'vps-scanner-pending-confirm',
           },
         }).then(() => {});
       } else {

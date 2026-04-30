@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Flame, Radio, Play, X, Users, Image as ImageIcon, Video, Youtube, Wifi, WifiOff } from 'lucide-react';
+import { Search, Filter, Flame, Radio, Play, X, Users, Image as ImageIcon, Video, Youtube, Wifi, WifiOff, Maximize, Minimize } from 'lucide-react';
 import type { LiveStream } from '@/services/live';
 
 interface YTStats { id: string; viewCount: number; likeCount: number; concurrentViewers?: number; }
@@ -31,6 +31,22 @@ export default function LivePage() {
   // YouTube live viewer counts keyed by youtube_id
   const [ytViewers, setYtViewers] = useState<Record<string, number | undefined>>({});
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>();
+
+  // Fullscreen for live stream player modal
+  const livePlayerRef = useRef<HTMLDivElement>(null);
+  const [isLiveFullscreen, setIsLiveFullscreen] = useState(false);
+  useEffect(() => {
+    const onFsChange = () => setIsLiveFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+  const handleLiveFullscreen = () => {
+    if (!isLiveFullscreen) {
+      livePlayerRef.current?.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   const fmtNum = (n: number): string => {
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -106,7 +122,7 @@ export default function LivePage() {
   const getEmbedUrl = (s: any): string | null => {
     // YouTube
     const ytId = s.youtube_id;
-    if (ytId) return `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`;
+    if (ytId) return `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&fs=1`;
     // OBS / other HLS or RTMP → can't embed directly, show link
     return s.stream_url ?? null;
   };
@@ -324,12 +340,13 @@ export default function LivePage() {
               className="relative w-full max-w-3xl bg-black rounded-2xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
+              <div ref={livePlayerRef} className="relative">
               <div className="aspect-video bg-gray-900">
                 {activeStream.youtube_id ? (
                   <iframe
-                    src={`https://www.youtube.com/embed/${activeStream.youtube_id}?autoplay=1&rel=0`}
+                    src={`https://www.youtube-nocookie.com/embed/${activeStream.youtube_id}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&fs=1`}
                     className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
                   />
                 ) : activeStream.stream_url?.endsWith('.m3u8') ? (
@@ -358,6 +375,19 @@ export default function LivePage() {
                     )}
                   </div>
                 )}
+              </div>
+              {activeStream.youtube_id && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 flex justify-end">
+                  <button
+                    onClick={handleLiveFullscreen}
+                    className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-white flex items-center gap-1.5 text-sm shadow-lg"
+                    title={isLiveFullscreen ? 'Réduire' : 'Plein écran'}
+                  >
+                    {isLiveFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                    <span className="hidden sm:inline">{isLiveFullscreen ? 'Réduire' : 'Plein écran'}</span>
+                  </button>
+                </div>
+              )}
               </div>
               <div className="p-4 bg-gray-900">
                 <div className="flex items-start justify-between gap-3">

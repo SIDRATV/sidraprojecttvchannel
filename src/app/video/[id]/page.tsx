@@ -98,10 +98,10 @@ export default function VideoDetailPage() {
               <iframe
                 width="100%"
                 height="100%"
-                src={`https://www.youtube.com/embed/${video.video_url}?autoplay=1`}
+                src={`https://www.youtube-nocookie.com/embed/${video.video_url}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&fs=1`}
                 title={video.title}
                 frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 allowFullScreen
                 className="w-full h-full"
               />

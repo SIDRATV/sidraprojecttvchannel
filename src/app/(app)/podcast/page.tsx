@@ -2,9 +2,9 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, TrendingUp, Clock, Youtube, Play, X, Mic2, Star, Eye, Heart, ThumbsUp } from 'lucide-react';
+import { Search, Filter, TrendingUp, Clock, Youtube, Play, X, Mic2, Star, Eye, Heart, ThumbsUp, Maximize, Minimize } from 'lucide-react';
 import type { Podcast } from '@/services/podcasts';
 
 interface YTStats { id: string; viewCount: number; likeCount: number; }
@@ -29,6 +29,22 @@ export default function PodcastPage() {
   const [banner, setBanner] = useState<PageBanner | null>(null);
   const [activeVideo, setActiveVideo] = useState<(Podcast & { youtube_id?: string }) | null>(null);
   const [ytStats, setYtStats] = useState<Record<string, YTStats>>({});
+
+  // Fullscreen for podcast player modal
+  const podcastPlayerRef = useRef<HTMLDivElement>(null);
+  const [isPodcastFullscreen, setIsPodcastFullscreen] = useState(false);
+  useEffect(() => {
+    const onFsChange = () => setIsPodcastFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+  const handlePodcastFullscreen = () => {
+    if (!isPodcastFullscreen) {
+      podcastPlayerRef.current?.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   // Formats number: 1200 → "1.2K", 1500000 → "1.5M", 800 → "800"
   const fmtNum = (n: number): string => {
@@ -279,13 +295,25 @@ export default function PodcastPage() {
               className="relative w-full max-w-3xl bg-black rounded-2xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="aspect-video">
-                <iframe
-                  src={`https://www.youtube.com/embed/${activeVideo.youtube_id}?autoplay=1&rel=0`}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+              <div ref={podcastPlayerRef} className="relative bg-black">
+                <div className="aspect-video">
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtube_id}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&fs=1`}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowFullScreen
+                  />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 flex justify-end">
+                  <button
+                    onClick={handlePodcastFullscreen}
+                    className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-white flex items-center gap-1.5 text-sm shadow-lg"
+                    title={isPodcastFullscreen ? 'Réduire' : 'Plein écran'}
+                  >
+                    {isPodcastFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                    <span className="hidden sm:inline">{isPodcastFullscreen ? 'Réduire' : 'Plein écran'}</span>
+                  </button>
+                </div>
               </div>
               <div className="p-4 bg-gray-900">
                 <div className="flex items-start justify-between gap-3">

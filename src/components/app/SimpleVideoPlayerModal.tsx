@@ -15,7 +15,9 @@ export function SimpleVideoPlayerModal({ videoId, title, isOpen, onClose }: Simp
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const youtubeEmbedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0`;
+  const youtubeEmbedUrl =
+    `https://www.youtube-nocookie.com/embed/${videoId}` +
+    `?autoplay=0&controls=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&fs=1`;
 
   const handlePlay = () => {
     if (iframeRef.current) {
@@ -73,7 +75,7 @@ export function SimpleVideoPlayerModal({ videoId, title, isOpen, onClose }: Simp
                   height="100%"
                   src={youtubeEmbedUrl}
                   title={title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                   allowFullScreen
                   className="w-full h-full"
                 />

@@ -1,8 +1,8 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Maximize, Info } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { X, Maximize, Minimize, Info } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 interface YouTubePlayerModalProps {
   videoId: string;
@@ -27,21 +27,28 @@ export function YouTubePlayerModal({
   onClose 
 }: YouTubePlayerModalProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
-  const youtubeEmbedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0&fs=1&playsinline=1&enablejsapi=1&iv_load_policy=3`;
+  // youtube-nocookie + params to suppress suggestions, share button, related videos
+  const youtubeEmbedUrl =
+    `https://www.youtube-nocookie.com/embed/${videoId}` +
+    `?autoplay=0&controls=1&rel=0&modestbranding=1&showinfo=0` +
+    `&iv_load_policy=3&cc_load_policy=0&fs=1&playsinline=1&enablejsapi=1`;
+
+  // Sync state with native browser fullscreen events
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
 
   const handleFullscreen = () => {
-    if (iframeRef.current) {
-      if (!isFullscreen) {
-        if (iframeRef.current.requestFullscreen) {
-          iframeRef.current.requestFullscreen().catch(err => {
-            console.error('Erreur fullscreen:', err);
-          });
-          setIsFullscreen(true);
-        }
-      }
+    if (!isFullscreen) {
+      containerRef.current?.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
     }
   };
 
@@ -89,7 +96,7 @@ export function YouTubePlayerModal({
             </div>
 
             {/* Video Player */}
-            <div className="bg-black relative w-full">
+            <div ref={containerRef} className="bg-black relative w-full">
               {/* Aspect Ratio Container (16:9) */}
               <div className="w-full" style={{ paddingBottom: '56.25%', position: 'relative' }}>
                 <iframe
@@ -97,12 +104,9 @@ export function YouTubePlayerModal({
                   src={youtubeEmbedUrl}
                   title={title}
                   className="absolute top-0 left-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                   allowFullScreen
-                  style={{
-                    border: 'none',
-                    borderRadius: 'inherit',
-                  }}
+                  style={{ border: 'none' }}
                 />
               </div>
 
@@ -111,10 +115,12 @@ export function YouTubePlayerModal({
                 <button
                   onClick={handleFullscreen}
                   className="p-2.5 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-white font-medium flex items-center gap-2 shadow-lg"
-                  title="Plein écran"
+                  title={isFullscreen ? 'Réduire' : 'Plein écran'}
                 >
-                  <Maximize size={18} />
-                  <span className="hidden sm:inline text-sm">Plein écran</span>
+                  {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                  <span className="hidden sm:inline text-sm">
+                    {isFullscreen ? 'Réduire' : 'Plein écran'}
+                  </span>
                 </button>
               </div>
             </div>

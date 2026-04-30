@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, CheckCircle, Loader, ExternalLink } from 'lucide-react';
 import { SDALogo } from './SDALogo';
+import { supabase } from '@/lib/supabase';
 
 interface PendingDeposit {
   id: string;
@@ -43,6 +44,8 @@ export function PendingDeposits({ authToken, onDepositConfirmed }: PendingDeposi
   const [pending, setPending] = useState<PendingDeposit[]>([]);
   const [recentlyConfirmed, setRecentlyConfirmed] = useState<RecentlyConfirmed[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Keep a ref to track pending count for confirmed-deposit callback
+  const pendingCountRef = useRef(0);
 
   const fetchPendingDeposits = useCallback(async () => {
     if (!authToken) return;
@@ -52,27 +55,67 @@ export function PendingDeposits({ authToken, onDepositConfirmed }: PendingDeposi
       });
       if (!res.ok) return;
       const data = await res.json();
-      const prevPendingCount = pending.length;
-      setPending(data.pending || []);
-      setRecentlyConfirmed(data.recentlyConfirmed || []);
+      const newPending: PendingDeposit[] = data.pending || [];
 
       // If we had pending deposits and now there are fewer, a deposit was confirmed
-      if (prevPendingCount > 0 && (data.pending || []).length < prevPendingCount) {
+      if (pendingCountRef.current > 0 && newPending.length < pendingCountRef.current) {
         onDepositConfirmed?.();
       }
+      pendingCountRef.current = newPending.length;
+      setPending(newPending);
+      setRecentlyConfirmed(data.recentlyConfirmed || []);
     } catch {
-      // silent fail — will retry on next interval
+      // silent fail — realtime will trigger next fetch on any DB change
     } finally {
       setIsLoading(false);
     }
-  }, [authToken, pending.length, onDepositConfirmed]);
+  }, [authToken, onDepositConfirmed]);
 
+  // Initial load
   useEffect(() => {
     fetchPendingDeposits();
-    // Poll every 15 seconds
-    const interval = setInterval(fetchPendingDeposits, 15000);
-    return () => clearInterval(interval);
   }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Supabase Realtime: re-fetch when any deposit transaction changes ──
+  useEffect(() => {
+    if (!authToken) return;
+
+    // Decode user_id from JWT (sub claim) for the Realtime filter
+    let userId: string | null = null;
+    try {
+      userId = JSON.parse(atob(authToken.split('.')[1])).sub ?? null;
+    } catch {
+      // If decode fails, fall through — no realtime filter, still works
+    }
+
+    const channelName = userId
+      ? `pending_deposits_${userId}`
+      : `pending_deposits_${Math.random()}`;
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wallet_transactions',
+          ...(userId ? { filter: `user_id=eq.${userId}` } : {}),
+        },
+        (payload) => {
+          const row = payload.new as Record<string, unknown> | null;
+          // Only react to deposit-type rows
+          if (row && row.type === 'deposit') {
+            fetchPendingDeposits();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [authToken, fetchPendingDeposits]);
 
   const shortenHash = (hash: string) => `${hash.slice(0, 10)}…${hash.slice(-8)}`;
 

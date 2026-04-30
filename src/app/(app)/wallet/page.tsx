@@ -29,6 +29,7 @@ import { SDALogo } from '@/components/wallet/SDALogo';
 import { WalletErrorBoundary } from '@/components/wallet/WalletErrorBoundary';
 import { getInternalBalance } from '@/lib/internalTransfer';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 
 type WalletMode = 'internal' | 'external';
 
@@ -63,14 +64,33 @@ export default function WalletPage() {
     if (authToken) refreshBalance();
   }, [authToken, refreshBalance]);
 
+  // ── Supabase Realtime: update balance when wallet_accounts row changes ──
   useEffect(() => {
-    if (!authToken) return;
-    const intervalId = setInterval(() => {
-      refreshBalance();
-    }, 15000);
+    if (!user?.id) return;
 
-    return () => clearInterval(intervalId);
-  }, [authToken, refreshBalance]);
+    const channel = supabase
+      .channel(`wallet_balance_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wallet_accounts',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const row = payload.new as Record<string, unknown> | null;
+          if (row && typeof row.balance !== 'undefined') {
+            setBalance(String(row.balance));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const handleTransferSuccess = useCallback(() => {
     setTimeout(() => refreshBalance(), 2000);

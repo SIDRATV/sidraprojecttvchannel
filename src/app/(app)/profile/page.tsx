@@ -39,6 +39,7 @@ export default function ProfilePage() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [twoFactorStep, setTwoFactorStep] = useState<'idle' | 'enrolling'>('idle');
   const [twoFactorQR, setTwoFactorQR] = useState('');
+  const [twoFactorSecret, setTwoFactorSecret] = useState('');
   const [twoFactorFactorId, setTwoFactorFactorId] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [twoFactorError, setTwoFactorError] = useState('');
@@ -179,6 +180,7 @@ export default function ProfilePage() {
     if (error || !data) { setTwoFactorError("Erreur lors de l'activation. Réessayez."); return; }
     setTwoFactorFactorId(data.id);
     setTwoFactorQR(data.totp.qr_code);
+    setTwoFactorSecret(data.totp.secret);
     setTwoFactorStep('enrolling');
   };
 
@@ -192,6 +194,7 @@ export default function ProfilePage() {
     setTwoFactorStep('idle');
     setShowTwoFactor(false);
     setTwoFactorCode('');
+    setTwoFactorSecret('');
   };
 
   const handleDisable2FA = async () => {
@@ -797,7 +800,7 @@ export default function ProfilePage() {
                 <h3 className="text-xl font-bold text-gray-950 dark:text-white">Authentification 2FA</h3>
               </div>
               <button
-                onClick={() => { setShowTwoFactor(false); setTwoFactorStep('idle'); setTwoFactorError(''); setTwoFactorCode(''); }}
+                onClick={() => { setShowTwoFactor(false); setTwoFactorStep('idle'); setTwoFactorError(''); setTwoFactorCode(''); setTwoFactorSecret(''); }}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <X size={20} />
@@ -838,6 +841,19 @@ export default function ProfilePage() {
                     <img src={twoFactorQR} alt="QR Code 2FA" className="w-40 h-40" />
                   </div>
                 )}
+                {twoFactorSecret && (
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 space-y-1">
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Clé secrète (saisie manuelle)
+                    </p>
+                    <p className="font-mono text-sm text-gray-900 dark:text-white break-all tracking-wider select-all">
+                      {twoFactorSecret}
+                    </p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                      Si vous ne pouvez pas scanner le QR, entrez cette clé manuellement dans votre application.
+                    </p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">Code de vérification</label>
                   <input
@@ -853,7 +869,7 @@ export default function ProfilePage() {
                 {twoFactorError && <p className="text-sm text-red-500">{twoFactorError}</p>}
                 <div className="flex gap-3">
                   <button
-                    onClick={() => { setTwoFactorStep('idle'); setTwoFactorError(''); }}
+                    onClick={() => { setTwoFactorStep('idle'); setTwoFactorError(''); setTwoFactorSecret(''); }}
                     className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-950 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     Annuler

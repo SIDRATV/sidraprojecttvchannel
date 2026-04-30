@@ -120,7 +120,7 @@ export function YouTubeFeaturedCarousel() {
         {/* Video layer — only for autoplay videos, overlays the thumbnail */}
         {isVideo && banner.autoplay && ytId && (
           <iframe
-            src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${muted ? 1 : 0}&loop=1&playlist=${ytId}&controls=0&showinfo=0&rel=0&modestbranding=1`}
+            src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${muted ? 1 : 0}&loop=1&playlist=${ytId}&controls=0&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&disablekb=1`}
             allow="autoplay; encrypted-media"
             className="absolute inset-0 w-full h-full object-cover pointer-events-none z-[1]"
             style={{ border: 0 }}

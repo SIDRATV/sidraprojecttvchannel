@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -8,7 +8,8 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, User, AtSign, AlertCircle, Loader2, Gift } from 'lucide-react';
 import { authService } from '@/services/auth';
 
-export default function SignupPage() {
+// Inner component that uses useSearchParams — must be inside <Suspense>
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [fullName, setFullName] = useState('');
@@ -274,5 +275,14 @@ export default function SignupPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+// Export wraps SignupForm in Suspense — required because useSearchParams() needs it
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   );
 }

@@ -25,11 +25,13 @@ export async function GET(request: NextRequest) {
         duration,
         is_premium,
         min_plan,
+        sort_order,
         views,
         likes,
         created_at,
         categories:category_id (name, icon, color)
       `)
+      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

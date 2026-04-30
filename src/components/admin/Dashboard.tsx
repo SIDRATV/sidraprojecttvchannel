@@ -48,6 +48,9 @@ import {
   Megaphone,
   Mail,
   Gift,
+  Pencil,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui';
@@ -472,9 +475,15 @@ function ContentTab() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
+  const [editVideo, setEditVideo] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '', min_plan: 'pro', category_id: '' });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
 
   const loadVideos = useCallback(async () => {
-    const res = await fetch('/api/premium-videos?limit=50');
+    const res = await fetch('/api/premium-videos?limit=100');
     if (res.ok) {
       const data = await res.json();
       setVideos(data.videos ?? []);
@@ -483,6 +492,16 @@ function ContentTab() {
   }, []);
 
   useEffect(() => { loadVideos(); }, [loadVideos]);
+  useEffect(() => { categoryService.getCategories().then(setCategories); }, []);
+
+  const patchVideo = async (id: string, patch: object) => {
+    if (!session?.access_token) return;
+    await fetch(`/api/admin/upload-video/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+  };
 
   const handleDelete = async (id: string) => {
     if (!session?.access_token || !confirm('Supprimer cette vidéo définitivement ?')) return;
@@ -495,13 +514,75 @@ function ContentTab() {
     setDeletingId(null);
   };
 
+  // Sort by sort_order asc, then created_at desc for ties
+  const sorted = [...videos].sort((a, b) => {
+    const ao = a.sort_order ?? 9999;
+    const bo = b.sort_order ?? 9999;
+    if (ao !== bo) return ao - bo;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
   const filtered = searchQuery
-    ? videos.filter(
+    ? sorted.filter(
         (v) =>
           v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (v.description || '').toLowerCase().includes(searchQuery.toLowerCase()),
       )
-    : videos;
+    : sorted;
+
+  const handleMove = async (videoId: string, direction: 'up' | 'down') => {
+    const idx = sorted.findIndex((v) => v.id === videoId);
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= sorted.length) return;
+
+    setReordering(true);
+    const aId = sorted[idx].id;
+    const bId = sorted[targetIdx].id;
+    // videoA moves to targetIdx position, videoB moves to idx position
+    const aOrder = targetIdx;
+    const bOrder = idx;
+
+    setVideos((prev) =>
+      prev.map((v) => {
+        if (v.id === aId) return { ...v, sort_order: aOrder };
+        if (v.id === bId) return { ...v, sort_order: bOrder };
+        return v;
+      }),
+    );
+
+    await Promise.all([patchVideo(aId, { sort_order: aOrder }), patchVideo(bId, { sort_order: bOrder })]);
+    setReordering(false);
+  };
+
+  const openEdit = (video: any) => {
+    setEditVideo(video);
+    setEditForm({
+      title: video.title,
+      description: video.description || '',
+      min_plan: video.min_plan || 'pro',
+      category_id: video.category_id || '',
+    });
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editVideo || !session?.access_token) return;
+    setEditSaving(true);
+    setEditError(null);
+    const res = await fetch(`/api/admin/upload-video/${editVideo.id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(editForm),
+    });
+    if (res.ok) {
+      setVideos((prev) => prev.map((v) => (v.id === editVideo.id ? { ...v, ...editForm } : v)));
+      setEditVideo(null);
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setEditError(d.error || 'Erreur lors de la mise à jour');
+    }
+    setEditSaving(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -550,6 +631,7 @@ function ContentTab() {
             <table className="w-full text-sm">
               <thead className="bg-slate-700/30 border-b border-slate-700/50">
                 <tr>
+                  <th className="px-4 py-4 text-center font-semibold text-slate-300 w-16">Ordre</th>
                   <th className="px-6 py-4 text-left font-semibold text-slate-300">Titre</th>
                   <th className="px-6 py-4 text-left font-semibold text-slate-300">Plan</th>
                   <th className="px-6 py-4 text-left font-semibold text-slate-300">Qualités</th>
@@ -559,8 +641,30 @@ function ContentTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
-                {filtered.map((video) => (
+                {filtered.map((video, idx) => (
                   <tr key={video.id} className="hover:bg-slate-700/20 transition-colors">
+                    {/* Order column with up/down arrows */}
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <button
+                          onClick={() => handleMove(video.id, 'up')}
+                          disabled={idx === 0 || reordering || !!searchQuery}
+                          className="p-0.5 hover:bg-slate-600/50 rounded disabled:opacity-20 transition-all"
+                          title="Monter"
+                        >
+                          <ArrowUp size={13} className="text-slate-400" />
+                        </button>
+                        <span className="text-xs font-mono text-slate-500 leading-none select-none">{idx + 1}</span>
+                        <button
+                          onClick={() => handleMove(video.id, 'down')}
+                          disabled={idx === filtered.length - 1 || reordering || !!searchQuery}
+                          className="p-0.5 hover:bg-slate-600/50 rounded disabled:opacity-20 transition-all"
+                          title="Descendre"
+                        >
+                          <ArrowDown size={13} className="text-slate-400" />
+                        </button>
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {video.thumbnail_url ? (
@@ -595,9 +699,16 @@ function ContentTab() {
                       {new Date(video.created_at).toLocaleDateString('fr-FR')}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => openEdit(video)}
+                          className="p-2 hover:bg-brand-500/10 rounded-lg transition-all"
+                          title="Modifier"
+                        >
+                          <Pencil size={14} className="text-brand-400" />
+                        </button>
                         <Link href={`/premium-videos/${video.id}`} className="p-2 hover:bg-slate-700/50 rounded-lg transition-all">
-                          <Eye size={14} className="text-brand-400" />
+                          <Eye size={14} className="text-slate-400" />
                         </Link>
                         <button
                           onClick={() => handleDelete(video.id)}
@@ -619,6 +730,113 @@ function ContentTab() {
           </div>
         )}
       </Card>
+
+      {/* Edit modal */}
+      <AnimatePresence>
+        {editVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={() => setEditVideo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 space-y-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                  <Pencil size={18} className="text-brand-400" />
+                  Modifier la vidéo
+                </h3>
+                <button onClick={() => setEditVideo(null)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 transition-all">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {editError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2">
+                  <AlertCircle size={16} />
+                  {editError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-300 mb-1.5 block">Titre *</label>
+                  <input
+                    type="text"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50 transition-all"
+                    placeholder="Titre de la vidéo"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-300 mb-1.5 block">Description</label>
+                  <textarea
+                    value={editForm.description}
+                    onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50 resize-none transition-all"
+                    placeholder="Description..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 mb-1.5 block">Plan minimum</label>
+                    <select
+                      value={editForm.min_plan}
+                      onChange={(e) => setEditForm((f) => ({ ...f, min_plan: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-brand-500/50 transition-all"
+                    >
+                      <option value="pro">Pro</option>
+                      <option value="premium">Premium</option>
+                      <option value="vip">VIP</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 mb-1.5 block">Catégorie</label>
+                    <select
+                      value={editForm.category_id}
+                      onChange={(e) => setEditForm((f) => ({ ...f, category_id: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-brand-500/50 transition-all"
+                    >
+                      <option value="">— Aucune —</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setEditVideo(null)}
+                  className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium text-sm transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={editSaving || !editForm.title.trim()}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-white rounded-lg font-medium text-sm disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {editSaving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                  Enregistrer
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

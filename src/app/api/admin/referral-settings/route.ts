@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/admin/referral-settings
 export async function GET(request: NextRequest) {
-  const supabase = createServerClient();
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = createServerClient() as any;
+  const { data, error } = await db
     .from('referral_settings')
     .select('*')
     .order('updated_at', { ascending: false })
@@ -28,17 +29,18 @@ export async function POST(request: NextRequest) {
       is_active,
     } = body;
 
-    const supabase = createServerClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = createServerClient() as any;
 
     // Get existing row id
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from('referral_settings')
       .select('id')
       .limit(1)
       .maybeSingle();
 
     if (existing?.id) {
-      const { error } = await supabase
+      const { error } = await db
         .from('referral_settings')
         .update({
           reward_per_subscription: Number(reward_per_subscription),
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
         .eq('id', existing.id);
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     } else {
-      const { error } = await supabase.from('referral_settings').insert({
+      const { error } = await db.from('referral_settings').insert({
         reward_per_subscription: Number(reward_per_subscription),
         reward_per_renewal: Number(reward_per_renewal),
         require_premium_to_earn: Boolean(require_premium_to_earn),

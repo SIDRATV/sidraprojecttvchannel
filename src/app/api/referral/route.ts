@@ -14,8 +14,12 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Cast to any — new referral tables are not yet in the generated Supabase types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+
     // Get or generate referral code
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from('referral_codes')
       .select('code, total_clicks, created_at')
       .eq('user_id', user.id)
@@ -24,12 +28,12 @@ export async function GET(request: NextRequest) {
     let code = existing?.code;
     if (!code) {
       // Generate via DB function
-      const { data: generated } = await supabase.rpc('generate_referral_code', { p_user_id: user.id });
+      const { data: generated } = await db.rpc('generate_referral_code', { p_user_id: user.id });
       code = generated;
     }
 
     // Get referrals with referred user info
-    const { data: referrals } = await supabase
+    const { data: referrals } = await db
       .from('referrals')
       .select(`
         id, status, created_at, activated_at,
@@ -39,16 +43,16 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     // Get total rewards earned
-    const { data: rewardsData } = await supabase
+    const { data: rewardsData } = await db
       .from('referral_rewards')
       .select('amount, reason, created_at')
       .eq('referrer_id', user.id)
       .order('created_at', { ascending: false });
 
-    const totalRewards = (rewardsData || []).reduce((sum, r) => sum + Number(r.amount), 0);
+    const totalRewards = (rewardsData || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
     // Get settings (rules)
-    const { data: settings } = await supabase
+    const { data: settings } = await db
       .from('referral_settings')
       .select('*')
       .eq('is_active', true)

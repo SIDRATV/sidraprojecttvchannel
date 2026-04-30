@@ -98,18 +98,19 @@ export async function POST(request: NextRequest) {
     if (referralCode && typeof referralCode === 'string' && referralCode.trim()) {
       try {
         const trimmedCode = referralCode.trim().toLowerCase();
-        // Use untyped client because new tables are not yet in the generated Supabase types
+        // Cast to any — new referral tables are not yet in the generated Supabase types
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const anySupabase = supabase as unknown as Record<string, any>;
-        const refResult = await anySupabase['from']('referral_codes')
-          ['select']('user_id')
-          ['eq']('code', trimmedCode)
-          ['maybeSingle']();
+        const db = supabase as any;
+        const { data: refCodeRow } = await db
+          .from('referral_codes')
+          .select('user_id')
+          .eq('code', trimmedCode)
+          .maybeSingle();
 
-        const referrerId = refResult?.data?.user_id;
+        const referrerId = refCodeRow?.user_id;
         if (referrerId && referrerId !== authData.user.id) {
           // Register the referral (status = pending until they subscribe to premium)
-          await anySupabase['from']('referrals')['insert']({
+          await db.from('referrals').insert({
             referrer_id: referrerId,
             referred_id: authData.user.id,
             status: 'pending',

@@ -1,62 +1,65 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { BottomNavBar } from '@/components/app/BottomNavBar';
 import { AppHeader } from '@/components/app/AppHeader';
 import { ProtectedRoute } from '@/components/app/ProtectedRoute';
 import { BlockedUserScreen } from '@/components/app/BlockedUserScreen';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { ProfileProvider } from '@/providers/ProfileProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 
-const MAINTENANCE_POLL_MS = 30_000; // check every 30s
-
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const showSearch = pathname === '/dashboard';
   const { user } = useAuth();
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [maintenanceRedirecting, setMaintenanceRedirecting] = useState(false);
 
-  // Client-side maintenance check — middleware only runs on hard navigations
-  useEffect(() => {
-    let active = true;
-
-    const check = async () => {
+  const checkMaintenance = useCallback(async () => {
+    try {
+      const headers: HeadersInit = {};
       try {
-        const headers: HeadersInit = {};
-        // Send auth token so API can check exemption for admins
-        try {
-          const { data: { session: s } } = await supabase.auth.getSession();
-          if (s?.access_token) {
-            headers['Authorization'] = `Bearer ${s.access_token}`;
-          }
-        } catch { /* proceed without token */ }
+        const { data: { session: s } } = await supabase.auth.getSession();
+        if (s?.access_token) headers['Authorization'] = `Bearer ${s.access_token}`;
+      } catch { /* proceed without token */ }
 
-        const res = await fetch('/api/maintenance', { cache: 'no-store', headers });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (active && data.enabled && !data.isExempt) {
-          setMaintenanceRedirecting(true);
-          // Use window.location for a hard redirect — ensures we leave the (app) layout
-          window.location.href = '/maintenance';
+      const res = await fetch('/api/maintenance', { cache: 'no-store', headers });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.enabled && !data.isExempt) {
+        setMaintenanceRedirecting(true);
+        window.location.href = '/maintenance';
+      }
+    } catch { /* ignore network errors */ }
+  }, []);
+
+  // Check once on mount / route change
+  useEffect(() => {
+    checkMaintenance();
+  }, [checkMaintenance]);
+
+  // Supabase Realtime: react instantly when admin toggles maintenance mode
+  useEffect(() => {
+    const channel = supabase
+      .channel('maintenance_mode_watch')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'site_settings',
+          filter: 'key=eq.maintenance_mode',
+        },
+        () => {
+          // Re-check via API to get correct exemption status for this user
+          checkMaintenance();
         }
-      } catch { /* ignore network errors */ }
-    };
+      )
+      .subscribe();
 
-    // Check once on mount / route change
-    check();
-
-    // Poll periodically
-    intervalRef.current = setInterval(check, MAINTENANCE_POLL_MS);
-
-    return () => {
-      active = false;
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [pathname]);
+    return () => { supabase.removeChannel(channel); };
+  }, [checkMaintenance]);
 
   // Show nothing while redirecting to maintenance
   if (maintenanceRedirecting) {

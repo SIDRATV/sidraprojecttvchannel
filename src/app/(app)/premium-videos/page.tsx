@@ -41,13 +41,20 @@ export default function PremiumVideosPage() {
     });
   }, [selectedCategory]);
 
+  const sortedVideos = [...videos].sort((a, b) => {
+    const ao = (a as any).sort_order ?? 999999;
+    const bo = (b as any).sort_order ?? 999999;
+    if (ao !== bo) return ao - bo;
+    return new Date((b as any).created_at).getTime() - new Date((a as any).created_at).getTime();
+  });
+
   const filteredVideos = searchQuery
-    ? videos.filter(
+    ? sortedVideos.filter(
         (v) =>
           v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           v.description?.toLowerCase().includes(searchQuery.toLowerCase()),
       )
-    : videos;
+    : sortedVideos;
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-gray-950 transition-colors overflow-hidden">

@@ -819,11 +819,30 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                 <button onClick={() => setShowModal(false)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400"><X size={18} /></button>
               </div>
               <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
-                <div className="grid grid-cols-[60px_1fr] gap-3">
+                {/* Logo strip preview + Nom */}
+                <div className="grid grid-cols-[72px_1fr] gap-3 items-start">
+                  {/* Live preview: exact rendering as it appears in the logo strip */}
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Emoji</label>
-                    <input type="text" value={form.logo_emoji} onChange={(e) => setForm({ ...form, logo_emoji: e.target.value })}
-                      className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-2.5 text-center text-2xl focus:outline-none focus:border-brand-500/50" />
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Logo strip</label>
+                    <div className="w-[72px] h-[72px] bg-white/[0.06] border border-white/[0.1] rounded-xl flex items-center justify-center overflow-hidden">
+                      {form.logo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={form.logo_url}
+                          alt="Logo"
+                          className="w-full h-full object-contain p-1"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }}
+                        />
+                      ) : null}
+                      {/* Fallback emoji shown when no logo_url or image fails */}
+                      <span
+                        className="text-3xl leading-none"
+                        style={{ display: form.logo_url ? 'none' : 'block' }}
+                      >
+                        {form.logo_emoji || '🏢'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-600 mt-1 text-center leading-tight">aperçu</p>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nom</label>
@@ -859,17 +878,28 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                     placeholder="https://..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">URL du logo (affiché dans la bande défilante)</label>
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">
+                    URL du logo
+                    <span className="ml-1 text-slate-600 font-normal">(affiché dans la bande défilante)</span>
+                  </label>
                   <input type="url" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
                     placeholder="https://exemple.com/logo.png" className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                   {form.logo_url && (
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2 flex items-center gap-3 p-2 bg-white/[0.03] rounded-lg border border-white/[0.06]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={form.logo_url} alt="Logo preview" className="w-8 h-8 rounded-lg object-contain border border-white/10 bg-white/5"
+                      <img src={form.logo_url} alt="Logo preview" className="w-10 h-10 rounded-lg object-contain border border-white/10 bg-white/5"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                      <span className="text-[11px] text-slate-500">Aperçu du logo</span>
+                      <span className="text-[11px] text-slate-500">Aperçu — rendu dans la bande défilante</span>
                     </div>
                   )}
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">
+                    Emoji fallback
+                    <span className="ml-1 text-slate-600 font-normal">(affiché si l'URL est vide ou invalide)</span>
+                  </label>
+                  <input type="text" value={form.logo_emoji} onChange={(e) => setForm({ ...form, logo_emoji: e.target.value })}
+                    className="w-24 bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-2.5 text-center text-2xl focus:outline-none focus:border-brand-500/50" />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-400 mb-1.5 block">Avantages (séparés par virgule)</label>

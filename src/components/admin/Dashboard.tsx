@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3,
@@ -49,8 +49,7 @@ import {
   Mail,
   Gift,
   Pencil,
-  ArrowUp,
-  ArrowDown,
+  GripVertical,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui';
@@ -475,7 +474,9 @@ function ContentTab() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [reordering, setReordering] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
   const [editVideo, setEditVideo] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ title: '', description: '', min_plan: 'pro', category_id: '' });
   const [editSaving, setEditSaving] = useState(false);
@@ -530,28 +531,29 @@ function ContentTab() {
       )
     : sorted;
 
-  const handleMove = async (videoId: string, direction: 'up' | 'down') => {
-    const idx = sorted.findIndex((v) => v.id === videoId);
-    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= sorted.length) return;
+  const handleDrop = async (targetId: string) => {
+    const fromId = dragIdRef.current;
+    if (!fromId || fromId === targetId) return;
+    const fromIdx = sorted.findIndex((v) => v.id === fromId);
+    const toIdx = sorted.findIndex((v) => v.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
 
-    setReordering(true);
-    const aId = sorted[idx].id;
-    const bId = sorted[targetIdx].id;
-    // videoA moves to targetIdx position, videoB moves to idx position
-    const aOrder = targetIdx;
-    const bOrder = idx;
+    // Rebuild array with the dragged item at the new position
+    const reordered = [...sorted];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
 
-    setVideos((prev) =>
-      prev.map((v) => {
-        if (v.id === aId) return { ...v, sort_order: aOrder };
-        if (v.id === bId) return { ...v, sort_order: bOrder };
-        return v;
-      }),
-    );
+    // Assign clean sort_order values: 0, 10, 20, ...
+    const updated = reordered.map((v, i) => ({ ...v, sort_order: i * 10 }));
+    setVideos(updated);
 
-    await Promise.all([patchVideo(aId, { sort_order: aOrder }), patchVideo(bId, { sort_order: bOrder })]);
-    setReordering(false);
+    // Persist only changed rows
+    const prevSnapshot = videos;
+    const changed = updated.filter((v) => {
+      const old = prevSnapshot.find((o) => o.id === v.id);
+      return !old || old.sort_order !== v.sort_order;
+    });
+    await Promise.all(changed.map((v) => patchVideo(v.id, { sort_order: v.sort_order })));
   };
 
   const openEdit = (video: any) => {
@@ -631,7 +633,9 @@ function ContentTab() {
             <table className="w-full text-sm">
               <thead className="bg-slate-700/30 border-b border-slate-700/50">
                 <tr>
-                  <th className="px-4 py-4 text-center font-semibold text-slate-300 w-16">Ordre</th>
+                  <th className="px-4 py-4 text-center font-semibold text-slate-300 w-20">
+                    {searchQuery ? 'N°' : <span className="flex items-center justify-center gap-1"><GripVertical size={14} />Ordre</span>}
+                  </th>
                   <th className="px-6 py-4 text-left font-semibold text-slate-300">Titre</th>
                   <th className="px-6 py-4 text-left font-semibold text-slate-300">Plan</th>
                   <th className="px-6 py-4 text-left font-semibold text-slate-300">Qualités</th>
@@ -642,27 +646,31 @@ function ContentTab() {
               </thead>
               <tbody className="divide-y divide-slate-700/30">
                 {filtered.map((video, idx) => (
-                  <tr key={video.id} className="hover:bg-slate-700/20 transition-colors">
-                    {/* Order column with up/down arrows */}
+                  <tr
+                    key={video.id}
+                    draggable={!searchQuery}
+                    onDragStart={() => { dragIdRef.current = video.id; setDraggingId(video.id); }}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverId(video.id); }}
+                    onDragLeave={() => setDragOverId((prev) => prev === video.id ? null : prev)}
+                    onDrop={() => { handleDrop(video.id); setDragOverId(null); }}
+                    onDragEnd={() => { dragIdRef.current = null; setDraggingId(null); setDragOverId(null); }}
+                    className={`transition-all select-none ${
+                      !searchQuery ? 'cursor-grab active:cursor-grabbing' : ''
+                    } ${
+                      draggingId === video.id
+                        ? 'opacity-30'
+                        : dragOverId === video.id
+                        ? 'bg-brand-500/10 border-t-2 border-brand-400'
+                        : 'hover:bg-slate-700/20'
+                    }`}
+                  >
+                    {/* Drag handle */}
                     <td className="px-4 py-4">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <button
-                          onClick={() => handleMove(video.id, 'up')}
-                          disabled={idx === 0 || reordering || !!searchQuery}
-                          className="p-0.5 hover:bg-slate-600/50 rounded disabled:opacity-20 transition-all"
-                          title="Monter"
-                        >
-                          <ArrowUp size={13} className="text-slate-400" />
-                        </button>
-                        <span className="text-xs font-mono text-slate-500 leading-none select-none">{idx + 1}</span>
-                        <button
-                          onClick={() => handleMove(video.id, 'down')}
-                          disabled={idx === filtered.length - 1 || reordering || !!searchQuery}
-                          className="p-0.5 hover:bg-slate-600/50 rounded disabled:opacity-20 transition-all"
-                          title="Descendre"
-                        >
-                          <ArrowDown size={13} className="text-slate-400" />
-                        </button>
+                      <div className="flex items-center gap-1.5 justify-center">
+                        {!searchQuery && (
+                          <GripVertical size={16} className="text-slate-400 flex-shrink-0" />
+                        )}
+                        <span className="text-xs font-mono text-slate-500 tabular-nums">{idx + 1}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">

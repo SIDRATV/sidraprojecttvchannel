@@ -58,8 +58,8 @@ export function useNotificationSound() {
     if (Notification.permission !== 'granted') return;
 
     const notifOptions = {
-      badge: '/images/logo.png',
-      icon: '/images/logo.png',
+      badge: '/sidra-logo.webp',
+      icon: '/sidra-logo.webp',
       tag: 'sidra-notification',
       requireInteraction: false,
       ...options,

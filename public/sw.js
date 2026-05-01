@@ -108,8 +108,8 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SHOW_NOTIFICATION') {
     const { title, options } = event.data;
     self.registration.showNotification(title, {
-      icon: '/images/logo.png',
-      badge: '/images/logo.png',
+      icon: '/sidra-logo.webp',
+      badge: '/sidra-logo.webp',
       tag: 'sidra-notification',
       requireInteraction: false,
       ...options,

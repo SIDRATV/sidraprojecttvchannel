@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { supabase } from '@/lib/supabase';
 
 interface Notification {
   id: string;
@@ -71,8 +72,8 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
             const latestNotif = newNotifications[0];
             showBrowserNotification(latestNotif.title, {
               body: latestNotif.message,
-              badge: '/images/favicon.ico',
-              icon: '/images/favicon.ico',
+              badge: '/sidra-logo.webp',
+              icon: '/sidra-logo.webp',
               tag: `notification-${latestNotif.id}`,
               link: latestNotif.link || '/',
             });
@@ -92,29 +93,48 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
     } catch {}
   }, [session?.access_token, playSound, showBrowserNotification]);
 
-  // Fetch on mount + poll with adaptive interval (fast at start, then slower)
+  // Fetch on mount + Supabase Realtime for instant notifications
   useEffect(() => {
     fetchNotifications();
-    
-    // Fast polling for first 2 minutes (every 3 seconds)
-    let fastPollingTimeout: NodeJS.Timeout | null = null;
-    let slowPollingInterval: NodeJS.Timeout | null = null;
-    let fastPollingTimer: NodeJS.Timeout | null = null;
-    
-    fastPollingTimeout = setInterval(fetchNotifications, 3000);
-    
-    // After 2 minutes, switch to slow polling (30 seconds)
-    fastPollingTimer = setTimeout(() => {
-      if (fastPollingTimeout) clearInterval(fastPollingTimeout);
-      slowPollingInterval = setInterval(fetchNotifications, 30000);
-    }, 120000);
-    
-    return () => {
-      if (fastPollingTimeout) clearInterval(fastPollingTimeout);
-      if (slowPollingInterval) clearInterval(slowPollingInterval);
-      if (fastPollingTimer) clearTimeout(fastPollingTimer);
-    };
+
+    // Fallback slow poll (60s) — catches anything Realtime misses
+    const slowPoll = setInterval(fetchNotifications, 60000);
+
+    return () => clearInterval(slowPoll);
   }, [fetchNotifications]);
+
+  // Supabase Realtime: subscribe to new notifications for this user
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`notifications_header_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newNotif = payload.new as Notification;
+          setNotifications((prev) => [newNotif, ...prev.slice(0, 9)]);
+          setUnreadCount((prev) => prev + 1);
+          playSound();
+          showBrowserNotification(newNotif.title, {
+            body: newNotif.message,
+            badge: '/sidra-logo.webp',
+            icon: '/sidra-logo.webp',
+            tag: `notification-${newNotif.id}`,
+            link: newNotif.link || '/',
+          });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, playSound, showBrowserNotification]);
 
   const markAllRead = async () => {
     if (!session?.access_token || unreadCount === 0) return;

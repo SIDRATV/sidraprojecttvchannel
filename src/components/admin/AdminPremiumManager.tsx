@@ -6,7 +6,7 @@ import {
   Crown, DollarSign, Tag, ShieldAlert, TrendingUp,
   Plus, Trash2, Check, X, Loader2, Copy, AlertTriangle,
   Users, Calendar, Percent, Gift, Eye, EyeOff, RefreshCw,
-  Zap, Star,
+  Zap, Star, Pencil, UserPlus, Clock,
 } from 'lucide-react';
 
 interface Props { token: string; }
@@ -412,10 +412,40 @@ function FraudSection({ alerts, onResolve, saving }: { alerts: FraudAlert[]; onR
 // ─── SUBSCRIBERS ────────────────────────────────
 function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Subscriber[]; onAction: (b: any) => void; saving: boolean }) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  // Modal state for edit (extend / change plan)
+  const [editSub, setEditSub] = useState<Subscriber | null>(null);
+  const [extendDays, setExtendDays] = useState('30');
+  const [newPlan, setNewPlan] = useState('');
+  // Modal state for assign (gift subscription)
+  const [showAssign, setShowAssign] = useState(false);
+  const [assignUserId, setAssignUserId] = useState('');
+  const [assignPlan, setAssignPlan] = useState('pro');
+  const [assignDays, setAssignDays] = useState('30');
 
   const handleCancel = (subId: string) => {
     onAction({ action: 'cancel_subscription', subscriptionId: subId });
     setCancellingId(null);
+  };
+
+  const handleExtend = () => {
+    if (!editSub || !extendDays) return;
+    onAction({ action: 'extend_subscription', subscriptionId: editSub.id, days: Number(extendDays) });
+    setEditSub(null);
+  };
+
+  const handleChangePlan = () => {
+    if (!editSub || !newPlan) return;
+    onAction({ action: 'change_subscription_plan', subscriptionId: editSub.id, newPlan });
+    setEditSub(null);
+  };
+
+  const handleAssign = () => {
+    if (!assignUserId.trim() || !assignPlan || !assignDays) return;
+    onAction({ action: 'assign_subscription', userId: assignUserId.trim(), planId: assignPlan, days: Number(assignDays) });
+    setShowAssign(false);
+    setAssignUserId('');
+    setAssignDays('30');
+    setAssignPlan('pro');
   };
 
   const planColors: Record<string, string> = {
@@ -428,15 +458,158 @@ function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Su
     monthly: '1 Mois',
     quarterly: '3 Mois',
     yearly: '1 An',
+    admin_gift: 'Cadeau Admin',
   };
+
+  const isExpired = (s: Subscriber) => s.expires_at && new Date(s.expires_at) < new Date();
 
   return (
     <div className="space-y-4">
-      <h3 className="text-white font-bold flex items-center gap-2">
-        <Users size={18} className="text-gold-400" /> Abonnés Actifs
-        {subscribers.length > 0 && <span className="px-2 py-0.5 bg-gold-500/20 text-gold-400 text-xs rounded-full">{subscribers.length}</span>}
-      </h3>
+      {/* Header + Assign button */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-white font-bold flex items-center gap-2">
+          <Users size={18} className="text-gold-400" /> Abonnés Actifs
+          {subscribers.length > 0 && (
+            <span className="px-2 py-0.5 bg-gold-500/20 text-gold-400 text-xs rounded-full">{subscribers.length}</span>
+          )}
+        </h3>
+        <button
+          onClick={() => setShowAssign(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-lg text-xs font-medium hover:bg-brand-500/30 transition-all"
+        >
+          <UserPlus size={13} />
+          Attribuer un abonnement
+        </button>
+      </div>
 
+      {/* Assign modal */}
+      <AnimatePresence>
+        {showAssign && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className={`${glass} p-5 space-y-3 border-brand-500/30`}
+          >
+            <h4 className="text-white font-semibold flex items-center gap-2 text-sm">
+              <Gift size={15} className="text-brand-400" /> Attribuer un abonnement gratuit
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">ID utilisateur</label>
+                <input
+                  value={assignUserId}
+                  onChange={e => setAssignUserId(e.target.value)}
+                  placeholder="UUID de l'utilisateur"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-brand-500/50 focus:outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Plan</label>
+                <select
+                  value={assignPlan}
+                  onChange={e => setAssignPlan(e.target.value)}
+                  className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-brand-500/50 focus:outline-none"
+                >
+                  <option value="pro">Pro</option>
+                  <option value="premium">Premium</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Durée (jours)</label>
+                <input
+                  type="number" min="1" max="3650"
+                  value={assignDays}
+                  onChange={e => setAssignDays(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-brand-500/50 focus:outline-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                disabled={saving || !assignUserId.trim()}
+                onClick={handleAssign}
+                className="flex items-center gap-1.5 px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-50 transition-all"
+              >
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                Confirmer
+              </button>
+              <button onClick={() => setShowAssign(false)} className="px-4 py-2 bg-white/5 text-slate-400 rounded-lg text-sm hover:bg-white/10">
+                Annuler
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit modal (extend / change plan) */}
+      <AnimatePresence>
+        {editSub && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className={`${glass} p-5 space-y-4 border-gold-500/30`}
+          >
+            <h4 className="text-white font-semibold text-sm flex items-center gap-2">
+              <Pencil size={14} className="text-gold-400" />
+              Modifier : {editSub.users?.full_name || editSub.users?.email || editSub.user_id}
+            </h4>
+
+            {/* Extend */}
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                <Clock size={11} /> Prolonger de (jours)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number" min="1" max="3650"
+                  value={extendDays}
+                  onChange={e => setExtendDays(e.target.value)}
+                  className="w-28 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-500/50 focus:outline-none"
+                />
+                <button
+                  disabled={saving || !extendDays}
+                  onClick={handleExtend}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-gold-500/20 text-gold-400 border border-gold-500/30 rounded-lg text-sm hover:bg-gold-500/30 disabled:opacity-50"
+                >
+                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                  Prolonger
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Expiration actuelle : {new Date(editSub.expires_at).toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+
+            {/* Change plan */}
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Changer le plan</label>
+              <div className="flex gap-2">
+                <select
+                  value={newPlan || editSub.plan_id}
+                  onChange={e => setNewPlan(e.target.value)}
+                  className="bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-500/50 focus:outline-none"
+                >
+                  <option value="pro">Pro</option>
+                  <option value="premium">Premium</option>
+                  <option value="vip">VIP</option>
+                </select>
+                <button
+                  disabled={saving || !newPlan || newPlan === editSub.plan_id}
+                  onClick={handleChangePlan}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-lg text-sm hover:bg-brand-500/30 disabled:opacity-50"
+                >
+                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                  Appliquer
+                </button>
+              </div>
+            </div>
+
+            <button onClick={() => { setEditSub(null); setNewPlan(''); setExtendDays('30'); }}
+              className="text-xs text-slate-400 hover:text-white transition-all">
+              Fermer
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* List */}
       {subscribers.length === 0 ? (
         <div className={`${glass} p-8 text-center`}>
           <Users size={32} className="text-slate-500 mx-auto mb-2" />
@@ -448,8 +621,8 @@ function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Su
             <motion.div key={s.id} layout className={`${glass} p-4`}>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 rounded-lg bg-gold-500/20">
-                    <Crown size={16} className="text-gold-400" />
+                  <div className={`p-2 rounded-lg ${isExpired(s) ? 'bg-red-500/20' : 'bg-gold-500/20'}`}>
+                    <Crown size={16} className={isExpired(s) ? 'text-red-400' : 'text-gold-400'} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-white font-medium text-sm truncate">
@@ -458,45 +631,53 @@ function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Su
                     {s.users?.email && s.users?.full_name && (
                       <p className="text-xs text-slate-500 truncate">{s.users.email}</p>
                     )}
-                    <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 mt-0.5">
                       <span className={`px-1.5 py-0.5 rounded text-xs font-medium capitalize ${planColors[s.plan_id] || 'bg-slate-500/20 text-slate-400'}`}>
                         {s.plan_id}
                       </span>
                       <span>{durationLabels[s.duration] || s.duration}</span>
-                      <span>{Number(s.amount_paid).toFixed(2)} SIDRA</span>
-                      <span className="flex items-center gap-1">
+                      {Number(s.amount_paid) > 0 && <span>{Number(s.amount_paid).toFixed(2)} SIDRA</span>}
+                      <span className={`flex items-center gap-1 ${isExpired(s) ? 'text-red-400' : ''}`}>
                         <Calendar size={10} />
-                        expire {new Date(s.expires_at).toLocaleDateString('fr-FR')}
+                        {isExpired(s) ? 'Expiré le ' : 'expire le '}
+                        {new Date(s.expires_at).toLocaleDateString('fr-FR')}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex items-center gap-1">
+                  {/* Edit button */}
+                  <button
+                    onClick={() => { setEditSub(s); setNewPlan(s.plan_id); setExtendDays('30'); setCancellingId(null); }}
+                    className="p-2 hover:bg-gold-500/10 rounded-lg transition-all"
+                    title="Prolonger / Changer plan"
+                  >
+                    <Pencil size={13} className="text-gold-400" />
+                  </button>
+
+                  {/* Cancel */}
                   {cancellingId === s.id ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <span className="text-xs text-red-400">Confirmer ?</span>
                       <button
                         disabled={saving}
                         onClick={() => handleCancel(s.id)}
-                        className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/30 disabled:opacity-50"
+                        className="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/30 disabled:opacity-50"
                       >
-                        {saving ? <Loader2 size={12} className="animate-spin" /> : 'Oui, annuler'}
+                        {saving ? <Loader2 size={11} className="animate-spin" /> : 'Oui'}
                       </button>
-                      <button
-                        onClick={() => setCancellingId(null)}
-                        className="px-3 py-1.5 bg-white/5 text-slate-400 rounded-lg text-xs hover:bg-white/10"
-                      >
+                      <button onClick={() => setCancellingId(null)} className="px-2 py-1 bg-white/5 text-slate-400 rounded-lg text-xs hover:bg-white/10">
                         Non
                       </button>
                     </div>
                   ) : (
                     <button
-                      onClick={() => setCancellingId(s.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-all"
+                      onClick={() => { setCancellingId(s.id); setEditSub(null); }}
+                      className="p-2 hover:bg-red-500/10 rounded-lg transition-all"
+                      title="Annuler l'abonnement"
                     >
-                      <X size={12} />
-                      Annuler
+                      <X size={13} className="text-red-400" />
                     </button>
                   )}
                 </div>

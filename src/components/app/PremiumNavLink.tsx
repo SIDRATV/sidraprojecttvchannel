@@ -9,7 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 export function PremiumNavLink() {
   const { status } = usePremium();
   const { user } = useAuth();
-  const isActive = status.isActive || !!user?.premium_plan;
+  const isActive = status.isActive || !!(user?.premium_plan &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
 
   // If premium is active, link to dashboard, otherwise to premium page
   const href = isActive ? '/premium-dashboard' : '/premium';

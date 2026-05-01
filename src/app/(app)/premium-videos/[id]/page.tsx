@@ -99,12 +99,13 @@ export default function WatchPremiumVideoPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Premium: user must be logged in and have a premium_plan set
-  const isPremiumUser = !!(user && user.premium_plan);
+  // Premium: user must be logged in, have a premium_plan set, and not expired
+  const isPremiumUser = !!(user && user.premium_plan &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
 
   const fetchVideo = useCallback(
     async (q: string) => {
-      const data = await premiumVideoService.getVideo(id, q);
+      const data = await premiumVideoService.getVideo(id, q, session?.access_token);
       if (!data) {
         setError('Video not found');
         setLoading(false);
@@ -116,7 +117,8 @@ export default function WatchPremiumVideoPage() {
       setAvailableQualities(data.available_qualities);
       setLoading(false);
     },
-    [id],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [id, session?.access_token],
   );
 
   useEffect(() => {

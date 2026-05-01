@@ -16,8 +16,9 @@ export default function PremiumDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  // Check BOTH localStorage status AND server user data
-  const isPremium = status.isActive || !!user?.premium_plan;
+  // Check BOTH localStorage status AND server user data (with expiry check)
+  const isPremium = status.isActive || !!(user?.premium_plan &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
 
   useEffect(() => {
     // Redirect to subscribe if not premium user (check both sources)

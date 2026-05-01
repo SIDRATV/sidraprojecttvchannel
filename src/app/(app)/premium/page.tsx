@@ -32,7 +32,8 @@ export default function PremiumPage() {
   const router = useRouter();
   const { session, user } = useAuth();
   const { status } = usePremium();
-  const isPremiumUser = status.isActive || !!user?.premium_plan;
+  const isPremiumUser = status.isActive || !!(user?.premium_plan &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
 
   // Redirect premium users to their dashboard
   useEffect(() => {

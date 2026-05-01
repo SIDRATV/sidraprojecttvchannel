@@ -35,6 +35,7 @@ export const premiumVideoService = {
   async getVideo(
     id: string,
     quality = '720p',
+    token?: string,
   ): Promise<{
     video: PremiumVideoWithRelations;
     stream_url: string;
@@ -42,7 +43,9 @@ export const premiumVideoService = {
     available_qualities: string[];
   } | null> {
     try {
-      const res = await fetch(`${API_BASE}/${id}?quality=${quality}`);
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/${id}?quality=${quality}`, { headers });
       if (!res.ok) return null;
       return await res.json();
     } catch (error) {

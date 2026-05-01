@@ -20,7 +20,8 @@ interface PremiumContentPreviewProps {
 export default function PremiumContentPreview({ content }: PremiumContentPreviewProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const { user } = useAuth();
-  const isPremium = !!user?.premium_plan;
+  const isPremium = !!(user?.premium_plan &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
 
   return (
     <div className="relative overflow-hidden">

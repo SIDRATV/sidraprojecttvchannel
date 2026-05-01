@@ -29,8 +29,9 @@ export default function PremiumVideosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Premium: user must be logged in and have a premium_plan set
-  const isPremiumUser = !!(user && user.premium_plan);
+  // Premium: user must be logged in, have a premium_plan set, and not expired
+  const isPremiumUser = !!(user && user.premium_plan &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
 
   useEffect(() => {
     categoryService.getCategories().then(setCategories).catch(() => {});

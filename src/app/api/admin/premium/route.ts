@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
       getFraudAlerts(false),
     ]);
 
-    // Fetch active subscribers for admin management
+    // Fetch active + recently expired subscribers for admin management
     const { data: rawSubs } = await (supabase as any)
       .from('premium_subscriptions')
       .select('id, user_id, plan_id, duration, status, amount_paid, starts_at, expires_at, cancelled_at')
-      .in('status', ['active'])
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .in('status', ['active', 'expired'])
+      .order('expires_at', { ascending: false })
+      .limit(200);
 
     // Enrich with user data from public.users (FK is on auth.users so join doesn't work)
     let subscribers: any[] = [];
@@ -147,6 +147,141 @@ export async function POST(request: NextRequest) {
         if (userErr) throw userErr;
 
         return NextResponse.json({ success: true });
+      }
+
+      case 'extend_subscription': {
+        // Extend an existing subscription by N days
+        const { subscriptionId, days } = body;
+        if (!subscriptionId || !days || days <= 0) {
+          return NextResponse.json({ error: 'subscriptionId and days (> 0) required' }, { status: 400 });
+        }
+        const supabase = createServerClient();
+
+        const { data: sub, error: subErr } = await (supabase as any)
+          .from('premium_subscriptions')
+          .select('id, user_id, expires_at, status')
+          .eq('id', subscriptionId)
+          .single();
+
+        if (subErr || !sub) return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
+
+        // Extend from current expiry (or now if expired)
+        const baseDate = sub.expires_at && new Date(sub.expires_at) > new Date()
+          ? new Date(sub.expires_at)
+          : new Date();
+        const newExpiry = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+        const newExpiryIso = newExpiry.toISOString();
+
+        const { error: extErr } = await (supabase as any)
+          .from('premium_subscriptions')
+          .update({ expires_at: newExpiryIso, status: 'active' })
+          .eq('id', subscriptionId);
+        if (extErr) throw extErr;
+
+        // Update user record
+        const { error: userExtErr } = await (supabase as any)
+          .from('users')
+          .update({ premium_expires_at: newExpiryIso, premium_subscription_id: subscriptionId })
+          .eq('id', sub.user_id);
+        if (userExtErr) throw userExtErr;
+
+        return NextResponse.json({ success: true, newExpiry: newExpiryIso });
+      }
+
+      case 'change_subscription_plan': {
+        // Change the plan of an existing active subscription
+        const { subscriptionId, newPlan } = body;
+        if (!subscriptionId || !newPlan) {
+          return NextResponse.json({ error: 'subscriptionId and newPlan required' }, { status: 400 });
+        }
+        if (!['pro', 'premium', 'vip'].includes(newPlan)) {
+          return NextResponse.json({ error: 'newPlan must be pro, premium, or vip' }, { status: 400 });
+        }
+        const supabase = createServerClient();
+
+        const { data: sub, error: subErr } = await (supabase as any)
+          .from('premium_subscriptions')
+          .select('id, user_id')
+          .eq('id', subscriptionId)
+          .single();
+
+        if (subErr || !sub) return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
+
+        const { error: planErr } = await (supabase as any)
+          .from('premium_subscriptions')
+          .update({ plan_id: newPlan })
+          .eq('id', subscriptionId);
+        if (planErr) throw planErr;
+
+        const { error: userPlanErr } = await (supabase as any)
+          .from('users')
+          .update({ premium_plan: newPlan })
+          .eq('id', sub.user_id);
+        if (userPlanErr) throw userPlanErr;
+
+        return NextResponse.json({ success: true });
+      }
+
+      case 'assign_subscription': {
+        // Manually assign a free subscription to a user (admin gift)
+        const { userId, planId, days } = body;
+        if (!userId || !planId || !days || days <= 0) {
+          return NextResponse.json({ error: 'userId, planId and days (> 0) required' }, { status: 400 });
+        }
+        if (!['pro', 'premium', 'vip'].includes(planId)) {
+          return NextResponse.json({ error: 'planId must be pro, premium, or vip' }, { status: 400 });
+        }
+        const supabase = createServerClient();
+
+        // Verify target user exists
+        const { data: targetUser, error: userFindErr } = await (supabase as any)
+          .from('users')
+          .select('id, full_name, email')
+          .eq('id', userId)
+          .single();
+        if (userFindErr || !targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+
+        // Cancel any existing active subscription
+        await (supabase as any)
+          .from('premium_subscriptions')
+          .update({ status: 'cancelled', cancelled_at: now.toISOString() })
+          .eq('user_id', userId)
+          .eq('status', 'active');
+
+        // Create new subscription row (0 cost = admin gift)
+        const { data: newSub, error: insertErr } = await (supabase as any)
+          .from('premium_subscriptions')
+          .insert({
+            user_id: userId,
+            plan_id: planId,
+            duration: 'monthly',
+            status: 'active',
+            amount_paid: 0,
+            currency: 'SIDRA',
+            payment_method: 'admin_gift',
+            starts_at: now.toISOString(),
+            expires_at: expiresAt,
+          })
+          .select('id')
+          .single();
+
+        if (insertErr) throw insertErr;
+
+        // Update user premium fields
+        const { error: userAssignErr } = await (supabase as any)
+          .from('users')
+          .update({
+            premium_plan: planId,
+            premium_expires_at: expiresAt,
+            premium_subscription_id: newSub.id,
+          })
+          .eq('id', userId);
+        if (userAssignErr) throw userAssignErr;
+
+        return NextResponse.json({ success: true, subscriptionId: newSub.id, expiresAt });
       }
 
       default:

@@ -32,7 +32,7 @@ export function PremiumAnalytics({ sptcEarned, totalEarned, referrals }: Analyti
   return (
     <section className="space-y-8">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -65,7 +65,7 @@ export function PremiumAnalytics({ sptcEarned, totalEarned, referrals }: Analyti
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-gradient-to-br from-purple-600/20 to-purple-500/10 border border-purple-500/30 rounded-xl p-6 space-y-3"
+          className="col-span-2 bg-gradient-to-br from-purple-600/20 to-purple-500/10 border border-purple-500/30 rounded-xl p-6 space-y-3"
         >
           <div className="flex items-center justify-between">
             <h3 className="text-gray-700 dark:text-gray-400 text-sm font-medium">Referrals</h3>

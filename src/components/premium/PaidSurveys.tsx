@@ -91,7 +91,7 @@ export function PaidSurveys() {
   return (
     <section className="space-y-8">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="bg-gradient-to-br from-green-600/20 to-green-500/10 border border-green-500/30 rounded-xl p-6">
           <h3 className="text-gray-700 dark:text-gray-400 text-sm font-medium mb-2">Sondages complétés</h3>
@@ -105,7 +105,7 @@ export function PaidSurveys() {
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">SPTC</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-gradient-to-br from-orange-600/20 to-orange-500/10 border border-orange-500/30 rounded-xl p-6">
+          className="col-span-2 bg-gradient-to-br from-orange-600/20 to-orange-500/10 border border-orange-500/30 rounded-xl p-6">
           <h3 className="text-gray-700 dark:text-gray-400 text-sm font-medium mb-2">Sondages disponibles</h3>
           <p className="text-4xl font-bold text-gray-950 dark:text-white">{availableSurveys}</p>
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">à compléter</p>

@@ -159,13 +159,13 @@ export async function POST(request: NextRequest) {
 
         const { data: sub, error: subErr } = await (supabase as any)
           .from('premium_subscriptions')
-          .select('id, user_id, expires_at, status')
+          .select('id, user_id, expires_at, status, plan_id')
           .eq('id', subscriptionId)
           .single();
 
         if (subErr || !sub) return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
 
-        // Extend from current expiry (or now if expired)
+        // Extend from current expiry (or now if already expired)
         const baseDate = sub.expires_at && new Date(sub.expires_at) > new Date()
           ? new Date(sub.expires_at)
           : new Date();
@@ -178,12 +178,29 @@ export async function POST(request: NextRequest) {
           .eq('id', subscriptionId);
         if (extErr) throw extErr;
 
-        // Update user record
+        // Restore premium_plan if it was cleared (expired) + update expiry + link subscription
         const { error: userExtErr } = await (supabase as any)
           .from('users')
-          .update({ premium_expires_at: newExpiryIso, premium_subscription_id: subscriptionId })
+          .update({
+            premium_plan: sub.plan_id,
+            premium_expires_at: newExpiryIso,
+            premium_subscription_id: subscriptionId,
+          })
           .eq('id', sub.user_id);
         if (userExtErr) throw userExtErr;
+
+        // Notify the user
+        const expiryLabel = newExpiry.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        await (supabase as any)
+          .from('notifications')
+          .insert({
+            user_id: sub.user_id,
+            type: 'subscription',
+            title: 'Abonnement prolongé',
+            message: `Votre abonnement ${(sub.plan_id as string).toUpperCase()} a été prolongé avec succès. Il expirera le ${expiryLabel}.`,
+            icon: 'crown',
+            link: '/premium',
+          });
 
         return NextResponse.json({ success: true, newExpiry: newExpiryIso });
       }
@@ -218,6 +235,18 @@ export async function POST(request: NextRequest) {
           .update({ premium_plan: newPlan })
           .eq('id', sub.user_id);
         if (userPlanErr) throw userPlanErr;
+
+        // Notify the user
+        await (supabase as any)
+          .from('notifications')
+          .insert({
+            user_id: sub.user_id,
+            type: 'subscription',
+            title: 'Plan d\'abonnement mis à jour',
+            message: `Votre abonnement a été changé vers le plan ${(newPlan as string).toUpperCase()} par l'administration.`,
+            icon: 'crown',
+            link: '/premium',
+          });
 
         return NextResponse.json({ success: true });
       }
@@ -280,6 +309,19 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', userId);
         if (userAssignErr) throw userAssignErr;
+
+        // Notify the user
+        const assignExpiryLabel = new Date(expiresAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        await (supabase as any)
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            type: 'subscription',
+            title: 'Abonnement offert',
+            message: `L'administration vous a offert un abonnement ${(planId as string).toUpperCase()} valable jusqu'au ${assignExpiryLabel}. Profitez-en !`,
+            icon: 'gift',
+            link: '/premium',
+          });
 
         return NextResponse.json({ success: true, subscriptionId: newSub.id, expiresAt });
       }

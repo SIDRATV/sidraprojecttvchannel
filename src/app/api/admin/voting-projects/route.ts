@@ -99,6 +99,15 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
+    // Broadcast notification to all users
+    await (supabase as any).rpc('broadcast_notification', {
+      p_type: 'system',
+      p_title: 'Nouveau projet de vote',
+      p_message: `"${title}" est maintenant disponible. Venez voter !`,
+      p_icon: 'vote',
+      p_link: '/explore/voting-project',
+    });
+
     return NextResponse.json({ success: true, project: data });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -102,6 +102,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // Broadcast notification when published (not draft)
+    if ((status || 'published') !== 'draft') {
+      await (supabase as any).rpc('broadcast_notification', {
+        p_type: 'system',
+        p_title: 'Nouvelle actualité',
+        p_message: title,
+        p_icon: 'newspaper',
+        p_link: '/explore/actualiter',
+      });
+    }
+
     return NextResponse.json({ success: true, article: data });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

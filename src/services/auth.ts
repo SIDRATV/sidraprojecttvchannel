@@ -77,6 +77,22 @@ export const authService = {
       throw new Error('Failed to establish session');
     }
 
+    // Fire-and-forget login notification
+    try {
+      const now = new Date().toLocaleDateString('fr-FR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+      await (supabase as any).rpc('create_notification', {
+        p_user_id: data.user?.id,
+        p_type: 'system',
+        p_title: 'Nouvelle connexion détectée',
+        p_message: `Connexion le ${now}`,
+        p_icon: 'log-in',
+        p_link: '/profile',
+      });
+    } catch {}
+
     return { ...data, needsMFA: false, mfaFactorId: null };
   },
 

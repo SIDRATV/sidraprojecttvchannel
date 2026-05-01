@@ -128,12 +128,25 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'surveyId required' }, { status: 400 });
     }
 
-    const { error } = await (supabase as any)
+    const { data: surveyData, error } = await (supabase as any)
       .from('surveys')
       .update({ is_active })
-      .eq('id', surveyId);
+      .eq('id', surveyId)
+      .select('title, reward_amount')
+      .single();
 
     if (error) throw error;
+
+    // Broadcast notification when survey is activated
+    if (is_active && surveyData) {
+      await (supabase as any).rpc('broadcast_notification', {
+        p_type: 'system',
+        p_title: 'Nouveau sondage disponible',
+        p_message: `"${surveyData.title}" — Récompense: ${surveyData.reward_amount || 0} SPTC`,
+        p_icon: 'gift',
+        p_link: '/premium-dashboard',
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

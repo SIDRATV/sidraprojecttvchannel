@@ -141,6 +141,16 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // Broadcast notification for new partner
+    await (supabase as any).rpc('broadcast_notification', {
+      p_type: 'system',
+      p_title: 'Nouveau partenaire',
+      p_message: `${name} rejoint l'écosystème Sidra !`,
+      p_icon: 'handshake',
+      p_link: '/explore/partenariat',
+    });
+
     return NextResponse.json({ success: true, partner: data });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

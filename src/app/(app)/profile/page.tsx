@@ -195,6 +195,15 @@ export default function ProfilePage() {
     setShowTwoFactor(false);
     setTwoFactorCode('');
     setTwoFactorSecret('');
+    // Notify user
+    await (supabase as any).rpc('create_notification', {
+      p_user_id: user?.id,
+      p_type: 'system',
+      p_title: 'Double authentification activée',
+      p_message: 'La vérification en deux étapes est maintenant active sur votre compte.',
+      p_icon: 'shield',
+      p_link: '/profile',
+    });
   };
 
   const handleDisable2FA = async () => {
@@ -203,6 +212,15 @@ export default function ProfilePage() {
     setTwoFactorEnabled(false);
     setTwoFactorFactorId('');
     setShowTwoFactor(false);
+    // Notify user
+    await (supabase as any).rpc('create_notification', {
+      p_user_id: user?.id,
+      p_type: 'system',
+      p_title: 'Double authentification désactivée',
+      p_message: 'La vérification en deux étapes a été retirée de votre compte.',
+      p_icon: 'shield-off',
+      p_link: '/profile',
+    });
   };
 
   const stats = [

@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
         created_at,
         categories:category_id (name, icon, color)
       `)
-      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

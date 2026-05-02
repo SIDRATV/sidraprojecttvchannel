@@ -82,7 +82,7 @@ export default function SubscribePage() {
       }
     } catch {}
     setLoading(false);
-  }, [session]);
+  }, [session?.access_token]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

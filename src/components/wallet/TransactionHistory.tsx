@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ExternalLink, Loader, Crown } from 'lucide-react';
 import { getTransaction } from '@/lib/web3-provider';
@@ -40,19 +40,7 @@ export function TransactionHistory({
     transactionType === 'onchain' ? 'onchain' : 'internal'
   );
 
-  useEffect(() => {
-    if (transactionType === 'all' || transactionType === 'onchain') {
-      // Note: In a real app, you would fetch on-chain transaction history
-      // from an indexer like Etherscan or The Graph
-      console.log('Fetching blockchain transactions for:', walletAddress);
-    }
-
-    if ((transactionType === 'all' || transactionType === 'internal') && authToken) {
-      fetchInternalTransactions();
-    }
-  }, [walletAddress, authToken, transactionType, limit]);
-
-  const fetchInternalTransactions = async () => {
+  const fetchInternalTransactions = useCallback(async () => {
     if (!authToken) return;
 
     setIsLoading(true);
@@ -73,7 +61,17 @@ export function TransactionHistory({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [authToken, limit]);
+
+  useEffect(() => {
+    if (transactionType === 'all' || transactionType === 'onchain') {
+      // On-chain history would be fetched from an indexer (Etherscan / The Graph)
+    }
+
+    if ((transactionType === 'all' || transactionType === 'internal') && authToken) {
+      fetchInternalTransactions();
+    }
+  }, [walletAddress, authToken, transactionType, fetchInternalTransactions]);
 
   const shortenAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   const shortenHash = (hash: string) => `${hash.slice(0, 10)}...${hash.slice(-8)}`;

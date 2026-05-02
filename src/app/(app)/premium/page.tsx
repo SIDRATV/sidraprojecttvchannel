@@ -50,7 +50,7 @@ export default function PremiumPage() {
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.plans) setDbPlans(d.plans); })
       .catch(() => {});
-  }, [session]);
+  }, [session?.access_token]);
 
   const premiumFeatures = [
     {

@@ -35,7 +35,9 @@ export default function PremiumVideosPage() {
 
   useEffect(() => {
     categoryService.getCategories().then(setCategories).catch(() => {});
+  }, []);
 
+  useEffect(() => {
     premiumVideoService.getVideos(50, 0, selectedCategory || undefined).then((data) => {
       setVideos(data);
       setLoading(false);

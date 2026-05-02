@@ -36,7 +36,7 @@ export function NetworkStatus({ isConnected, isCorrectChain, chainId }: NetworkS
       }
     };
 
-    const interval = setInterval(checkLatency, 5000);
+    const interval = setInterval(checkLatency, 60_000); // reduced from 5s to 60s
     checkLatency();
     return () => clearInterval(interval);
   }, []);

@@ -8,7 +8,6 @@ import {
   ExternalLink, RefreshCw, MousePointer
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase';
 
 interface ReferralEntry {
   id: string;
@@ -57,7 +56,7 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 export function ReferralProgram() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [data, setData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -70,7 +69,6 @@ export function ReferralProgram() {
     setLoading(true);
     setError('');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Non authentifié');
 
       const res = await fetch('/api/referral', {

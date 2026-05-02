@@ -93,7 +93,7 @@ export default function LivePage() {
   useEffect(() => {
     fetchYtViewers();
     // Auto-refresh concurrent viewers every 30s for active live streams
-    refreshTimerRef.current = setInterval(fetchYtViewers, 30_000);
+    refreshTimerRef.current = setInterval(fetchYtViewers, 60_000); // 60s is sufficient for viewer counts
     return () => clearInterval(refreshTimerRef.current);
   }, [fetchYtViewers]);
 

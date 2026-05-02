@@ -18,45 +18,42 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
 
-    // Get or generate referral code
+    // Get or generate referral code (must be sequential — generate depends on existing)
     const { data: existing } = await db
       .from('referral_codes')
-      .select('code, total_clicks, created_at')
+      .select('code, total_clicks')
       .eq('user_id', user.id)
       .maybeSingle();
 
     let code = existing?.code;
     if (!code) {
-      // Generate via DB function
       const { data: generated } = await db.rpc('generate_referral_code', { p_user_id: user.id });
       code = generated;
     }
 
-    // Get referrals with referred user info
-    const { data: referrals } = await db
-      .from('referrals')
-      .select(`
-        id, status, created_at, activated_at,
-        referred:referred_id (full_name, username, premium_plan)
-      `)
-      .eq('referrer_id', user.id)
-      .order('created_at', { ascending: false });
+    // Run remaining queries in parallel
+    const [referralsRes, rewardsRes, settingsRes] = await Promise.all([
+      db.from('referrals')
+        .select('id, status, created_at, activated_at, referred:referred_id (full_name, username, premium_plan)')
+        .eq('referrer_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      db.from('referral_rewards')
+        .select('amount, reason, created_at')
+        .eq('referrer_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100),
+      db.from('referral_settings')
+        .select('reward_per_subscription, reward_per_renewal, require_premium_to_earn, max_reward_per_referral')
+        .eq('is_active', true)
+        .maybeSingle(),
+    ]);
 
-    // Get total rewards earned
-    const { data: rewardsData } = await db
-      .from('referral_rewards')
-      .select('amount, reason, created_at')
-      .eq('referrer_id', user.id)
-      .order('created_at', { ascending: false });
+    const referrals = referralsRes.data || [];
+    const rewardsData = rewardsRes.data || [];
+    const settings = settingsRes.data;
 
-    const totalRewards = (rewardsData || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
-
-    // Get settings (rules)
-    const { data: settings } = await db
-      .from('referral_settings')
-      .select('*')
-      .eq('is_active', true)
-      .maybeSingle();
+    const totalRewards = rewardsData.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
     return NextResponse.json({
       code,

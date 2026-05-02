@@ -49,9 +49,16 @@ export default function DashboardPage() {
   const [premiumVideos, setPremiumVideos] = useState<any[]>([]);
 
   useEffect(() => {
-    videoService.getVideos(6).then(setRecentVideos).catch(() => {});
-    videoService.getFeaturedVideos(5).then(setFeaturedVideos).catch(() => {});
-    premiumVideoService.getVideos(8).then(setPremiumVideos).catch(() => {});
+    // All three fetches in parallel — no sequential waterfall
+    Promise.all([
+      videoService.getVideos(6).catch(() => []),
+      videoService.getFeaturedVideos(5).catch(() => []),
+      premiumVideoService.getVideos(8).catch(() => []),
+    ]).then(([recent, featured, premium]) => {
+      setRecentVideos(recent as VideoWithRelations[]);
+      setFeaturedVideos(featured as VideoWithRelations[]);
+      setPremiumVideos(premium);
+    });
   }, []);
 
   const premiumContent = premiumVideos.length > 0

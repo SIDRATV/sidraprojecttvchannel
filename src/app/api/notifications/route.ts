@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     let query = (supabase as any)
       .from('notifications')
-      .select('*')
+      .select('id, type, title, message, icon, link, read, created_at', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -30,19 +30,29 @@ export async function GET(request: NextRequest) {
       query = query.eq('read', false);
     }
 
-    const { data, error } = await query;
+    const { data, error, count: totalCount } = await query;
     if (error) throw error;
 
-    // Get unread count
-    const { count } = await (supabase as any)
-      .from('notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('read', false);
+    // Unread count: if fetching all, count unread from result; else run lean query
+    let unreadCount: number;
+    if (!unreadOnly) {
+      unreadCount = (data || []).filter((n: any) => !n.read).length;
+      // If we hit the limit, a precise count requires a separate head query
+      if ((data || []).length === limit) {
+        const { count: exactUnread } = await (supabase as any)
+          .from('notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('read', false);
+        unreadCount = exactUnread || 0;
+      }
+    } else {
+      unreadCount = totalCount || 0;
+    }
 
     return NextResponse.json({
       notifications: data || [],
-      unreadCount: count || 0,
+      unreadCount,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });

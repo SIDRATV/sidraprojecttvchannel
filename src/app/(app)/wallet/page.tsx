@@ -92,9 +92,8 @@ export default function WalletPage() {
     };
   }, [user?.id]);
 
-  const handleTransferSuccess = useCallback(() => {
-    setTimeout(() => refreshBalance(), 2000);
-  }, [refreshBalance]);
+  // Balance is pushed via Realtime subscription on wallet_accounts — no explicit re-fetch needed.
+  const handleTransferSuccess = useCallback(() => {}, []);
 
   /* ─── animation variants ─── */
   const container = {

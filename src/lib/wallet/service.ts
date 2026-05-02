@@ -103,8 +103,11 @@ export const getGasFeeBps = async (): Promise<number> => {
 
 /**
  * Update the gas fee BPS in DB (used by admin API).
+ * Skips the write if the stored value already matches to avoid redundant UPDATEs.
  */
 export const setGasFeeBps = async (bps: number): Promise<void> => {
+  const current = await getGasFeeBps();
+  if (current === bps) return; // no-op: value unchanged
   const supabase = createServerClient();
   await (supabase as any)
     .from('wallet_settings')
@@ -373,36 +376,44 @@ export const getInternalBalance = async (userId: string): Promise<WalletBalanceR
 export const provisionUserWallet = async (userId: string) => {
   const supabase = createServerClient();
 
-  const { error: accountError } = await supabase
+  // Check existence first — avoid unconditional upsert writes on every call
+  const { data: existing } = await supabase
     .from('wallet_accounts')
-    .upsert(
-      {
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!existing) {
+    const { error: accountError } = await supabase
+      .from('wallet_accounts')
+      .insert({
         user_id: userId,
         balance: 0,
         locked_balance: 0,
         currency: walletConfig.currency,
-      },
-      { onConflict: 'user_id' }
-    );
+      });
 
-  if (accountError) {
-    throw new Error(`Failed to provision wallet account: ${accountError.message}`);
+    if (accountError) {
+      throw new Error(`Failed to provision wallet account: ${accountError.message}`);
+    }
   }
 
   const depositAddress = await getOrCreateDepositAddress(userId);
 
-  await writeAuditLog({
-    actorUserId: userId,
-    action: 'wallet.user.provisioned',
-    targetId: depositAddress.id,
-    details: {
-      address: depositAddress.address,
-      network: depositAddress.network,
-    },
-  });
+  if (!existing) {
+    await writeAuditLog({
+      actorUserId: userId,
+      action: 'wallet.user.provisioned',
+      targetId: depositAddress.id,
+      details: {
+        address: depositAddress.address,
+        network: depositAddress.network,
+      },
+    });
+  }
 
   return {
-    accountCreated: true,
+    accountCreated: !existing,
     address: depositAddress.address,
     network: depositAddress.network,
   };
@@ -706,38 +717,22 @@ const markWithdrawalSuccess = async (withdrawal: any, txHash: string) => {
 };
 
 const refundFailedWithdrawal = async (withdrawal: any, reason: string) => {
-  console.log(`[withdrawal] Refunding failed withdrawal ${withdrawal.id}: ${Number(withdrawal.amount || 0) + Number(withdrawal.fee || 0)} ${walletConfig.currency} to user ${withdrawal.user_id}`);
+  const refundAmount = Number(withdrawal.amount || 0) + Number(withdrawal.fee || 0);
+  console.log(`[withdrawal] Refunding failed withdrawal ${withdrawal.id}: ${refundAmount} ${walletConfig.currency} to user ${withdrawal.user_id}`);
   const supabase = createServerClient();
 
-  const { data: account, error: accountError } = await supabase
-    .from('wallet_accounts')
-    .select('balance')
-    .eq('user_id', withdrawal.user_id)
-    .maybeSingle();
-
-  if (accountError) {
-    throw new Error(`Failed to fetch account for refund: ${accountError.message}`);
-  }
-
-  await supabase
-    .from('wallet_accounts')
-    .update({ balance: Number(account?.balance || 0) + Number(withdrawal.amount || 0) + Number(withdrawal.fee || 0) })
-    .eq('user_id', withdrawal.user_id);
-
-  await supabase.from('wallet_transactions').insert({
-    user_id: withdrawal.user_id,
-    type: 'adjustment',
-    direction: 'credit',
-    amount: Number(withdrawal.amount || 0) + Number(withdrawal.fee || 0),
-    fee: 0,
-    status: 'success',
-    network: 'internal',
-    description: 'Automatic refund for failed withdrawal',
-    metadata: {
-      source_withdrawal_id: withdrawal.id,
-      reason,
-    },
+  // Use atomic RPC to credit balance + insert adjustment record in one DB round-trip.
+  // Avoids the SELECT-then-UPDATE race condition of reading balance first.
+  const { error } = await (supabase as any).rpc('wallet_credit_adjustment', {
+    p_user_id: withdrawal.user_id,
+    p_amount: refundAmount,
+    p_description: 'Automatic refund for failed withdrawal',
+    p_metadata: { source_withdrawal_id: withdrawal.id, reason },
   });
+
+  if (error) {
+    throw new Error(`Failed to refund withdrawal ${withdrawal.id}: ${error.message}`);
+  }
 };
 
 const markWithdrawalFailed = async (withdrawal: any, errorMessage: string) => {

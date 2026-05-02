@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Copy, CheckCircle, QrCode, Loader, Shield } from 'lucide-react';
 
@@ -14,9 +14,14 @@ export function DepositAddress({ authToken }: DepositAddressProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Deposit address never changes per user — skip re-fetch on token refresh.
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (authToken) fetchDepositAddress();
+    if (authToken && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchDepositAddress();
+    }
   }, [authToken]);
 
   const fetchDepositAddress = async () => {

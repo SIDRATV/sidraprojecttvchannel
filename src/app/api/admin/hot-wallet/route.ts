@@ -62,14 +62,29 @@ export async function GET(request: NextRequest) {
     txQuery = txQuery.lte('created_at', endOfDay.toISOString());
   }
 
-  // Wallet summary
-  const [txRes, summaryRes, topUsersRes] = await Promise.all([
+  // Wallet summary — use DB-side aggregates instead of fetching all rows into JS
+  const [txRes, depositSumRes, withdrawalSumRes, pendingCountRes, topUsersRes] = await Promise.all([
     txQuery,
 
-    // Total deposits/withdrawals/transfers
+    // Total successful deposits
     (supabase as any)
       .from('wallet_transactions')
-      .select('type, direction, amount, status'),
+      .select('amount')
+      .eq('type', 'deposit')
+      .eq('status', 'success'),
+
+    // Total successful withdrawals
+    (supabase as any)
+      .from('wallet_transactions')
+      .select('amount')
+      .eq('type', 'withdrawal')
+      .eq('status', 'success'),
+
+    // Count pending transactions only
+    (supabase as any)
+      .from('wallet_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending'),
 
     // Top wallets by balance
     (supabase as any)
@@ -79,15 +94,11 @@ export async function GET(request: NextRequest) {
       .limit(10),
   ]);
 
-  const allTxs = summaryRes.data ?? [];
   const rawTxs = txRes.data ?? [];
 
   if (txRes.error) {
     console.error('[hot-wallet] transaction query error:', txRes.error);
     return NextResponse.json({ error: txRes.error.message }, { status: 500 });
-  }
-  if (summaryRes.error) {
-    console.error('[hot-wallet] summary query error:', summaryRes.error);
   }
 
   // Enrich transactions with user info
@@ -110,15 +121,13 @@ export async function GET(request: NextRequest) {
     users: usersMap[t.user_id] ?? null,
   }));
 
-  const successfulDeposits = allTxs
-    .filter((t: any) => t.type === 'deposit' && t.status === 'success')
+  const successfulDeposits = (depositSumRes.data ?? [])
     .reduce((s: number, t: any) => s + (parseFloat(t.amount) || 0), 0);
 
-  const successfulWithdrawals = allTxs
-    .filter((t: any) => t.type === 'withdrawal' && t.status === 'success')
+  const successfulWithdrawals = (withdrawalSumRes.data ?? [])
     .reduce((s: number, t: any) => s + (parseFloat(t.amount) || 0), 0);
 
-  const pendingCount = allTxs.filter((t: any) => t.status === 'pending').length;
+  const pendingCount = pendingCountRes.count ?? 0;
 
   return NextResponse.json({
     transactions,

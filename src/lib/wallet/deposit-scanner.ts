@@ -397,13 +397,17 @@ async function scanChainDeposits(
     result.scannedBlocks++;
   }
 
-  // Step 5: Update last_checked_block for all addresses
-  const updatePromises = addresses.map((row) =>
-    supabase
-      .from('wallet_deposit_addresses')
-      .update({ last_checked_block: safeToBlock })
-      .eq('id', row.id)
-  );
+  // Step 5: Update last_checked_block — only for rows where value actually changed.
+  // IS DISTINCT FROM semantics: skip rows already at safeToBlock to avoid redundant writes.
+  const updatePromises = addresses
+    .filter((row) => Number(row.last_checked_block ?? -1) !== safeToBlock)
+    .map((row) =>
+      supabase
+        .from('wallet_deposit_addresses')
+        .update({ last_checked_block: safeToBlock })
+        .eq('id', row.id)
+        .neq('last_checked_block', safeToBlock) // server-side guard: IS DISTINCT FROM equivalent
+    );
   await Promise.all(updatePromises);
 
   result.durationMs = Date.now() - startTime;

@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck, Loader2, Download } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/providers/ProfileProvider';
@@ -13,18 +13,8 @@ import Link from 'next/link';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { supabase } from '@/lib/supabase';
-import { swrFetch, invalidateCache } from '@/lib/clientCache';
-
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  icon: string;
-  link: string | null;
-  read: boolean;
-  created_at: string;
-}
+import { useNotifications } from '@/hooks/queries/useNotifications';
+import type { Notification } from '@/hooks/queries/useNotifications';
 
 interface AppHeaderProps {
   onSearch?: (query: string) => void;
@@ -46,66 +36,15 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const { playSound, showBrowserNotification } = useNotificationSound();
   const { isInstallable, installApp } = usePWAInstall();
 
-  // Real notifications from DB
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // Notifications via React Query (cache 15s, poll 60s, refetch on focus)
+  const {
+    notifications,
+    unreadCount,
+    markAllRead,
+    addRealtimeNotification,
+  } = useNotifications();
+
   const previousUnreadCount = useRef<number | null>(null);
-
-  const fetchNotifications = useCallback(async () => {
-    if (!session?.access_token) return;
-    try {
-      // swrFetch: returns stale data instantly on repeat mounts (no spinner),
-      // then refreshes in background — TTL 15s so new notifications appear quickly.
-      const data = await swrFetch<any>(
-        '/api/notifications?limit=10',
-        { headers: { Authorization: `Bearer ${session.access_token}` } },
-        15_000
-      );
-      if (data) {
-        const newUnreadCount = data.unreadCount || 0;
-        const newNotifications = data.notifications || [];
-        
-        // Play sound and show browser notification if:
-        // 1. This is NOT the first fetch (previousUnreadCount is not null)
-        // 2. New unread count is higher than before
-        if (previousUnreadCount.current !== null && newUnreadCount > previousUnreadCount.current) {
-          playSound();
-          
-          // Show browser notification for the latest notification
-          if (newNotifications.length > 0) {
-            const latestNotif = newNotifications[0];
-            showBrowserNotification(latestNotif.title, {
-              body: latestNotif.message,
-              badge: '/sidra-logo.webp',
-              icon: '/sidra-logo.webp',
-              tag: `notification-${latestNotif.id}`,
-              link: latestNotif.link || '/',
-            });
-          }
-        }
-        
-        // Set initial count on first fetch
-        if (previousUnreadCount.current === null) {
-          previousUnreadCount.current = newUnreadCount;
-        } else {
-          previousUnreadCount.current = newUnreadCount;
-        }
-        
-        setNotifications(newNotifications);
-        setUnreadCount(newUnreadCount);
-      }
-    } catch {}
-  }, [session?.access_token, playSound, showBrowserNotification]);
-
-  // Fetch on mount + Supabase Realtime for instant notifications
-  useEffect(() => {
-    fetchNotifications();
-
-    // Fallback slow poll (60s) — catches anything Realtime misses
-    const slowPoll = setInterval(fetchNotifications, 60000);
-
-    return () => clearInterval(slowPoll);
-  }, [fetchNotifications]);
 
   // Supabase Realtime: subscribe to new notifications for this user
   useEffect(() => {
@@ -123,40 +62,26 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
         },
         (payload) => {
           const newNotif = payload.new as Notification;
-          setNotifications((prev) => [newNotif, ...prev.slice(0, 9)]);
-          setUnreadCount((prev) => prev + 1);
-          playSound();
-          showBrowserNotification(newNotif.title, {
-            body: newNotif.message,
-            badge: '/sidra-logo.webp',
-            icon: '/sidra-logo.webp',
-            tag: `notification-${newNotif.id}`,
-            link: newNotif.link || '/',
-          });
+          // Mise à jour du cache React Query directement — pas de re-fetch
+          addRealtimeNotification(newNotif);
+          // Son + notification navigateur
+          if (previousUnreadCount.current !== null) {
+            playSound();
+            showBrowserNotification(newNotif.title, {
+              body: newNotif.message,
+              badge: '/sidra-logo.webp',
+              icon: '/sidra-logo.webp',
+              tag: `notification-${newNotif.id}`,
+              link: newNotif.link || '/',
+            });
+          }
+          previousUnreadCount.current = (previousUnreadCount.current ?? 0) + 1;
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id, playSound, showBrowserNotification]);
-
-  const markAllRead = async () => {
-    if (!session?.access_token || unreadCount === 0) return;
-    try {
-      await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ markAll: true }),
-      });
-      // Invalidate cache so next fetch returns fresh read-state
-      invalidateCache('/api/notifications');
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      setUnreadCount(0);
-    } catch {}
-  };
+  }, [user?.id, playSound, showBrowserNotification, addRealtimeNotification]);
 
   const getNotifIcon = (icon: string) => {
     switch (icon) {

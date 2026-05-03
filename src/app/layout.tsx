@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { MiniPlayerProvider } from '@/providers/MiniPlayerProvider';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
@@ -120,9 +121,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <MiniPlayerProvider>
             <AuthProvider>
-              <PWAInstallPrompt />
-              {children}
-              <MiniPlayer />
+              <QueryProvider>
+                <PWAInstallPrompt />
+                {children}
+                <MiniPlayer />
+              </QueryProvider>
             </AuthProvider>
           </MiniPlayerProvider>
         </ThemeProvider>

@@ -1,17 +1,13 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { YouTubeFeaturedCarousel } from '@/components/app/YouTubeFeaturedCarousel';
 import { YouTubeSection } from '@/components/app/YouTubeSection';
 import { LazySection } from '@/components/app/LazySection';
 import { PremiumBanner, PremiumContentPreview } from '@/components/premium';
 import { Heart, MessageCircle, Play, Sparkles, TrendingUp, BookOpen, Briefcase, Cpu, Users, ArrowRight } from 'lucide-react';
-import { videoService } from '@/services/videos';
-import { premiumVideoService } from '@/services/premiumVideos';
+import { useDashboardVideos } from '@/hooks/queries/useDashboardVideos';
 import type { VideoWithRelations } from '@/types';
 
 const staggerContainer = {
@@ -44,22 +40,7 @@ function SectionHeader({ icon: Icon, title, description, gold = false }: { icon:
 }
 
 export default function DashboardPage() {
-  const [recentVideos, setRecentVideos] = useState<VideoWithRelations[]>([]);
-  const [featuredVideos, setFeaturedVideos] = useState<VideoWithRelations[]>([]);
-  const [premiumVideos, setPremiumVideos] = useState<any[]>([]);
-
-  useEffect(() => {
-    // All three fetches in parallel — no sequential waterfall
-    Promise.all([
-      videoService.getVideos(6).catch(() => []),
-      videoService.getFeaturedVideos(5).catch(() => []),
-      premiumVideoService.getVideos(8).catch(() => []),
-    ]).then(([recent, featured, premium]) => {
-      setRecentVideos(recent as VideoWithRelations[]);
-      setFeaturedVideos(featured as VideoWithRelations[]);
-      setPremiumVideos(premium);
-    });
-  }, []);
+  const { recentVideos, featuredVideos, premiumVideos } = useDashboardVideos();
 
   const premiumContent = premiumVideos.length > 0
     ? premiumVideos.map((v: any) => ({

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Play, ChevronLeft, ChevronRight, Volume2, VolumeX, ExternalLink, Sparkles } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { YouTubePlayerModal } from './YouTubePlayerModal';
+import { swrFetch } from '@/lib/clientCache';
 
 interface SponsoredBanner {
   id: string;
@@ -37,9 +38,9 @@ export function YouTubeFeaturedCarousel() {
     const fetchBanners = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/banners');
-        const data = await res.json();
-        setBanners(data.banners || []);
+        // swrFetch: cache client 2min — les bannières changent rarement
+        const data = await swrFetch<{ banners: SponsoredBanner[] }>('/api/banners', {}, 2 * 60 * 1000);
+        setBanners(data?.banners || []);
       } catch {
         // silent
       } finally {

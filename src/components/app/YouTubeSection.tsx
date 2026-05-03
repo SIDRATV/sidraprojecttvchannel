@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Clock, X, BookOpen, Briefcase, TrendingUp, Cpu, Users, Tv, Eye } from 'lucide-react';
 import { YouTubePlayerModal } from './YouTubePlayerModal';
+import { swrFetch } from '@/lib/clientCache';
 
 const iconMap: Record<string, React.ElementType> = {
   book: BookOpen,
@@ -50,26 +51,36 @@ export function YouTubeSection({
   const Icon = icon ? iconMap[icon] || iconMap.default : null;
 
   useEffect(() => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000); // 10s max
+
     const fetchVideos = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/videos?q=${encodeURIComponent(query)}&max=${maxResults}`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `HTTP ${response.status}`);
+        // swrFetch: cache client 5min — retour instantané sur les navigations répétées
+        const data = await swrFetch<YouTubeVideo[] | { error: string }>(
+          `/api/videos?q=${encodeURIComponent(query)}&max=${maxResults}`,
+          { signal: controller.signal },
+          5 * 60 * 1000
+        );
+        if (controller.signal.aborted) return;
+        if (!data || 'error' in data) {
+          throw new Error((data as any)?.error || 'Erreur YouTube API');
         }
-        const data = await response.json();
         setVideos(Array.isArray(data) ? data : []);
         setError(null);
       } catch (err) {
+        if ((err as any)?.name === 'AbortError') return;
         const message = err instanceof Error ? err.message : String(err);
         setError(message);
         setVideos([]);
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     };
     fetchVideos();
+    return () => { controller.abort(); clearTimeout(timeoutId); };
   }, [query, maxResults]);
 
   const SectionHeader = () => (

@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import { ProfileProvider } from '@/providers/ProfileProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+import { swrFetch } from '@/lib/clientCache';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,16 +19,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const checkMaintenance = useCallback(async () => {
     try {
-      const headers: HeadersInit = {};
+      let authHeader: string | undefined;
       try {
         const { data: { session: s } } = await supabase.auth.getSession();
-        if (s?.access_token) headers['Authorization'] = `Bearer ${s.access_token}`;
+        if (s?.access_token) authHeader = `Bearer ${s.access_token}`;
       } catch { /* proceed without token */ }
 
-      const res = await fetch('/api/maintenance', { cache: 'no-store', headers });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.enabled && !data.isExempt) {
+      // swrFetch (30s TTL): switching routes reuses stale result instantly.
+      // Realtime subscription handles the rare case when admin toggles maintenance.
+      const data = await swrFetch<any>(
+        '/api/maintenance',
+        authHeader ? { headers: { Authorization: authHeader } } : {},
+        30_000
+      );
+      if (data?.enabled && !data.isExempt) {
         setMaintenanceRedirecting(true);
         window.location.href = '/maintenance';
       }

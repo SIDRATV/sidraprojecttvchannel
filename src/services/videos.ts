@@ -1,8 +1,15 @@
 import { supabase } from "@/lib/supabase";
 import type { Video, VideoWithRelations } from "@/types";
+import { memoCacheGet, memoCacheSet } from "@/lib/clientCache";
+
+const VIDEO_TTL = 60_000; // 60s — stale-while-revalidate for video lists
 
 export const videoService = {
   async getVideos(limit = 12, offset = 0) {
+    const cacheKey = `videos_recent_${limit}_${offset}`;
+    const cached = memoCacheGet<VideoWithRelations[]>(cacheKey);
+    if (cached && !cached.isStale) return cached.data;
+
     try {
       const { data, error } = await supabase
         .from("videos")
@@ -17,14 +24,20 @@ export const videoService = {
         .range(offset, offset + limit - 1);
 
       if (error) throw error;
-      return data as VideoWithRelations[];
+      const result = data as VideoWithRelations[];
+      memoCacheSet(cacheKey, result, VIDEO_TTL);
+      return result;
     } catch (error) {
       console.debug("Videos service unavailable - demo mode");
-      return [];
+      return cached?.data ?? [];
     }
   },
 
   async getFeaturedVideos(limit = 5) {
+    const cacheKey = `videos_featured_${limit}`;
+    const cached = memoCacheGet<VideoWithRelations[]>(cacheKey);
+    if (cached && !cached.isStale) return cached.data;
+
     try {
       const { data, error } = await supabase
         .from("videos")
@@ -40,14 +53,20 @@ export const videoService = {
         .limit(limit);
 
       if (error) throw error;
-      return data as VideoWithRelations[];
+      const result = data as VideoWithRelations[];
+      memoCacheSet(cacheKey, result, VIDEO_TTL);
+      return result;
     } catch (error) {
       console.debug("Featured videos unavailable - demo mode");
-      return [];
+      return cached?.data ?? [];
     }
   },
 
   async getTrendingVideos(limit = 12) {
+    const cacheKey = `videos_trending_${limit}`;
+    const cached = memoCacheGet<VideoWithRelations[]>(cacheKey);
+    if (cached && !cached.isStale) return cached.data;
+
     try {
       const { data, error } = await supabase
         .from("videos")
@@ -63,10 +82,12 @@ export const videoService = {
         .limit(limit);
 
       if (error) throw error;
-      return data as VideoWithRelations[];
+      const result = data as VideoWithRelations[];
+      memoCacheSet(cacheKey, result, VIDEO_TTL);
+      return result;
     } catch (error) {
       console.debug("Trending videos unavailable - demo mode");
-      return [];
+      return cached?.data ?? [];
     }
   },
 

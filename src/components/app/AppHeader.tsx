@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { supabase } from '@/lib/supabase';
+import { swrFetch, invalidateCache } from '@/lib/clientCache';
 
 interface Notification {
   id: string;
@@ -53,11 +54,14 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const fetchNotifications = useCallback(async () => {
     if (!session?.access_token) return;
     try {
-      const res = await fetch('/api/notifications?limit=10', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      // swrFetch: returns stale data instantly on repeat mounts (no spinner),
+      // then refreshes in background — TTL 15s so new notifications appear quickly.
+      const data = await swrFetch<any>(
+        '/api/notifications?limit=10',
+        { headers: { Authorization: `Bearer ${session.access_token}` } },
+        15_000
+      );
+      if (data) {
         const newUnreadCount = data.unreadCount || 0;
         const newNotifications = data.notifications || [];
         
@@ -147,6 +151,8 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
         },
         body: JSON.stringify({ markAll: true }),
       });
+      // Invalidate cache so next fetch returns fresh read-state
+      invalidateCache('/api/notifications');
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch {}

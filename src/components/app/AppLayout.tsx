@@ -25,12 +25,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         if (s?.access_token) authHeader = `Bearer ${s.access_token}`;
       } catch { /* proceed without token */ }
 
-      // swrFetch (30s TTL): switching routes reuses stale result instantly.
-      // Realtime subscription handles the rare case when admin toggles maintenance.
+      // swrFetch with a fixed cache key (URL only, not token) so token rotation
+      // doesn't cause a new fetch — Realtime handles live status changes.
       const data = await swrFetch<any>(
         '/api/maintenance',
         authHeader ? { headers: { Authorization: authHeader } } : {},
-        30_000
+        30_000,
+        10 * 60_000,     // stale data acceptable for up to 10 min
+        '/api/maintenance' // stable cache key — ignore token in key
       );
       if (data?.enabled && !data.isExempt) {
         setMaintenanceRedirecting(true);

@@ -26,9 +26,9 @@ export function useDashboardVideos() {
   const query = useQuery<DashboardVideos>({
     queryKey: ['dashboard-videos'],
     queryFn: fetchDashboardVideos,
-    staleTime: 2 * 60 * 1000,    // réutilise le cache 2 min sur navigation
-    refetchInterval: 60 * 1000,  // rafraîchit en fond chaque minute
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000,    // vidéos stables — cache 5 min
+    refetchInterval: false,       // pas de polling en fond
+    refetchOnWindowFocus: false,  // pas de refetch sur focus
     // Données initiales vides pour éviter l'écran blanc
     placeholderData: {
       recentVideos: [],

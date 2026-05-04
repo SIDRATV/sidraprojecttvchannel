@@ -86,14 +86,16 @@ export async function cachedFetch<T = unknown>(
  * @param init      RequestInit options
  * @param ttl       How long data is considered "fresh" (default: 15s)
  * @param staleTtl  How long stale data is still usable (default: 5 min)
+ * @param cacheKey  Optional explicit cache key override (avoids keying on headers like auth tokens)
  */
 export async function swrFetch<T = unknown>(
   url: string,
   init: RequestInit = {},
   ttl = 15_000,
-  staleTtl = 5 * 60_000
+  staleTtl = 5 * 60_000,
+  cacheKey?: string
 ): Promise<T> {
-  const key = url + JSON.stringify(init.headers ?? {});
+  const key = cacheKey ?? (url + JSON.stringify(init.headers ?? {}));
   const now = Date.now();
   const existing = cache.get(key) as CacheEntry<T> | undefined;
 

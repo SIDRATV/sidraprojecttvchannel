@@ -38,7 +38,7 @@ export default function PremiumVideosPage() {
   }, []);
 
   useEffect(() => {
-    premiumVideoService.getVideos(50, 0, selectedCategory || undefined).then((data) => {
+    premiumVideoService.getVideos(20, 0, selectedCategory || undefined).then((data) => {
       setVideos(data);
       setLoading(false);
     });

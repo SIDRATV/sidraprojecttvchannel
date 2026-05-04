@@ -58,7 +58,7 @@ export default function PodcastPage() {
   const fetchPodcasts = useCallback(async () => {
     setIsLoading(true);
     try {
-      let url = '/api/podcasts?limit=50';
+      let url = '/api/podcasts?limit=20';
       if (viewType === 'trending') url += '&type=trending';
       else if (viewType === 'recent') url += '&type=featured';
       if (selectedCategory) url += `&category=${encodeURIComponent(selectedCategory)}`;
@@ -77,7 +77,7 @@ export default function PodcastPage() {
     const ids = podcasts
       .map(p => (p as any).youtube_id as string | undefined)
       .filter((id): id is string => !!id)
-      .slice(0, 50);
+      .slice(0, 20);
     if (ids.length === 0) return;
     fetch(`/api/youtube-stats?ids=${ids.join(',')}`)
       .then(r => r.ok ? r.json() : [])

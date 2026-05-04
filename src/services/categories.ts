@@ -17,7 +17,8 @@ export const categoryService = {
       const { data, error } = await supabase
         .from("categories")
         .select("*")
-        .order("name", { ascending: true });
+        .order("name", { ascending: true })
+        .limit(50);
 
       if (error) {
         console.error('Supabase error fetching categories:', error.message);

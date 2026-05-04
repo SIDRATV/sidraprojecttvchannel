@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { invalidateCache } from '@/lib/clientCache';
 
@@ -35,9 +36,9 @@ export function useNotifications() {
     queryKey: ['notifications', accessToken],
     queryFn: () => fetchNotifications(accessToken),
     enabled: !!accessToken,
-    staleTime: 15 * 1000,          // notifications: fraîches 15s (plus court)
-    refetchInterval: 60 * 1000,    // poll toutes les 60s en fond
-    refetchOnWindowFocus: true,
+    staleTime: 2 * 60 * 1000,          // Realtime gère les mises à jour live — 2 min
+    refetchInterval: 5 * 60 * 1000,    // poll de secours toutes les 5 min si Realtime échoue
+    refetchOnWindowFocus: false,        // Realtime couvre les retours d'onglet
   });
 
   const markAllRead = async () => {
@@ -69,7 +70,7 @@ export function useNotifications() {
   };
 
   // Ajouter une notification venue du Realtime sans re-fetch
-  const addRealtimeNotification = (notif: Notification) => {
+  const addRealtimeNotification = useCallback((notif: Notification) => {
     queryClient.setQueryData<NotificationsResponse>(
       ['notifications', accessToken],
       (old) =>
@@ -80,10 +81,11 @@ export function useNotifications() {
             }
           : { unreadCount: 1, notifications: [notif] }
     );
-  };
+  }, [queryClient, accessToken]);
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['notifications', accessToken] });
+  const invalidate = useCallback(() =>
+    queryClient.invalidateQueries({ queryKey: ['notifications', accessToken] }),
+  [queryClient, accessToken]);
 
   return {
     notifications: query.data?.notifications ?? [],

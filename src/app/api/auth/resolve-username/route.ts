@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,8 +9,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Username is required' }, { status: 400 });
     }
 
-    const supabase = createServerClient();
-
+    // Use the anon client — RLS policy "Users are publicly readable" (USING true)
+    // allows SELECT on users table without service role.
+    // This also removes the SUPABASE_SERVICE_ROLE_KEY dependency for this route.
     const { data, error } = await supabase
       .from('users')
       .select('email')
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (error) {
-      console.error('Resolve username error:', error);
+      console.error('[resolve-username] DB error:', error.message, error.code);
       return NextResponse.json({ error: 'Failed to resolve username' }, { status: 500 });
     }
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ email: data.email });
   } catch (error: any) {
-    console.error('Resolve username error:', error);
+    console.error('[resolve-username] Unexpected error:', error?.message ?? error);
     return NextResponse.json({ error: 'Failed to resolve username' }, { status: 500 });
   }
 }

@@ -1,7 +1,6 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
+// No force-dynamic — static generation is fine, no server-side data needed
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';

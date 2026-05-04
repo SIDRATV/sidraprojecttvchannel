@@ -136,24 +136,15 @@ export function buildBustingUrl(
 }
 
 /**
- * Fetch with automatic cache busting
+ * Fetch with automatic cache busting — disabled, kept for interface compatibility.
+ * Was sending no-cache headers that defeated CDN caching.
+ * Callers should pass explicit `{ cache: 'no-store' }` only when truly required.
  */
 export async function fetchWithCacheBusting(
   url: string,
   options?: RequestInit
 ): Promise<Response> {
-  const bustingUrl = addCacheBustingParam(url);
-
-  const headers = {
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    ...(options?.headers || {}),
-  };
-
-  return fetch(bustingUrl, {
-    ...options,
-    headers,
-  });
+  return fetch(url, options);
 }
 
 /**

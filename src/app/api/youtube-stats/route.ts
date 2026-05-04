@@ -58,7 +58,7 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json(stats, {
-      headers: { 'Cache-Control': 'no-cache' },
+      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' },
     });
   } catch (err) {
     console.error('[youtube-stats] Fetch error:', err);

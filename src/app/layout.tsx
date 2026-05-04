@@ -57,10 +57,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Sidra TV" />
         
-        {/* AGGRESSIVE Cache Control Meta Tags - Forces browser to ALWAYS validate */}
-        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, s-maxage=0" />
-        <meta httpEquiv="Pragma" content="no-cache" />
-        <meta httpEquiv="Expires" content="0" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         
         <link rel="manifest" href="/manifest.json?v=1.0.0" />
@@ -89,11 +85,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 window.addEventListener('load', () => {
                   console.log('[PWA] Starting service worker registration...');
 
-                  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+                  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'imports' })
                     .then((registration) => {
                       console.log('[PWA] Service Worker registered:', registration);
-
-                      registration.update().catch(() => undefined);
 
                       // Listen for updates
                       registration.addEventListener('updatefound', () => {

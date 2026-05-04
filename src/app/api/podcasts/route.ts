@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json(data || [], {
-      headers: { 'Cache-Control': 'no-cache' }
+      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' }
     });
   } catch (error) {
     console.error('Podcasts API error:', error);

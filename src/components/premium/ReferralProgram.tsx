@@ -73,7 +73,6 @@ export function ReferralProgram() {
 
       const res = await fetch('/api/referral', {
         headers: { Authorization: `Bearer ${session.access_token}` },
-        cache: 'no-store',
       });
       if (!res.ok) throw new Error('Erreur chargement données');
       const json = await res.json();

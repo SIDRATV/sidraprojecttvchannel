@@ -15,7 +15,7 @@ export function useBuildInfo() {
   useEffect(() => {
     const fetchBuildInfo = async () => {
       try {
-        const response = await fetch('/build-info.json', { cache: 'no-store' });
+        const response = await fetch('/build-info.json');
         if (response.ok) {
           const data = await response.json();
           setBuildInfo(data);

@@ -1,11 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 
-// GET /api/maintenance — public endpoint to check maintenance status
-export async function GET(request: NextRequest) {
-  // Hard timeout: if Supabase is slow, never hang the client more than 5 s
+// ─── Server-side in-memory cache (per warm function instance) ────────────────
+// Prevents hitting Supabase on every request while the function is warm.
+// CDN-level caching (s-maxage=60) eliminates most DB hits entirely.
+interface MaintenanceCache {
+  enabled: boolean;
+  message: string;
+  expiresAt: number;
+}
+let _cache: MaintenanceCache | null = null;
+const SERVER_CACHE_TTL = 60_000; // 60 s — matches CDN s-maxage
+
+// GET /api/maintenance — returns only { enabled, message }
+// Authentication and exemption checks were removed:
+//   - Checking auth doubles Supabase calls on every page load
+//   - Exemptions are enforced client-side in AppLayout via the sidra_uid cookie
+//     that is set by AuthProvider (no extra network roundtrip needed)
+export async function GET() {
+  // Serve from in-memory cache if fresh
+  if (_cache && _cache.expiresAt > Date.now()) {
+    return buildResponse(_cache.enabled, _cache.message);
+  }
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5_000);
+  const timeoutId = setTimeout(() => controller.abort(), 4_000);
 
   try {
     const supabase = createServerClient();
@@ -20,45 +39,39 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeoutId);
 
     if (error || !data) {
-      return NextResponse.json({ enabled: false });
+      return buildResponse(false, '');
     }
 
-    const settings = data.value as { enabled: boolean; message: string; exempt_user_ids: string[] };
+    const settings = data.value as { enabled: boolean; message?: string };
 
-    // For unauthenticated public requests, only return enabled + message
-    // Check if user is exempt via auth header
-    const authHeader = request.headers.get('authorization');
-    let isExempt = false;
+    // Populate in-memory cache
+    _cache = {
+      enabled: settings.enabled ?? false,
+      message: settings.message ?? '',
+      expiresAt: Date.now() + SERVER_CACHE_TTL,
+    };
 
-    if (authHeader?.startsWith('Bearer ') && settings.enabled) {
-      try {
-        const token = authHeader.replace('Bearer ', '');
-        // getUser also gets a timeout from the shared AbortController above (already cleared,
-        // so create a fresh one scoped to this auth check only)
-        const authController = new AbortController();
-        const authTimeout = setTimeout(() => authController.abort(), 3_000);
-        const { data: { user } } = await supabase.auth.getUser(token);
-        clearTimeout(authTimeout);
-        if (user && settings.exempt_user_ids?.includes(user.id)) {
-          isExempt = true;
-        }
-      } catch {
-        // Ignore auth errors for public endpoint
-      }
-    }
-
-    return NextResponse.json({
-      enabled: settings.enabled,
-      message: settings.message,
-      isExempt,
-    });
+    return buildResponse(_cache.enabled, _cache.message);
   } catch (err: any) {
     clearTimeout(timeoutId);
-    // Timeout or network error → treat as maintenance disabled so the site stays up
     if (err?.name === 'AbortError') {
-      console.warn('[maintenance] Supabase query timed out, defaulting to enabled:false');
+      console.warn('[maintenance] DB query timed out — returning enabled:false');
     }
-    return NextResponse.json({ enabled: false });
+    // Safe default: never block the site on a DB error
+    return buildResponse(false, '');
   }
 }
+
+function buildResponse(enabled: boolean, message: string) {
+  return NextResponse.json(
+    { enabled, message },
+    {
+      headers: {
+        // CDN caches for 60 s; serves stale for up to 5 min while revalidating
+        'Cache-Control': 's-maxage=60, stale-while-revalidate=300',
+      },
+    },
+  );
+}
+
 

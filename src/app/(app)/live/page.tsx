@@ -63,7 +63,7 @@ export default function LivePage() {
       if (viewType === 'active') url += '&type=active';
       else if (viewType === 'featured') url += '&type=featured';
       if (selectedCategory) url += `&category=${encodeURIComponent(selectedCategory)}`;
-      const res = await fetch(url, { cache: 'no-store' });
+      const res = await fetch(url);
       const data = await res.json();
       setStreams(Array.isArray(data) ? data : []);
       setCurrentPage(0);

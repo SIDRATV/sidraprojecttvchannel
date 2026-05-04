@@ -19,22 +19,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const checkMaintenance = useCallback(async () => {
     try {
-      let authHeader: string | undefined;
-      try {
-        const { data: { session: s } } = await supabase.auth.getSession();
-        if (s?.access_token) authHeader = `Bearer ${s.access_token}`;
-      } catch { /* proceed without token */ }
-
-      // swrFetch with a fixed cache key (URL only, not token) so token rotation
-      // doesn't cause a new fetch — Realtime handles live status changes.
+      // swrFetch with a fixed cache key so repeated calls return the cached result.
+      // The API no longer requires authentication — exemptions are enforced by middleware.
       const data = await swrFetch<any>(
         '/api/maintenance',
-        authHeader ? { headers: { Authorization: authHeader } } : {},
+        {},
         30_000,
         10 * 60_000,     // stale data acceptable for up to 10 min
-        '/api/maintenance' // stable cache key — ignore token in key
+        '/api/maintenance' // stable cache key
       );
-      if (data?.enabled && !data.isExempt) {
+      if (data?.enabled) {
         setMaintenanceRedirecting(true);
         window.location.href = '/maintenance';
       }

@@ -78,7 +78,12 @@ export async function GET(request: NextRequest) {
     // Step 2: Scan all chains for deposits
     try {
       console.log('[cron] Starting blockchain deposit scan...');
-      const depositScan = await runFullDepositScan({ maxBlocks: 20 });
+      // Hard deadline: 90s total for scanning — well under Vercel's 300s limit.
+      // Each chain gets ~45s. If a chain is slow the deadline breaks the block loop
+      // cleanly and updates last_checked_block to the last finished block.
+      const CRON_MAX_RUNTIME_MS = 90_000;
+      const scanDeadline = startTime + CRON_MAX_RUNTIME_MS;
+      const depositScan = await runFullDepositScan({ maxBlocks: 20, deadlineMs: scanDeadline });
       results.deposits = depositScan;
       console.log(
         `[cron] Deposit scan complete: credited=${depositScan.totalCredited} matches=${depositScan.totalMatches} errors=${depositScan.totalErrors} duration=${depositScan.durationMs}ms`

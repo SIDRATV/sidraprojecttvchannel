@@ -151,7 +151,7 @@ const roundAmount = (amount: number): number => Number(amount.toFixed(8));
  */
 async function scanChainDeposits(
   network: WalletNetwork,
-  options?: { maxBlocks?: number }
+  options?: { maxBlocks?: number; deadlineMs?: number }
 ): Promise<ScanResult> {
   const startTime = Date.now();
   const config = CHAIN_CONFIGS[network];
@@ -249,166 +249,189 @@ async function scanChainDeposits(
   const totalBlocks = safeToBlock - startBlock + 1;
   log('info', network, `Scanning blocks ${startBlock} → ${safeToBlock} (${totalBlocks} blocks, ${minConfirmations} confirmations required)`);
 
-  // Step 4: Scan blocks
-  for (let blockNumber = startBlock; blockNumber <= safeToBlock; blockNumber++) {
-    let block: ethers.Block | null = null;
-    try {
-      block = await provider.getBlock(blockNumber, true);
-    } catch (blockErr: any) {
-      log('warn', network, `Failed to fetch block ${blockNumber}: ${blockErr?.message}`);
-      result.errors++;
-      continue;
+  // Step 4: Scan blocks in parallel batches to avoid sequential RPC latency
+  const BLOCK_BATCH_SIZE = 5;
+  let lastScannedBlock = startBlock - 1; // tracks highest block actually processed
+
+  for (let batchStart = startBlock; batchStart <= safeToBlock; batchStart += BLOCK_BATCH_SIZE) {
+    // Hard deadline: stop early instead of hitting Vercel timeout
+    if (options?.deadlineMs && Date.now() >= options.deadlineMs) {
+      log('warn', network, `Scan deadline reached at block ${batchStart} — stopping early`);
+      break;
     }
 
-    if (!block) {
-      result.scannedBlocks++;
-      continue;
-    }
+    const batchEnd = Math.min(batchStart + BLOCK_BATCH_SIZE - 1, safeToBlock);
+    const blockNums: number[] = [];
+    for (let n = batchStart; n <= batchEnd; n++) blockNums.push(n);
 
-    // ethers v6: use prefetchedTransactions for full tx objects
-    let transactions: ethers.TransactionResponse[] = [];
-    try {
-      transactions = block.prefetchedTransactions || [];
-    } catch {
-      // Fallback: fetch individual transactions by hash
-      for (const txHash of block.transactions) {
-        try {
-          const tx = await provider.getTransaction(txHash);
-          if (tx) transactions.push(tx);
-        } catch {
-          // skip
-        }
-      }
-    }
+    // Fetch all blocks in this batch simultaneously
+    const blockResults = await Promise.allSettled(
+      blockNums.map((n) => provider.getBlock(n, true))
+    );
 
-    if (transactions.length === 0) {
-      result.scannedBlocks++;
-      continue;
-    }
+    for (let i = 0; i < blockResults.length; i++) {
+      const blockNumber = blockNums[i];
+      const settled = blockResults[i];
 
-    // Check each transaction
-    for (const tx of transactions) {
-      const to = tx.to?.toLowerCase();
-      if (!to || !byAddress.has(to) || tx.value <= 0n) {
-        continue;
-      }
-
-      // Deposit match found!
-      result.matches++;
-      const depositOwner = byAddress.get(to)!;
-      const amount = Number(ethers.formatEther(tx.value));
-      const confirmations = latestBlock - blockNumber + 1;
-
-      log('info', network, `Deposit detected: TX_HASH=${tx.hash}`, {
-        to,
-        from: tx.from?.toLowerCase(),
-        amount,
-        block: blockNumber,
-        confirmations,
-        userId: depositOwner.user_id,
-      });
-
-      // Check confirmations
-      if (confirmations < minConfirmations) {
-        log('info', network, `Waiting for confirmations: ${confirmations}/${minConfirmations} for tx ${tx.hash}`);
-        result.pendingConfirmations++;
-        continue;
-      }
-
-      // Verify receipt (tx actually succeeded on-chain)
-      try {
-        const receipt = await provider.getTransactionReceipt(tx.hash);
-        if (!receipt || receipt.status !== 1) {
-          log('warn', network, `Transaction receipt invalid or reverted: ${tx.hash}`);
-          continue;
-        }
-      } catch (receiptErr: any) {
-        log('warn', network, `Failed to fetch receipt for ${tx.hash}: ${receiptErr?.message}`);
+      if (settled.status === 'rejected') {
+        log('warn', network, `Failed to fetch block ${blockNumber}: ${(settled.reason as any)?.message}`);
         result.errors++;
+        lastScannedBlock = Math.max(lastScannedBlock, blockNumber);
         continue;
       }
 
-      // Credit the user's internal balance
-      try {
-        const { error: creditError } = await supabase.rpc('wallet_credit_deposit', {
-          p_user_id: depositOwner.user_id,
-          p_amount: roundAmount(amount),
-          p_tx_hash: tx.hash,
-          p_network: network,
-          p_deposit_address: to,
-          p_confirmations: confirmations,
-          p_metadata: {
-            block_number: blockNumber,
-            from_address: tx.from?.toLowerCase(),
-            chain_id: config.chainId,
-            explorer_url: `${config.explorerUrl}/tx/${tx.hash}`,
-          },
-        });
+      const block = settled.value;
+      if (!block) {
+        result.scannedBlocks++;
+        lastScannedBlock = Math.max(lastScannedBlock, blockNumber);
+        continue;
+      }
 
-        if (creditError) {
-          // "Deposit already credited" is expected for duplicate scans
-          if (creditError.message?.includes('already credited')) {
-            log('info', network, `Deposit already credited (duplicate): ${tx.hash}`);
-          } else {
-            log('error', network, `Failed to credit deposit: ${creditError.message}`, { txHash: tx.hash });
-            result.errors++;
-          }
+      // ethers v6: use prefetchedTransactions for full tx objects
+      let transactions: ethers.TransactionResponse[] = [];
+      try {
+        transactions = block.prefetchedTransactions || [];
+      } catch {
+        // Fallback: fetch individual transactions by hash in parallel
+        const txFetches = await Promise.allSettled(
+          block.transactions.map((txHash) => provider.getTransaction(txHash))
+        );
+        for (const r of txFetches) {
+          if (r.status === 'fulfilled' && r.value) transactions.push(r.value);
+        }
+      }
+
+      // Check each transaction for deposits to monitored addresses
+      for (const tx of transactions) {
+        const to = tx.to?.toLowerCase();
+        if (!to || !byAddress.has(to) || tx.value <= 0n) {
           continue;
         }
 
-        result.credited++;
-        log('info', network, `User credited: ${roundAmount(amount)} ${config.symbol}`, {
-          userId: depositOwner.user_id,
-          txHash: tx.hash,
+        // Deposit match found!
+        result.matches++;
+        const depositOwner = byAddress.get(to)!;
+        const amount = Number(ethers.formatEther(tx.value));
+        const confirmations = latestBlock - blockNumber + 1;
+
+        log('info', network, `Deposit detected: TX_HASH=${tx.hash}`, {
+          to,
+          from: tx.from?.toLowerCase(),
+          amount,
           block: blockNumber,
           confirmations,
+          userId: depositOwner.user_id,
         });
 
-        // Write audit log
+        // Check confirmations
+        if (confirmations < minConfirmations) {
+          log('info', network, `Waiting for confirmations: ${confirmations}/${minConfirmations} for tx ${tx.hash}`);
+          result.pendingConfirmations++;
+          continue;
+        }
+
+        // Verify receipt (tx actually succeeded on-chain)
         try {
-          await supabase.from('wallet_audit_logs').insert({
-            actor_user_id: depositOwner.user_id,
-            action: 'wallet.deposit.credited',
-            target_id: tx.hash,
-            details: {
-              amount: roundAmount(amount),
-              address: to,
-              from_address: tx.from?.toLowerCase(),
-              confirmations,
+          const receipt = await provider.getTransactionReceipt(tx.hash);
+          if (!receipt || receipt.status !== 1) {
+            log('warn', network, `Transaction receipt invalid or reverted: ${tx.hash}`);
+            continue;
+          }
+        } catch (receiptErr: any) {
+          log('warn', network, `Failed to fetch receipt for ${tx.hash}: ${receiptErr?.message}`);
+          result.errors++;
+          continue;
+        }
+
+        // Credit the user's internal balance
+        try {
+          const { error: creditError } = await supabase.rpc('wallet_credit_deposit', {
+            p_user_id: depositOwner.user_id,
+            p_amount: roundAmount(amount),
+            p_tx_hash: tx.hash,
+            p_network: network,
+            p_deposit_address: to,
+            p_confirmations: confirmations,
+            p_metadata: {
               block_number: blockNumber,
-              network,
+              from_address: tx.from?.toLowerCase(),
               chain_id: config.chainId,
+              explorer_url: `${config.explorerUrl}/tx/${tx.hash}`,
             },
           });
-        } catch {
-          // best-effort audit
-        }
-      } catch (creditErr: any) {
-        // Duplicate deposit (tx_hash already exists) — safe to ignore
-        if (creditErr?.message?.includes('already credited') || creditErr?.message?.includes('duplicate')) {
-          log('info', network, `Deposit already processed: ${tx.hash}`);
-        } else {
-          log('error', network, `Error crediting deposit: ${creditErr?.message}`, { txHash: tx.hash });
-          result.errors++;
+
+          if (creditError) {
+            // "Deposit already credited" is expected for duplicate scans
+            if (creditError.message?.includes('already credited')) {
+              log('info', network, `Deposit already credited (duplicate): ${tx.hash}`);
+            } else {
+              log('error', network, `Failed to credit deposit: ${creditError.message}`, { txHash: tx.hash });
+              result.errors++;
+            }
+            continue;
+          }
+
+          result.credited++;
+          log('info', network, `User credited: ${roundAmount(amount)} ${config.symbol}`, {
+            userId: depositOwner.user_id,
+            txHash: tx.hash,
+            block: blockNumber,
+            confirmations,
+          });
+
+          // Write audit log
+          try {
+            await supabase.from('wallet_audit_logs').insert({
+              actor_user_id: depositOwner.user_id,
+              action: 'wallet.deposit.credited',
+              target_id: tx.hash,
+              details: {
+                amount: roundAmount(amount),
+                address: to,
+                from_address: tx.from?.toLowerCase(),
+                confirmations,
+                block_number: blockNumber,
+                network,
+                chain_id: config.chainId,
+              },
+            });
+          } catch {
+            // best-effort audit
+          }
+        } catch (creditErr: any) {
+          // Duplicate deposit (tx_hash already exists) — safe to ignore
+          if (creditErr?.message?.includes('already credited') || creditErr?.message?.includes('duplicate')) {
+            log('info', network, `Deposit already processed: ${tx.hash}`);
+          } else {
+            log('error', network, `Error crediting deposit: ${creditErr?.message}`, { txHash: tx.hash });
+            result.errors++;
+          }
         }
       }
-    }
 
-    result.scannedBlocks++;
+      result.scannedBlocks++;
+      lastScannedBlock = Math.max(lastScannedBlock, blockNumber);
+    }
   }
 
+  // Use the highest block we actually finished processing for the checkpoint
+  const actualToBlock = lastScannedBlock >= startBlock ? lastScannedBlock : startBlock - 1;
+  result.toBlock = actualToBlock;
+
   // Step 5: Update last_checked_block — only for rows where value actually changed.
-  // IS DISTINCT FROM semantics: skip rows already at safeToBlock to avoid redundant writes.
-  const updatePromises = addresses
-    .filter((row) => Number(row.last_checked_block ?? -1) !== safeToBlock)
-    .map((row) =>
-      supabase
-        .from('wallet_deposit_addresses')
-        .update({ last_checked_block: safeToBlock })
-        .eq('id', row.id)
-        .neq('last_checked_block', safeToBlock) // server-side guard: IS DISTINCT FROM equivalent
-    );
-  await Promise.all(updatePromises);
+  // Skip rows already at actualToBlock to avoid redundant writes.
+  if (actualToBlock >= startBlock) {
+    const updatePromises = addresses
+      .filter((row) => Number(row.last_checked_block ?? -1) !== actualToBlock)
+      .map((row) =>
+        supabase
+          .from('wallet_deposit_addresses')
+          .update({ last_checked_block: actualToBlock })
+          .eq('id', row.id)
+          .neq('last_checked_block', actualToBlock)
+      );
+    await Promise.all(updatePromises);
+  }
 
   result.durationMs = Date.now() - startTime;
 
@@ -440,7 +463,7 @@ export interface FullScanResult {
  * Run deposit scan across all configured chains.
  * Called by the cron endpoint.
  */
-export const runFullDepositScan = async (options?: { maxBlocks?: number }): Promise<FullScanResult> => {
+export const runFullDepositScan = async (options?: { maxBlocks?: number; deadlineMs?: number }): Promise<FullScanResult> => {
   const startTime = Date.now();
   const activeNetworks = getActiveNetworks();
 

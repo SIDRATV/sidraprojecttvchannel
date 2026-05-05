@@ -8,13 +8,17 @@ export async function GET() {
 
     const { data: advertisements, error } = await (supabase as any)
       .from('advertisements')
-      .select('*')
+      .select('id, advertiser_name, email, whatsapp, ad_type, media_url, media_type, redirect_url, duration_days, budget, currency, status, reject_reason, starts_at, ends_at, impressions, clicks, payment_status, payment_ref, admin_note, created_at')
       .eq('status', 'active')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error) throw error;
 
-    return NextResponse.json({ advertisements: advertisements || [] });
+    return NextResponse.json(
+      { advertisements: advertisements || [] },
+      { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

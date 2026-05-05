@@ -8,9 +8,10 @@ export async function GET() {
 
     const { data: projects, error } = await (supabase as any)
       .from('voting_projects')
-      .select('*')
+      .select('id, title, description, category, image_url, funding_goal, funding_current, status, starts_at, ends_at, created_at')
       .in('status', ['active', 'upcoming', 'completed'])
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error) throw error;
 
@@ -35,14 +36,17 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({
-      projects: (projects || []).map((p: any) => ({
-        ...p,
-        upvotes: voteStats[p.id]?.upvotes || 0,
-        downvotes: voteStats[p.id]?.downvotes || 0,
-        total_votes: voteStats[p.id]?.total || 0,
-      })),
-    });
+    return NextResponse.json(
+      {
+        projects: (projects || []).map((p: any) => ({
+          ...p,
+          upvotes: voteStats[p.id]?.upvotes || 0,
+          downvotes: voteStats[p.id]?.downvotes || 0,
+          total_votes: voteStats[p.id]?.total || 0,
+        })),
+      },
+      { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=120' } }
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

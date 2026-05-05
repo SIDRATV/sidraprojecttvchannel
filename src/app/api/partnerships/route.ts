@@ -8,14 +8,18 @@ export async function GET() {
 
     const { data: partners, error } = await (supabase as any)
       .from('partners')
-      .select('*')
+      .select('id, name, description, category, logo_emoji, logo_url, website_url, rating, reviews_count, followers_count, status, benefits, join_date')
       .in('status', ['active', 'featured'])
       .order('status', { ascending: true }) // featured first
-      .order('rating', { ascending: false });
+      .order('rating', { ascending: false })
+      .limit(50);
 
     if (error) throw error;
 
-    return NextResponse.json({ partners: partners || [] });
+    return NextResponse.json(
+      { partners: partners || [] },
+      { headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=600' } }
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

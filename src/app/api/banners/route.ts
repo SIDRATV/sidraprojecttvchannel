@@ -18,7 +18,10 @@ export async function GET() {
 
     if (error) throw error;
 
-    return NextResponse.json({ banners: data || [] });
+    return NextResponse.json(
+      { banners: data || [] },
+      { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
+    );
   } catch (err: any) {
     return NextResponse.json({ banners: [], error: err.message }, { status: 500 });
   }

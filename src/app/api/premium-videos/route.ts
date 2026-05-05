@@ -61,7 +61,10 @@ export async function GET(request: NextRequest) {
       }),
     );
 
-    return NextResponse.json({ videos, count: videos.length });
+    return NextResponse.json(
+      { videos, count: videos.length },
+      { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
+    );
   } catch (err) {
     console.error('Premium videos API error:', err);
     const message = err instanceof Error ? err.message : 'Failed to fetch premium videos';

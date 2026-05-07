@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,16 +12,11 @@ export async function POST(
   try {
     const { id: videoId } = await params;
     const supabase = createServerClient();
-
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const jwt = await verifyJwt(token);
+    if (!jwt) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const user = { id: jwt.sub };
 
     // @ts-ignore - RPC function not in generated types
     const { data, error } = await (supabase as any).rpc('toggle_premium_video_like', {
@@ -47,15 +43,11 @@ export async function GET(
     const { id: videoId } = await params;
     const supabase = createServerClient();
 
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ liked: false });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ liked: false });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ liked: false });
+    const jwt = await verifyJwt(token);
+    if (!jwt) return NextResponse.json({ liked: false });
+    const user = { id: jwt.sub };
 
     const { data } = await (supabase as any)
       .from('premium_video_likes')

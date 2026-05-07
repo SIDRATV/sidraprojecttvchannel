@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 // GET /api/news-articles — list published articles (or fetch comments for an article)
 export async function GET(request: NextRequest) {
@@ -98,15 +99,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient();
 
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const jwt = await verifyJwt(token);
+    if (!jwt) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    const user = { id: jwt.sub };
 
     const body = await request.json();
     const { action, articleId, content } = body;

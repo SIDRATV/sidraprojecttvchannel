@@ -49,7 +49,7 @@ const fetchUserProfile = async (authUser: SupabaseUser): Promise<User> => {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, email, username, full_name, avatar_url, bio, is_admin, premium_plan, created_at, updated_at')
+      .select('id, email, username, full_name, avatar_url, bio, is_admin, created_at, updated_at')
       .eq('id', userId)
       .maybeSingle();
     if (error) return toAppUser(authUser);

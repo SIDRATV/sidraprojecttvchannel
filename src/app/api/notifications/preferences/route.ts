@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 // GET /api/notifications/preferences — fetch user notification preferences
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient();
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const user = { id: jwtPayload.sub, email: jwtPayload.email };
 
     // Fetch user's notification preferences from localStorage on client
     // or from a new notification_preferences table if adding to DB
@@ -44,15 +41,11 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = createServerClient();
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const user = { id: jwtPayload.sub, email: jwtPayload.email };
 
     const body = await request.json();
     const { notifications_enabled, preferences } = body;

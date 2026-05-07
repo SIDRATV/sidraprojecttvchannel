@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 // GET /api/voting-projects — public: list active voting projects with stats
 export async function GET() {
@@ -56,16 +57,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient();
-
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    const user = { id: jwtPayload.sub, email: jwtPayload.email };
 
     const body = await request.json();
     const { projectId, voteType } = body;

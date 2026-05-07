@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 // GET /api/referral — get current user's referral code, stats, referrals list, settings
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.replace('Bearer ', '');
+    const token = extractBearerToken(request.headers.get('Authorization'));
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = { id: jwtPayload.sub, email: jwtPayload.email };
 
     const supabase = createServerClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     // Cast to any — new referral tables are not yet in the generated Supabase types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

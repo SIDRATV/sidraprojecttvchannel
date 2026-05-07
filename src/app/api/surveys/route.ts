@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 // GET /api/surveys — get available surveys for the user
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient();
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const user = { id: jwtPayload.sub, email: jwtPayload.email };
 
     // @ts-ignore - RPC function not in generated types
     const { data, error } = await (supabase as any).rpc('get_available_surveys', { p_user_id: user.id });
@@ -29,15 +26,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient();
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const user = { id: jwtPayload.sub, email: jwtPayload.email };
 
     const body = await request.json();
     const { surveyId, answers } = body;

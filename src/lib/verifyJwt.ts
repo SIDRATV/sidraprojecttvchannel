@@ -24,11 +24,15 @@ export interface JwtPayload {
   iat: number;
 }
 
-function b64url(str: string): Uint8Array {
+function b64url(str: string): Uint8Array<ArrayBuffer> {
   // Convert base64url → standard base64 → bytes
   const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
   const padded = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, '=');
-  return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+  const chars = atob(padded);
+  const buf = new ArrayBuffer(chars.length);
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < chars.length; i++) view[i] = chars.charCodeAt(i);
+  return view;
 }
 
 /**

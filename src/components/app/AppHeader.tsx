@@ -47,6 +47,15 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const previousUnreadCount = useRef<number | null>(null);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null);
 
+  // Initialize previousUnreadCount once notifications data is loaded.
+  // Without this, the FIRST real-time notification is always skipped because
+  // previousUnreadCount.current starts as null and the guard `!== null` fails.
+  useEffect(() => {
+    if (previousUnreadCount.current === null && unreadCount !== undefined) {
+      previousUnreadCount.current = unreadCount;
+    }
+  }, [unreadCount]);
+
   // Track permission state on mount
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;

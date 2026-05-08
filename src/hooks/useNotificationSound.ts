@@ -65,29 +65,33 @@ export function useNotificationSound() {
       ...options,
     };
 
-    // Use Service Worker registration for better mobile/Android support
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'SHOW_NOTIFICATION',
-        title,
-        options: {
-          ...notifOptions,
-          data: { link: options?.link || '/' },
-        },
-      });
-    } else if ('serviceWorker' in navigator) {
-      // Fallback: wait for SW to be ready
+    // Always go through serviceWorker.ready — more reliable on mobile than
+    // checking .controller (which is null on first load / after hard refresh)
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
-        registration.showNotification(title, {
-          ...notifOptions,
-          data: { link: options?.link || '/' },
-        });
+        // Use postMessage so the SW calls showNotification with event.waitUntil()
+        // which prevents the SW from being killed on mobile before showing it
+        if (registration.active) {
+          registration.active.postMessage({
+            type: 'SHOW_NOTIFICATION',
+            title,
+            options: {
+              ...notifOptions,
+              vibrate: [200, 100, 200],
+              data: { link: options?.link || '/' },
+            },
+          });
+        } else {
+          // SW registered but not active yet — show directly
+          registration.showNotification(title, {
+            ...notifOptions,
+            data: { link: options?.link || '/' },
+          }).catch(() => {});
+        }
       }).catch(() => {
-        // Last resort: direct Notification API (desktop only)
         try { new Notification(title, notifOptions); } catch {}
       });
     } else {
-      // No service worker support — fallback to direct API
       try { new Notification(title, notifOptions); } catch {}
     }
   }, []);

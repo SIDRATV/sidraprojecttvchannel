@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck, Loader2, Download } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/providers/ProfileProvider';
@@ -45,15 +45,22 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   } = useNotifications();
 
   const previousUnreadCount = useRef<number | null>(null);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null);
 
-  // Request browser notification permission when user is logged in
+  // Track permission state
   useEffect(() => {
-    if (!user?.id) return;
     if (typeof window === 'undefined' || !('Notification' in window)) return;
-    if (Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-  }, [user?.id]);
+    setNotifPermission(Notification.permission);
+  }, []);
+
+  // Request permission — must be called from a user gesture on Android Chrome
+  const requestNotifPermission = useCallback(async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    try {
+      const result = await Notification.requestPermission();
+      setNotifPermission(result);
+    } catch {}
+  }, []);
 
   // Supabase Realtime: subscribe to new notifications for this user
   useEffect(() => {
@@ -207,15 +214,27 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                 >
                   <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between">
                     <h3 className="font-bold text-gray-950 dark:text-white">Notifications</h3>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={markAllRead}
-                        className="flex items-center gap-1 text-xs text-brand-500 hover:text-brand-400 font-medium transition-colors"
-                      >
-                        <CheckCheck size={14} />
-                        Tout lire
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {notifPermission === 'default' && (
+                        <button
+                          onClick={requestNotifPermission}
+                          title="Activer les notifications système"
+                          className="flex items-center gap-1 text-xs text-amber-500 hover:text-amber-400 font-medium transition-colors"
+                        >
+                          <Bell size={13} />
+                          Activer
+                        </button>
+                      )}
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          className="flex items-center gap-1 text-xs text-brand-500 hover:text-brand-400 font-medium transition-colors"
+                        >
+                          <CheckCheck size={14} />
+                          Tout lire
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="max-h-80 overflow-y-auto scrollbar-thin">

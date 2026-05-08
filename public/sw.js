@@ -107,13 +107,18 @@ self.addEventListener('message', (event) => {
   // Show notification via Service Worker (works on mobile/Android PWA)
   if (event.data?.type === 'SHOW_NOTIFICATION') {
     const { title, options } = event.data;
-    self.registration.showNotification(title, {
-      icon: '/sidra-logo.webp',
-      badge: '/sidra-logo.webp',
-      tag: 'sidra-notification',
-      requireInteraction: false,
-      ...options,
-    });
+    // event.waitUntil() is CRITICAL on mobile — without it the SW is killed
+    // before the notification is displayed
+    event.waitUntil(
+      self.registration.showNotification(title, {
+        icon: '/sidra-logo.webp',
+        badge: '/sidra-logo.webp',
+        tag: options?.tag || 'sidra-notification',
+        requireInteraction: false,
+        vibrate: [200, 100, 200],
+        ...options,
+      })
+    );
   }
 });
 

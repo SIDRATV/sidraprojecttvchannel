@@ -142,17 +142,17 @@ export function ReferralProgram() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Gift className="text-brand-400" size={22} />
             Programme de Parrainage
           </h2>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Invitez des amis et gagnez des SIDRA à chaque abonnement
           </p>
         </div>
         <button
           onClick={fetchData}
-          className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
           title="Actualiser"
         >
           <RefreshCw size={16} />
@@ -162,40 +162,40 @@ export function ReferralProgram() {
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total filleuls', value: totalCount, icon: Users, color: 'text-blue-400' },
-          { label: 'Filleuls actifs', value: activeCount, icon: Crown, color: 'text-green-400' },
-          { label: 'En attente', value: pendingCount, icon: Clock, color: 'text-amber-400' },
-          { label: 'SIDRA gagnés', value: (data?.totalRewards || 0).toFixed(2), icon: TrendingUp, color: 'text-brand-400' },
+          { label: 'Total filleuls', value: totalCount, icon: Users, color: 'text-blue-500 dark:text-blue-400' },
+          { label: 'Filleuls actifs', value: activeCount, icon: Crown, color: 'text-green-500 dark:text-green-400' },
+          { label: 'En attente', value: pendingCount, icon: Clock, color: 'text-amber-500 dark:text-amber-400' },
+          { label: 'SIDRA gagnés', value: (data?.totalRewards || 0).toFixed(2), icon: TrendingUp, color: 'text-brand-500 dark:text-brand-400' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="glass-card p-3 text-center">
             <Icon size={18} className={`${color} mx-auto mb-1`} />
-            <p className="text-lg font-bold text-white">{value}</p>
-            <p className="text-xs text-gray-400">{label}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{value}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
           </div>
         ))}
       </div>
 
       {/* Referral link */}
       <div className="glass-card p-4">
-        <p className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+        <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 flex items-center gap-2">
           <Share2 size={14} className="text-brand-400" />
           Votre lien de parrainage
           {data?.clicks ? (
-            <span className="ml-auto text-xs text-gray-500 flex items-center gap-1">
+            <span className="ml-auto text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
               <MousePointer size={11} /> {data.clicks} clics
             </span>
           ) : null}
         </p>
         <div className="flex gap-2">
-          <div className="flex-1 min-w-0 px-3 py-2 bg-gray-900/50 border border-gray-700/50 rounded-lg text-sm text-gray-300 font-mono truncate">
+          <div className="flex-1 min-w-0 px-3 py-2 bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg text-sm text-gray-700 dark:text-gray-300 font-mono truncate">
             {referralLink || '—'}
           </div>
           <button
             onClick={handleCopy}
             className={`flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
               copied
-                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                : 'bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30'
+                ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
+                : 'bg-brand-500/20 text-brand-600 dark:text-brand-400 border border-brand-500/30 hover:bg-brand-500/30'
             }`}
           >
             {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
@@ -203,15 +203,15 @@ export function ReferralProgram() {
           </button>
           <button
             onClick={handleShare}
-            className="flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-300 border border-gray-700/50 hover:bg-white/10 transition-colors flex items-center gap-1.5"
+            className="flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700/50 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors flex items-center gap-1.5"
           >
             <ExternalLink size={14} />
             Partager
           </button>
         </div>
         {data?.code && (
-          <p className="text-xs text-gray-500 mt-2">
-            Code: <span className="font-mono text-gray-400">{data.code}</span>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Code: <span className="font-mono text-gray-600 dark:text-gray-400">{data.code}</span>
           </p>
         )}
       </div>
@@ -220,7 +220,7 @@ export function ReferralProgram() {
       <div className="glass-card overflow-hidden">
         <button
           onClick={() => setShowRules(v => !v)}
-          className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-gray-200 hover:bg-white/5 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
         >
           <span className="flex items-center gap-2">
             <Info size={15} className="text-brand-400" />
@@ -237,7 +237,7 @@ export function ReferralProgram() {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="px-4 pb-4 space-y-3 border-t border-gray-700/40">
+              <div className="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700/40">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                   <RuleItem
                     label="Bonus 1er abonnement"
@@ -269,7 +269,7 @@ export function ReferralProgram() {
                     highlight={s.require_premium_to_earn}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                   Les récompenses sont créditées sur votre wallet Sidra automatiquement.
                   Consultez votre wallet dans <span className="text-brand-400">Explorer → Wallet</span>.
                 </p>
@@ -284,12 +284,12 @@ export function ReferralProgram() {
         <div className="glass-card overflow-hidden">
           <button
             onClick={() => setShowRewards(v => !v)}
-            className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-gray-200 hover:bg-white/5 transition-colors"
+            className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
             <span className="flex items-center gap-2">
               <TrendingUp size={15} className="text-green-400" />
               Historique des récompenses
-              <span className="ml-1 px-1.5 py-0.5 rounded bg-green-400/10 text-green-400 text-xs">
+              <span className="ml-1 px-1.5 py-0.5 rounded bg-green-400/10 text-green-600 dark:text-green-400 text-xs">
                 {data?.rewards.length}
               </span>
             </span>
@@ -304,20 +304,20 @@ export function ReferralProgram() {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="border-t border-gray-700/40 divide-y divide-gray-700/30">
+                <div className="border-t border-gray-200 dark:border-gray-700/40 divide-y divide-gray-100 dark:divide-gray-700/30">
                   {data?.rewards.slice(0, 20).map((reward, i) => (
                     <div key={i} className="px-4 py-2.5 flex items-center justify-between text-sm">
                       <div>
-                        <span className="text-gray-300">
+                        <span className="text-gray-700 dark:text-gray-300">
                           {REASON_LABELS[reward.reason] || reward.reason}
                         </span>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                           {new Date(reward.created_at).toLocaleDateString('fr-FR', {
                             day: '2-digit', month: 'short', year: 'numeric'
                           })}
                         </p>
                       </div>
-                      <span className="font-semibold text-green-400">+{Number(reward.amount).toFixed(2)} SIDRA</span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">+{Number(reward.amount).toFixed(2)} SIDRA</span>
                     </div>
                   ))}
                 </div>
@@ -329,12 +329,12 @@ export function ReferralProgram() {
 
       {/* Referrals list */}
       <div className="glass-card overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-700/40">
-          <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-            <Users size={15} className="text-blue-400" />
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700/40">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+            <Users size={15} className="text-blue-500 dark:text-blue-400" />
             Mes filleuls
             {totalCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400 text-xs">
+              <span className="ml-1 px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-600 dark:text-blue-400 text-xs">
                 {totalCount}
               </span>
             )}
@@ -343,31 +343,31 @@ export function ReferralProgram() {
 
         {totalCount === 0 ? (
           <div className="px-4 py-8 text-center">
-            <Users size={32} className="text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400 text-sm">Aucun filleul pour l'instant</p>
-            <p className="text-gray-500 text-xs mt-1">
+            <Users size={32} className="text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Aucun filleul pour l'instant</p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
               Partagez votre lien pour commencer à gagner des SIDRA
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-700/30">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700/30">
             {data?.referrals.map((ref) => {
               const statusInfo = STATUS_LABELS[ref.status] || STATUS_LABELS.pending;
               return (
                 <div key={ref.id} className="px-4 py-3 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-400 shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-500 dark:text-brand-400 shrink-0">
                     {(ref.referred?.full_name || ref.referred?.username || '?')[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-200 truncate">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                       {ref.referred?.full_name || ref.referred?.username || 'Utilisateur'}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
                       Inscrit le {new Date(ref.created_at).toLocaleDateString('fr-FR', {
                         day: '2-digit', month: 'short', year: 'numeric'
                       })}
                       {ref.referred?.premium_plan && ref.referred.premium_plan !== 'free' && (
-                        <span className="ml-2 text-brand-400">· {ref.referred.premium_plan}</span>
+                        <span className="ml-2 text-brand-500 dark:text-brand-400">· {ref.referred.premium_plan}</span>
                       )}
                     </p>
                   </div>
@@ -390,13 +390,13 @@ function RuleItem({
   label: string; value: string; desc: string; icon: string; highlight?: boolean
 }) {
   return (
-    <div className={`p-3 rounded-xl border ${highlight ? 'border-amber-500/30 bg-amber-500/5' : 'border-gray-700/40 bg-white/[0.03]'}`}>
+    <div className={`p-3 rounded-xl border ${highlight ? 'border-amber-500/30 bg-amber-500/5' : 'border-gray-200 dark:border-gray-700/40 bg-gray-50 dark:bg-white/[0.03]'}`}>
       <div className="flex items-center gap-2 mb-1">
         <span className="text-base">{icon}</span>
-        <span className="text-xs font-semibold text-gray-300">{label}</span>
+        <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{label}</span>
       </div>
-      <p className={`text-sm font-bold ${highlight ? 'text-amber-400' : 'text-brand-400'}`}>{value}</p>
-      <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+      <p className={`text-sm font-bold ${highlight ? 'text-amber-500 dark:text-amber-400' : 'text-brand-500 dark:text-brand-400'}`}>{value}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{desc}</p>
     </div>
   );
 }

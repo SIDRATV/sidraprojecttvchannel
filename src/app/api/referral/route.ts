@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Run remaining queries in parallel
     const [referralsRes, rewardsRes, settingsRes] = await Promise.all([
       db.from('referrals')
-        .select('id, status, created_at, activated_at, referred:referred_id (full_name, username, premium_plan)')
+        .select('id, status, created_at, activated_at, referred_id')
         .eq('referrer_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50),
@@ -50,16 +50,34 @@ export async function GET(request: NextRequest) {
         .maybeSingle(),
     ]);
 
-    const referrals = referralsRes.data || [];
+    const rawReferrals = referralsRes.data || [];
     const rewardsData = rewardsRes.data || [];
     const settings = settingsRes.data;
+
+    // Manually fetch referred users from public.users (FK points to auth.users so
+    // PostgREST cannot auto-resolve the join)
+    let referrals = rawReferrals;
+    if (rawReferrals.length > 0) {
+      const referredIds = rawReferrals.map((r: any) => r.referred_id);
+      const { data: referredUsers } = await db
+        .from('users')
+        .select('id, full_name, username, premium_plan')
+        .in('id', referredIds);
+      const usersMap: Record<string, any> = Object.fromEntries(
+        (referredUsers || []).map((u: any) => [u.id, u])
+      );
+      referrals = rawReferrals.map((r: any) => ({
+        ...r,
+        referred: usersMap[r.referred_id] || null,
+      }));
+    }
 
     const totalRewards = rewardsData.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
     return NextResponse.json({
       code,
       clicks: existing?.total_clicks || 0,
-      referrals: referrals || [],
+      referrals,
       rewards: rewardsData || [],
       totalRewards,
       settings: settings || {

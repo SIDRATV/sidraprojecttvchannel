@@ -66,11 +66,19 @@ export function useNotificationSound() {
     };
 
     // Always go through serviceWorker.ready — more reliable on mobile than
-    // checking .controller (which is null on first load / after hard refresh)
+    // checking .controller (which is null on first load / after hard refresh).
+    // Timeout of 3s: if SW never activates, fall back to direct Notification API.
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
-        // Use postMessage so the SW calls showNotification with event.waitUntil()
-        // which prevents the SW from being killed on mobile before showing it
+      const swReady = navigator.serviceWorker.ready;
+      const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+
+      Promise.race([swReady, timeout]).then((result) => {
+        if (!result) {
+          // Timeout — SW not ready, fall back to direct API
+          try { new Notification(title, notifOptions); } catch {}
+          return;
+        }
+        const registration = result as ServiceWorkerRegistration;
         if (registration.active) {
           registration.active.postMessage({
             type: 'SHOW_NOTIFICATION',
@@ -82,11 +90,13 @@ export function useNotificationSound() {
             },
           });
         } else {
-          // SW registered but not active yet — show directly
+          // SW registered but not active — show directly
           registration.showNotification(title, {
             ...notifOptions,
             data: { link: options?.link || '/' },
-          }).catch(() => {});
+          }).catch(() => {
+            try { new Notification(title, notifOptions); } catch {}
+          });
         }
       }).catch(() => {
         try { new Notification(title, notifOptions); } catch {}

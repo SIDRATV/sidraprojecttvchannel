@@ -47,13 +47,24 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const previousUnreadCount = useRef<number | null>(null);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null);
 
-  // Track permission state
+  // Track permission state on mount
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     setNotifPermission(Notification.permission);
   }, []);
 
-  // Request permission — must be called from a user gesture on Android Chrome
+  // Auto-request permission when user logs in (works on desktop + most mobile browsers)
+  // The button below is a fallback for Android Chrome strict gesture requirement
+  useEffect(() => {
+    if (!user?.id) return;
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'default') return;
+    Notification.requestPermission()
+      .then((result) => setNotifPermission(result))
+      .catch(() => {});
+  }, [user?.id]);
+
+  // Manual request — for when auto-request was blocked by browser gesture policy
   const requestNotifPermission = useCallback(async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     try {

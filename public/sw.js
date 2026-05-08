@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mna8dtb2';
+const CACHE_VERSION = 'mna8dtb3';
 const CACHE_NAME = `sidra-tv-v${CACHE_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',
@@ -120,15 +120,14 @@ self.addEventListener('message', (event) => {
     // icon must be a PNG — WebP is unreliable on some Android devices.
     event.waitUntil(
       self.registration.showNotification(title, {
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/badge-72x72.png',
         tag: options?.tag || 'sidra-notification',
         requireInteraction: false,
         silent: false,
         vibrate: [200, 100, 200],
         ...options,
-        // Force PNG icon override even if caller passed a webp path
-        ...(options?.icon ? {} : { icon: '/icons/icon-192x192.png' }),
+        // Always override icon/badge with PNG — WebP is unreliable on Android
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/badge-72x72.png',
       })
     );
   }

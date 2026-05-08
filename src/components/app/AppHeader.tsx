@@ -96,8 +96,6 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
             playSound();
             showBrowserNotification(newNotif.title, {
               body: newNotif.message,
-              badge: '/sidra-logo.webp',
-              icon: '/sidra-logo.webp',
               tag: `notification-${newNotif.id}`,
               link: newNotif.link || '/',
             });

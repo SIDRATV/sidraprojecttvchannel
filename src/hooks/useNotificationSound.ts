@@ -23,13 +23,13 @@ export function useNotificationSound() {
     if (Notification.permission !== 'granted') return;
 
     const notifOptions = {
-      // PNG icons are mandatory — WebP is unreliable on Android Chrome notifications
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/badge-72x72.png',
       tag: 'sidra-notification',
       requireInteraction: false,
       silent: false,
       ...options,
+      // Always override with official PNG icons — WebP is unreliable on Android notifications
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/badge-72x72.png',
     };
 
     // Always go through serviceWorker.ready — more reliable on mobile than

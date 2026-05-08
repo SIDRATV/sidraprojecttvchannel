@@ -18,7 +18,7 @@ async function main() {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   });
 
-  const source = path.join(__dirname, '..', 'public', 'images', 'sda-logo.png');
+  const source = path.join(__dirname, '..', 'public', 'sidra-logo.webp');
   if (!fs.existsSync(source)) {
     console.error('❌ Source not found:', source);
     process.exit(1);

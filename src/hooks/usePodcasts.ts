@@ -1,9 +1,23 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { podcastService, type Podcast } from '@/services/podcasts';
+
+function readSet(key: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+  } catch { return new Set(); }
+}
 
 export function usePodcasts() {
   const [likedPodcasts, setLikedPodcasts] = useState<Set<string>>(new Set());
-  const [bookmarkedPodcasts, setBookmarkedPodcasts] = useState<Set<string>>(new Set());
+  const [bookmarkedPodcasts, setBookmarkedPodcasts] = useState<Set<string>>(() => readSet('bookmarkedPodcasts'));
+
+  // Persist bookmarks — decoupled from callback to avoid stale closures
+  useEffect(() => {
+    if (typeof window !== 'undefined')
+      localStorage.setItem('bookmarkedPodcasts', JSON.stringify(Array.from(bookmarkedPodcasts)));
+  }, [bookmarkedPodcasts]);
 
   const likePodcast = useCallback(async (podcastId: string) => {
     try {
@@ -25,18 +39,11 @@ export function usePodcasts() {
   const bookmarkPodcast = useCallback((podcastId: string) => {
     setBookmarkedPodcasts(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(podcastId)) {
-        newSet.delete(podcastId);
-      } else {
-        newSet.add(podcastId);
-      }
+      if (newSet.has(podcastId)) newSet.delete(podcastId);
+      else newSet.add(podcastId);
       return newSet;
     });
-    // Save to localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('bookmarkedPodcasts', JSON.stringify(Array.from(bookmarkedPodcasts)));
-    }
-  }, [bookmarkedPodcasts]);
+  }, []);
 
   const isLiked = useCallback((podcastId: string) => likedPodcasts.has(podcastId), [likedPodcasts]);
   const isBookmarked = useCallback((podcastId: string) => bookmarkedPodcasts.has(podcastId), [bookmarkedPodcasts]);

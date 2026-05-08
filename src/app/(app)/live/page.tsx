@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Flame, Radio, Play, X, Users, Image as ImageIcon, Video, Youtube, Wifi, WifiOff, Maximize, Minimize } from 'lucide-react';
 import type { LiveStream } from '@/services/live';
+import { useLiveStreams } from '@/hooks/queries/useLiveStreams';
 
 interface YTStats { id: string; viewCount: number; likeCount: number; concurrentViewers?: number; }
 
@@ -19,18 +20,20 @@ interface PageBanner {
 const CATEGORIES = ['Tout', 'Conférence', 'Workshop', 'Éducation', 'Podcast', 'Événement', 'Design', 'Développement', 'Sport'];
 
 export default function LivePage() {
-  const [streams, setStreams] = useState<LiveStream[]>([]);
   const [filteredStreams, setFilteredStreams] = useState<LiveStream[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [viewType, setViewType] = useState<'active' | 'all' | 'featured'>('active');
-  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [banner, setBanner] = useState<PageBanner | null>(null);
   const [activeStream, setActiveStream] = useState<(LiveStream & { youtube_id?: string; stream_url?: string; stream_type?: string }) | null>(null);
   // YouTube live viewer counts keyed by youtube_id
   const [ytViewers, setYtViewers] = useState<Record<string, number | undefined>>({});
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>();
+
+  // Fetch streams via React Query (30s stale, 60s background refresh)
+  const { streams, isLoading } = useLiveStreams({ viewType, category: selectedCategory });
 
   // Fullscreen for live stream player modal
   const livePlayerRef = useRef<HTMLDivElement>(null);
@@ -56,26 +59,16 @@ export default function LivePage() {
 
   const ITEMS_PER_PAGE = 12;
 
-  const fetchStreams = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      let url = '/api/live?limit=50';
-      if (viewType === 'active') url += '&type=active';
-      else if (viewType === 'featured') url += '&type=featured';
-      if (selectedCategory) url += `&category=${encodeURIComponent(selectedCategory)}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      setStreams(Array.isArray(data) ? data : []);
-      setCurrentPage(0);
-    } catch { setStreams([]); }
-    finally { setIsLoading(false); }
-  }, [viewType, selectedCategory]);
+  // Reset to page 0 when filters change
+  useEffect(() => { setCurrentPage(0); }, [viewType, selectedCategory]);
 
-  useEffect(() => { fetchStreams(); }, [fetchStreams]);
+  // Use a ref so fetchYtViewers never re-creates itself when streams changes
+  const streamsRef = useRef<LiveStream[]>([]);
+  streamsRef.current = streams;
 
-  // Fetch YouTube concurrent viewers for live streams with a youtube_id
+  // Stable callback — reads streams from ref, so dependency array is empty
   const fetchYtViewers = useCallback(() => {
-    const ids = streams
+    const ids = streamsRef.current
       .filter(s => (s as any).youtube_id)
       .map(s => (s as any).youtube_id as string)
       .slice(0, 50);
@@ -88,14 +81,18 @@ export default function LivePage() {
         setYtViewers(map);
       })
       .catch(() => {});
-  }, [streams]);
+  }, []); // no deps — streams accessed via ref
 
+  // Single interval, created once and never re-created
   useEffect(() => {
-    fetchYtViewers();
-    // Auto-refresh concurrent viewers every 30s for active live streams
-    refreshTimerRef.current = setInterval(fetchYtViewers, 60_000); // 60s is sufficient for viewer counts
+    refreshTimerRef.current = setInterval(fetchYtViewers, 60_000);
     return () => clearInterval(refreshTimerRef.current);
   }, [fetchYtViewers]);
+
+  // Fetch viewers once when streams list arrives/changes
+  useEffect(() => {
+    fetchYtViewers();
+  }, [streams, fetchYtViewers]);
 
   useEffect(() => {
     fetch('/api/page-banner?page=live')
@@ -103,6 +100,12 @@ export default function LivePage() {
       .then(d => { if (d) setBanner(d); })
       .catch(() => {});
   }, []);
+
+  // Debounce search — only update query after 300ms of inactivity
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   useEffect(() => {
     let result = streams;
@@ -177,8 +180,8 @@ export default function LivePage() {
           <input
             type="text"
             placeholder="Rechercher par titre ou streamer..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/30 transition-all"
           />
         </motion.div>

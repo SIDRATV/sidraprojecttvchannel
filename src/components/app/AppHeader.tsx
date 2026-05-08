@@ -46,6 +46,15 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
 
   const previousUnreadCount = useRef<number | null>(null);
 
+  // Request browser notification permission when user is logged in
+  useEffect(() => {
+    if (!user?.id) return;
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, [user?.id]);
+
   // Supabase Realtime: subscribe to new notifications for this user
   useEffect(() => {
     if (!user?.id) return;

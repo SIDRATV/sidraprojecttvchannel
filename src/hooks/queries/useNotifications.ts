@@ -36,9 +36,9 @@ export function useNotifications() {
     queryKey: ['notifications', accessToken],
     queryFn: () => fetchNotifications(accessToken),
     enabled: !!accessToken,
-    staleTime: 2 * 60 * 1000,          // Realtime gère les mises à jour live — 2 min
-    refetchInterval: 5 * 60 * 1000,    // poll de secours toutes les 5 min si Realtime échoue
-    refetchOnWindowFocus: false,        // Realtime couvre les retours d'onglet
+    staleTime: 10 * 60 * 1000,         // 10 min — Realtime handles live updates
+    refetchInterval: false,            // no polling — Realtime subscription covers this
+    refetchOnWindowFocus: false,       // Realtime couvre les retours d'onglet
   });
 
   const markAllRead = async () => {

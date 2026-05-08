@@ -1,5 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+// Lightweight server-side anon client — no browser auth persistence
+function createAnonClient() {
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    '';
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    '';
+  if (!url || !key) {
+    throw new Error('Supabase env vars missing (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY)');
+  }
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,9 +27,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Username is required' }, { status: 400 });
     }
 
-    // Use the anon client — RLS policy "Users are publicly readable" (USING true)
-    // allows SELECT on users table without service role.
-    // This also removes the SUPABASE_SERVICE_ROLE_KEY dependency for this route.
+    const supabase = createAnonClient();
+
     const { data, error } = await supabase
       .from('users')
       .select('email')
@@ -19,7 +36,7 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (error) {
-      console.error('[resolve-username] DB error:', error.message, error.code);
+      console.error('[resolve-username] DB error:', JSON.stringify(error));
       return NextResponse.json({ error: 'Failed to resolve username' }, { status: 500 });
     }
 
@@ -29,8 +46,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ email: data.email });
-  } catch (error: any) {
-    console.error('[resolve-username] Unexpected error:', error?.message ?? error);
+  } catch (err: any) {
+    console.error('[resolve-username] Unexpected error:', err?.message ?? String(err));
     return NextResponse.json({ error: 'Failed to resolve username' }, { status: 500 });
   }
 }

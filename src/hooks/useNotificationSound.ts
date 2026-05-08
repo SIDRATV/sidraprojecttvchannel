@@ -4,53 +4,18 @@ export function useNotificationSound() {
   // Do NOT request permission on mount - let usePWAInstall handle this
 
   const playSound = useCallback(() => {
+    // Primary: use the pre-generated WAV file (reliable, no autoplay restrictions after user interaction)
     try {
-      // Try to use Web Audio API for a pleasant notification sound
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // Simple pleasant "ding" sound - two notes
-      oscillator.frequency.value = 800; // Frequency in Hz
-      oscillator.type = 'sine';
-
-      // Set volume
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-
-      // Play the sound
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
-
-      // Optional: Second note for a "dinging" effect
-      setTimeout(() => {
-        try {
-          const osc2 = audioContext.createOscillator();
-          const gainNode2 = audioContext.createGain();
-          osc2.connect(gainNode2);
-          gainNode2.connect(audioContext.destination);
-
-          osc2.frequency.value = 1000; // Slightly higher pitch
-          osc2.type = 'sine';
-
-          gainNode2.gain.setValueAtTime(0.2, audioContext.currentTime);
-          gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-
-          osc2.start(audioContext.currentTime);
-          osc2.stop(audioContext.currentTime + 0.2);
-        } catch {}
-      }, 150);
-    } catch (error) {
-      // Fallback: Try to play from a file if Web Audio doesn't work
-      try {
-        const audio = new Audio('/sounds/notification.mp3');
-        audio.volume = 0.7;
-        audio.play().catch(() => {});
-      } catch {}
-    }
+      const audio = new Audio('/sounds/notification.wav');
+      audio.volume = 0.7;
+      audio.play().catch(() => {
+        // Fallback: Web Audio API oscillator (works even if file fails)
+        playWebAudioDing();
+      });
+      return;
+    } catch {}
+    // Final fallback: Web Audio API
+    playWebAudioDing();
   }, []);
 
   const showBrowserNotification = useCallback((title: string, options?: NotificationOptions & { link?: string }) => {
@@ -58,10 +23,12 @@ export function useNotificationSound() {
     if (Notification.permission !== 'granted') return;
 
     const notifOptions = {
-      badge: '/sidra-logo.webp',
-      icon: '/sidra-logo.webp',
+      // PNG icons are mandatory — WebP is unreliable on Android Chrome notifications
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/badge-72x72.png',
       tag: 'sidra-notification',
       requireInteraction: false,
+      silent: false,
       ...options,
     };
 
@@ -107,4 +74,26 @@ export function useNotificationSound() {
   }, []);
 
   return { playSound, showBrowserNotification };
+}
+
+/** Web Audio API two-tone ding — fallback when audio file cannot be played */
+function playWebAudioDing() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const playTone = (freq: number, startAt: number, duration: number, vol: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
+      osc.start(startAt);
+      osc.stop(startAt + duration);
+    };
+    const now = ctx.currentTime;
+    playTone(800, now, 0.18, 0.3);
+    playTone(1050, now + 0.22, 0.18, 0.22);
+  } catch {}
 }

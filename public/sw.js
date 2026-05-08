@@ -1,6 +1,13 @@
-const CACHE_VERSION = 'mna8dtb1';
+const CACHE_VERSION = 'mna8dtb2';
 const CACHE_NAME = `sidra-tv-v${CACHE_VERSION}`;
-const PRECACHE_URLS = ['/manifest.json', '/sidra-logo.webp'];
+const PRECACHE_URLS = [
+  '/manifest.json',
+  '/sidra-logo.webp',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/icons/badge-72x72.png',
+  '/sounds/notification.wav',
+];
 
 const isSameOrigin = (requestUrl) => {
   return new URL(requestUrl).origin === self.location.origin;
@@ -108,15 +115,20 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SHOW_NOTIFICATION') {
     const { title, options } = event.data;
     // event.waitUntil() is CRITICAL on mobile — without it the SW is killed
-    // before the notification is displayed
+    // before the notification is displayed.
+    // silent: false ensures the OS plays its notification sound.
+    // icon must be a PNG — WebP is unreliable on some Android devices.
     event.waitUntil(
       self.registration.showNotification(title, {
-        icon: '/sidra-logo.webp',
-        badge: '/sidra-logo.webp',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/badge-72x72.png',
         tag: options?.tag || 'sidra-notification',
         requireInteraction: false,
+        silent: false,
         vibrate: [200, 100, 200],
         ...options,
+        // Force PNG icon override even if caller passed a webp path
+        ...(options?.icon ? {} : { icon: '/icons/icon-192x192.png' }),
       })
     );
   }

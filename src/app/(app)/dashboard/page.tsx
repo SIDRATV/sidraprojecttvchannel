@@ -71,9 +71,6 @@ export default function DashboardPage() {
         animate="visible"
         className="relative z-10 space-y-8 px-4 md:px-8 lg:px-10 pt-4 md:pt-6 pb-4 md:pb-8"
       >
-        {/* Premium Banner */}
-        <PremiumBanner />
-
         {/* Featured Carousel */}
         <motion.div variants={fadeInUp}>
           <YouTubeFeaturedCarousel />

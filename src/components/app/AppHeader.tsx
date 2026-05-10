@@ -39,6 +39,11 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const { isInstallable, installApp } = usePWAInstall();
   const { history: watchHistory } = useWatchHistory();
 
+  // Crown badge: user has an active premium plan
+  const isPremium = !!(user?.premium_plan &&
+    user.premium_plan !== 'free' &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
+
   // Notifications via React Query (cache 15s, poll 60s, refetch on focus)
   const {
     notifications,
@@ -342,17 +347,24 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2 p-1 pl-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
             >
-              {(profile?.profilePhoto || user?.avatar_url) ? (
-                <img
-                  src={profile?.profilePhoto || user?.avatar_url || ''}
-                  alt="Profile"
-                  className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-400 flex items-center justify-center flex-shrink-0">
-                  <User size={18} className="text-white" />
-                </div>
-              )}
+              <div className="relative flex-shrink-0">
+                {(profile?.profilePhoto || user?.avatar_url) ? (
+                  <img
+                    src={profile?.profilePhoto || user?.avatar_url || ''}
+                    alt="Profile"
+                    className="w-9 h-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-400 flex items-center justify-center">
+                    <User size={18} className="text-white" />
+                  </div>
+                )}
+                {isPremium && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-md ring-1 ring-white dark:ring-gray-900">
+                    <Crown size={9} className="text-white" fill="currentColor" />
+                  </span>
+                )}
+              </div>
               <div className="hidden lg:block text-left">
                 <p className="text-xs text-gray-600 dark:text-gray-400">Account</p>
                 <p className="text-sm font-semibold text-gray-950 dark:text-white">{profile?.fullName?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'User'}</p>

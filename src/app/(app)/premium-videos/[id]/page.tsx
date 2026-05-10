@@ -20,6 +20,7 @@ import { PremiumVideoPlayer } from '@/components/premium/PremiumVideoPlayer';
 import { premiumVideoService } from '@/services/premiumVideos';
 import { useAuth } from '@/hooks/useAuth';
 import { useMiniPlayer } from '@/providers/MiniPlayerProvider';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 import type { PremiumVideoWithRelations } from '@/types/premium';
 import Link from 'next/link';
 
@@ -33,6 +34,7 @@ export default function WatchPremiumVideoPage() {
   const router = useRouter();
   const { user, session } = useAuth();
   const { miniPlayer, resumeData, animating, startMiniPlayer, closeMiniPlayer, expandMiniPlayer, consumeResumeData } = useMiniPlayer();
+  const { addToHistory } = useWatchHistory();
   const id = params.id as string;
 
   // Check for resume data from mini-player expand (takes priority over ?t=)
@@ -138,6 +140,18 @@ export default function WatchPremiumVideoPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isPremiumUser]);
+
+  // Track in watch history once video data is available
+  useEffect(() => {
+    if (!video) return;
+    addToHistory({
+      id: video.id,
+      title: video.title,
+      image: video.thumbnail_url || '',
+      category: (video as any).categories?.name || 'Premium',
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [video?.id]);
 
   // Fetch suggestions when video is loaded
   useEffect(() => {

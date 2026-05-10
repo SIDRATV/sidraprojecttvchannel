@@ -43,11 +43,11 @@ export function PartnerLogosStrip() {
               <img
                 src={p.logo_url}
                 alt={p.name}
-                className="h-8 w-auto max-w-[80px] object-contain opacity-60 dark:opacity-40 hover:opacity-100 dark:hover:opacity-80 transition-opacity grayscale hover:grayscale-0"
+                className="h-8 w-auto max-w-[80px] object-contain opacity-90 hover:opacity-100 transition-opacity"
                 draggable={false}
               />
             ) : (
-              <div className="h-8 px-3 flex items-center gap-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg border border-gray-200 dark:border-white/[0.08] opacity-70 hover:opacity-100 transition-opacity">
+              <div className="h-8 px-3 flex items-center gap-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg border border-gray-200 dark:border-white/[0.08] opacity-90 hover:opacity-100 transition-opacity">
                 <span className="text-base leading-none">{p.logo_emoji || '🤝'}</span>
                 <span className="text-xs font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">{p.name}</span>
               </div>

@@ -1,72 +1,152 @@
-'use client';
+﻿'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useMemo, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Film, Search, Sparkles, Crown, Filter } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Film, Search, Sparkles, Crown, ChevronRight } from 'lucide-react';
 import { PremiumVideoCard } from '@/components/premium/PremiumVideoCard';
 import { premiumVideoService } from '@/services/premiumVideos';
-import { categoryService } from '@/services/categories';
 import { useAuth } from '@/hooks/useAuth';
 import type { PremiumVideoWithRelations } from '@/types/premium';
-import type { Category } from '@/types';
 import Link from 'next/link';
+
+// Premium category definitions (must match DB category names)
+const PREMIUM_CATEGORIES = [
+  { slug: 'films',         label: 'Films',         emoji: '🎬' },
+  { slug: 'series',        label: 'Séries',        emoji: '📺' },
+  { slug: 'sport',         label: 'Sport',         emoji: '⚽' },
+  { slug: 'anime',         label: 'Anime',         emoji: '⭐' },
+  { slug: 'documentaires', label: 'Documentaires', emoji: '🎥' },
+  { slug: 'enfants',       label: 'Enfants',       emoji: '🧒' },
+  { slug: 'masterclasses', label: 'Masterclasses', emoji: '🎓' },
+];
 
 const stagger = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
 };
-
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
 };
 
-export default function PremiumVideosPage() {
+function SkeletonCard() {
+  return (
+    <div className="animate-pulse space-y-2 flex-shrink-0 w-44 sm:w-52">
+      <div className="aspect-video rounded-xl bg-gray-200 dark:bg-gray-800" />
+      <div className="h-2.5 w-16 rounded bg-gray-200 dark:bg-gray-800" />
+      <div className="h-3.5 w-full rounded bg-gray-200 dark:bg-gray-800" />
+    </div>
+  );
+}
+
+function CategoryRow({
+  label,
+  emoji,
+  slug,
+  videos,
+  isPremiumUser,
+}: {
+  label: string;
+  emoji: string;
+  slug: string;
+  videos: PremiumVideoWithRelations[];
+  isPremiumUser: boolean;
+}) {
+  if (videos.length === 0) return null;
+  return (
+    <motion.section variants={fadeUp} className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <span>{emoji}</span>
+          {label}
+          <span className="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">
+            {videos.length} titres
+          </span>
+        </h2>
+        <Link
+          href={`/premium-videos?category=${slug}`}
+          className="flex items-center gap-0.5 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors"
+        >
+          Voir tout <ChevronRight size={14} />
+        </Link>
+      </div>
+      <div className="-mx-4 px-4 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+          {videos.map((video) => (
+            <div key={video.id} className="flex-shrink-0 w-44 sm:w-52">
+              <PremiumVideoCard video={video} isPremiumUser={isPremiumUser} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
+function PremiumVideosContent() {
   const { user } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get('category') ?? null;
+
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(initialCategory);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Premium: user must be logged in, have a premium_plan set, and not expired
-  const isPremiumUser = !!(user && user.premium_plan &&
-    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
+  const isPremiumUser = !!(
+    user &&
+    user.premium_plan &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date())
+  );
 
-  // Categories — long cache (categories rarely change)
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['categories'],
-    queryFn: () => categoryService.getCategories(),
-    staleTime: 30 * 60 * 1000,    // 30 min
-    refetchOnWindowFocus: false,
-    gcTime: 60 * 60 * 1000,       // 1 hour
-  });
-
-  // Premium videos — cached by selected category
-  const { data: videos = [], isLoading: loading } = useQuery<PremiumVideoWithRelations[]>({
-    queryKey: ['premium-videos', selectedCategory],
-    queryFn: () => premiumVideoService.getVideos(20, 0, selectedCategory || undefined),
-    staleTime: 5 * 60 * 1000,     // 5 min
-    refetchOnWindowFocus: false,
+  const { data: allVideos = [], isLoading } = useQuery<PremiumVideoWithRelations[]>({
+    queryKey: ['premium-videos-all'],
+    queryFn: () => premiumVideoService.getVideos(200, 0),
+    staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  const sortedVideos = [...videos].sort((a, b) => {
-    const ao = (a as any).sort_order ?? 999999;
-    const bo = (b as any).sort_order ?? 999999;
-    if (ao !== bo) return ao - bo;
-    return new Date((b as any).created_at).getTime() - new Date((a as any).created_at).getTime();
-  });
+  const sorted = useMemo(
+    () =>
+      [...allVideos].sort((a, b) => {
+        const ao = (a as any).sort_order ?? 999999;
+        const bo = (b as any).sort_order ?? 999999;
+        if (ao !== bo) return ao - bo;
+        return new Date((b as any).created_at).getTime() - new Date((a as any).created_at).getTime();
+      }),
+    [allVideos],
+  );
 
-  const filteredVideos = searchQuery
-    ? sortedVideos.filter(
+  const grouped = useMemo(() => {
+    const map: Record<string, PremiumVideoWithRelations[]> = {};
+    for (const cat of PREMIUM_CATEGORIES) {
+      map[cat.slug] = sorted.filter((v) => {
+        const name = (v.categories?.name ?? '').toLowerCase().replace(/\s+/g, '-');
+        return name === cat.slug || name === cat.label.toLowerCase();
+      });
+    }
+    const matched = new Set(Object.values(map).flatMap((vs) => vs.map((v) => v.id)));
+    const others = sorted.filter((v) => !matched.has(v.id));
+    if (others.length) map['__autres__'] = others;
+    return map;
+  }, [sorted]);
+
+  const filteredVideos = useMemo(() => {
+    let base = selectedSlug ? (grouped[selectedSlug] ?? sorted) : sorted;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      base = base.filter(
         (v) =>
-          v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          v.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : sortedVideos;
+          v.title.toLowerCase().includes(q) ||
+          (v.description?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    return base;
+  }, [selectedSlug, grouped, sorted, searchQuery]);
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-gray-950 transition-colors overflow-hidden">
-      {/* Decorative orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-gold-500/5 dark:bg-gold-500/10 blur-3xl" />
         <div className="absolute top-1/3 -left-32 h-[400px] w-[400px] rounded-full bg-brand-500/5 dark:bg-brand-500/8 blur-3xl" />
@@ -76,9 +156,8 @@ export default function PremiumVideosPage() {
         variants={stagger}
         initial="hidden"
         animate="visible"
-        className="relative z-10 p-4 md:p-8 lg:p-10 space-y-8"
+        className="relative z-10 p-4 md:p-8 lg:p-10 space-y-6"
       >
-        {/* Header */}
         <motion.div variants={fadeUp} className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-gold-500 to-gold-400 shadow-lg shadow-gold-500/20">
@@ -88,11 +167,11 @@ export default function PremiumVideosPage() {
               <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gold-400 via-gold-500 to-gold-300 bg-clip-text text-transparent">
                 Premium Videos
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Exclusive content for premium subscribers</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Contenu exclusif pour abonnés premium
+              </p>
             </div>
           </div>
-
-          {/* Premium status badge */}
           {!isPremiumUser && (
             <Link href="/premium">
               <motion.div
@@ -101,7 +180,8 @@ export default function PremiumVideosPage() {
               >
                 <Crown size={18} className="text-gold-500" />
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-semibold text-gold-600 dark:text-gold-400">Unlock Premium</span> — Subscribe to watch all exclusive content
+                  <span className="font-semibold text-gold-600 dark:text-gold-400">Débloquer Premium</span>
+                  {' '}— Abonnez-vous pour regarder tout le contenu exclusif
                 </p>
                 <Sparkles size={14} className="text-gold-400 ml-auto" />
               </motion.div>
@@ -109,70 +189,105 @@ export default function PremiumVideosPage() {
           )}
         </motion.div>
 
-        {/* Search & Filter */}
-        <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search premium videos..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-950 dark:text-white placeholder-gray-400 focus:outline-none focus:border-gold-500/50 focus:ring-2 focus:ring-gold-500/20 transition-all text-sm"
-            />
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+        <motion.div variants={fadeUp} className="relative">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher des vidéos premium…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-950 dark:text-white placeholder-gray-400 focus:outline-none focus:border-gold-500/50 focus:ring-2 focus:ring-gold-500/20 transition-all text-sm"
+          />
+        </motion.div>
+
+        <motion.div variants={fadeUp} className="-mx-4 px-4 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             <button
-              onClick={() => setSelectedCategory(null)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                !selectedCategory
+              onClick={() => setSelectedSlug(null)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                !selectedSlug
                   ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  : 'bg-gray-100 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
-              <Filter size={12} />
-              All
+              ✨ Tout
             </button>
-            {categories.map((cat) => (
+            {PREMIUM_CATEGORIES.map((cat) => (
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  selectedCategory === cat.id
+                key={cat.slug}
+                onClick={() => setSelectedSlug(cat.slug)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                  selectedSlug === cat.slug
                     ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-gray-100 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
-                {cat.name}
+                {cat.emoji} {cat.label}
               </button>
             ))}
           </div>
         </motion.div>
 
-        {/* Videos Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="animate-pulse space-y-3">
-                <div className="aspect-video rounded-xl bg-gray-200 dark:bg-gray-800" />
-                <div className="h-3 w-16 rounded bg-gray-200 dark:bg-gray-800" />
-                <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-800" />
-                <div className="h-3 w-1/2 rounded bg-gray-200 dark:bg-gray-800" />
+        {isLoading ? (
+          <motion.div variants={fadeUp} className="space-y-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="space-y-3">
+                <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-800 animate-pulse" />
+                <div className="flex gap-3 overflow-hidden">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <SkeletonCard key={j} />
+                  ))}
+                </div>
               </div>
             ))}
-          </div>
+          </motion.div>
+        ) : !selectedSlug && !searchQuery ? (
+          <motion.div variants={stagger} className="space-y-8">
+            {PREMIUM_CATEGORIES.map((cat) => (
+              <CategoryRow
+                key={cat.slug}
+                label={cat.label}
+                emoji={cat.emoji}
+                slug={cat.slug}
+                videos={grouped[cat.slug] ?? []}
+                isPremiumUser={isPremiumUser}
+              />
+            ))}
+            {(grouped['__autres__']?.length ?? 0) > 0 && (
+              <CategoryRow
+                label="Autres"
+                emoji="🎞️"
+                slug="__autres__"
+                videos={grouped['__autres__'] ?? []}
+                isPremiumUser={isPremiumUser}
+              />
+            )}
+            {sorted.length === 0 && (
+              <motion.div variants={fadeUp} className="text-center py-20">
+                <Film size={48} className="text-gray-300 dark:text-gray-700 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
+                  Aucune vidéo premium
+                </p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
+                  Nouveau contenu bientôt disponible
+                </p>
+              </motion.div>
+            )}
+          </motion.div>
         ) : filteredVideos.length === 0 ? (
           <motion.div variants={fadeUp} className="text-center py-20">
             <Film size={48} className="text-gray-300 dark:text-gray-700 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">No premium videos found</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
+              Aucune vidéo trouvée
+            </p>
             <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-              {searchQuery ? 'Try a different search term' : 'New content coming soon'}
+              {searchQuery ? 'Essayez un autre terme' : 'Nouveau contenu bientôt disponible'}
             </p>
           </motion.div>
         ) : (
           <motion.div
             variants={stagger}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
           >
             {filteredVideos.map((video) => (
               <motion.div key={video.id} variants={fadeUp}>
@@ -183,5 +298,17 @@ export default function PremiumVideosPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+export default function PremiumVideosPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gold-500 border-t-transparent" />
+      </div>
+    }>
+      <PremiumVideosContent />
+    </Suspense>
   );
 }

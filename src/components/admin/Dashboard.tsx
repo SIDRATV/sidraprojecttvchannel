@@ -811,6 +811,43 @@ function ContentTab() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-slate-300 mb-1.5 block">Catégorie</label>
+                    {/* Premium quick-select */}
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {[
+                        { label: 'Films', emoji: '🎬' },
+                        { label: 'Séries', emoji: '📺' },
+                        { label: 'Sport', emoji: '⚽' },
+                        { label: 'Anime', emoji: '⭐' },
+                        { label: 'Documentaires', emoji: '🎥' },
+                        { label: 'Enfants', emoji: '🧒' },
+                        { label: 'Masterclasses', emoji: '🎓' },
+                      ].map(({ label, emoji }) => {
+                        const match = categories.find(
+                          (c: any) => c.name.toLowerCase() === label.toLowerCase(),
+                        );
+                        if (!match) return null;
+                        const isActive = editForm.category_id === match.id;
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() =>
+                              setEditForm((f) => ({
+                                ...f,
+                                category_id: isActive ? '' : match.id,
+                              }))
+                            }
+                            className={`px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                              isActive
+                                ? 'bg-gold-500 text-gray-900 shadow-lg shadow-gold-500/25'
+                                : 'bg-slate-700/60 text-slate-300 hover:bg-slate-600/60 border border-slate-700'
+                            }`}
+                          >
+                            {emoji} {label}
+                          </button>
+                        );
+                      })}
+                    </div>
                     <select
                       value={editForm.category_id}
                       onChange={(e) => setEditForm((f) => ({ ...f, category_id: e.target.value }))}

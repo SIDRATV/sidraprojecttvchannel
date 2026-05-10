@@ -9,9 +9,10 @@ import type { PremiumVideoWithRelations } from '@/types/premium';
 interface PremiumVideoCardProps {
   video: PremiumVideoWithRelations;
   isPremiumUser: boolean;
+  compact?: boolean;
 }
 
-export function PremiumVideoCard({ video, isPremiumUser }: PremiumVideoCardProps) {
+export function PremiumVideoCard({ video, isPremiumUser, compact = false }: PremiumVideoCardProps) {
   const [showSummary, setShowSummary] = useState(false);
 
   const href = isPremiumUser
@@ -36,7 +37,7 @@ export function PremiumVideoCard({ video, isPremiumUser }: PremiumVideoCardProps
         <motion.div
           whileHover={{ y: -6, scale: 1.02 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="rounded-2xl overflow-hidden bg-gray-50 dark:bg-gray-900/80 border border-gray-200/60 dark:border-gray-800/60 hover:border-gold-400/50 dark:hover:border-gold-500/40 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-gold-500/10"
+          className={`overflow-hidden bg-gray-50 dark:bg-gray-900/80 border border-gray-200/60 dark:border-gray-800/60 hover:border-gold-400/50 dark:hover:border-gold-500/40 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-gold-500/10 ${compact ? 'rounded-xl' : 'rounded-2xl'}`}
         >
           {/* Thumbnail */}
           <div className="relative aspect-video overflow-hidden">
@@ -98,31 +99,33 @@ export function PremiumVideoCard({ video, isPremiumUser }: PremiumVideoCardProps
           </div>
 
           {/* Info */}
-          <div className="p-3.5">
-            {/* Category badge */}
-            {video.categories && (
+          <div className={compact ? 'p-2' : 'p-3.5'}>
+            {/* Category badge — hidden in compact mode */}
+            {!compact && video.categories && (
               <span className="inline-block px-2 py-0.5 mb-2 rounded-md text-[11px] font-semibold bg-gold-500/10 dark:bg-gold-500/15 text-gold-600 dark:text-gold-400 border border-gold-500/20">
                 {video.categories.name}
               </span>
             )}
 
-            <h3 className="font-bold text-gray-950 dark:text-white text-sm leading-snug line-clamp-2 mb-1.5">
+            <h3 className={`font-bold text-gray-950 dark:text-white leading-snug ${compact ? 'text-xs line-clamp-1' : 'text-sm line-clamp-2 mb-1.5'}`}>
               {video.title}
             </h3>
 
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1">
-                <Eye size={12} />
-                {video.views} views
-              </span>
-              <span>{new Date(video.created_at).toLocaleDateString()}</span>
-            </div>
+            {!compact && (
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span className="flex items-center gap-1">
+                  <Eye size={12} />
+                  {video.views} views
+                </span>
+                <span>{new Date(video.created_at).toLocaleDateString()}</span>
+              </div>
+            )}
           </div>
         </motion.div>
       </Link>
 
-      {/* Info/Summary button */}
-      {video.description && (
+      {/* Info/Summary button — hidden in compact mode */}
+      {!compact && video.description && (
         <div className="absolute bottom-1 right-1 z-10">
           <motion.button
             whileHover={{ scale: 1.1 }}

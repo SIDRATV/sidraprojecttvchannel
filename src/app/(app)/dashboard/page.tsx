@@ -8,6 +8,7 @@ import { LazySection } from '@/components/app/LazySection';
 import { PremiumBanner, PremiumContentPreview } from '@/components/premium';
 import { Heart, MessageCircle, Play, Sparkles, TrendingUp, BookOpen, Briefcase, Cpu, Users, ArrowRight } from 'lucide-react';
 import { useDashboardVideos } from '@/hooks/queries/useDashboardVideos';
+import { QuickShortcuts } from '@/components/app/QuickShortcuts';
 import type { VideoWithRelations } from '@/types';
 
 const staggerContainer = {
@@ -74,6 +75,11 @@ export default function DashboardPage() {
         {/* Featured Carousel */}
         <motion.div variants={fadeInUp}>
           <YouTubeFeaturedCarousel />
+        </motion.div>
+
+        {/* Quick Shortcuts */}
+        <motion.div variants={fadeInUp}>
+          <QuickShortcuts />
         </motion.div>
 
         {/* Latest Videos Section */}

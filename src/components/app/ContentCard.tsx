@@ -34,10 +34,9 @@ export function ContentCard({
   const isHorizontal = type === 'horizontal';
   const isYouTubeVideo = !!videoId;
 
-  const openPlayer = () => {
-    addToHistory({ id, title, image, duration, category, videoId });
-    setShowPlayer(true);
-  };
+  // For YouTube: YouTubePlayerModal will track automatically on open
+  // For /watch pages: track here on link click
+  const openPlayer = () => setShowPlayer(true);
 
   const CardContent = (
     <motion.div
@@ -142,7 +141,7 @@ export function ContentCard({
       ) : (
         <Link
           href={`/watch/${id}`}
-          onClick={() => addToHistory({ id, title, image, duration, category, videoId })}
+          onClick={() => addToHistory({ id, title, image, duration, category })}
         >
           {CardContent}
         </Link>

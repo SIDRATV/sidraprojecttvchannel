@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Maximize, Minimize, Info } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface YouTubePlayerModalProps {
   videoId: string;
@@ -30,6 +31,20 @@ export function YouTubePlayerModal({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const { addToHistory } = useWatchHistory();
+
+  // Track this video in watch history when the modal opens
+  useEffect(() => {
+    if (!isOpen || !videoId) return;
+    addToHistory({
+      id: videoId,
+      title,
+      // YouTube maxresdefault thumbnail — always available
+      image: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
+      videoId,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, videoId]);
 
   // youtube-nocookie + params to suppress suggestions, share button, related videos
   const youtubeEmbedUrl =

@@ -191,7 +191,7 @@ BEGIN
 
   -- Credit wallet of referrer (internal transfer)
   INSERT INTO wallet_transactions (
-    user_id, type, direction, amount, fee, status, network, notes
+    user_id, type, direction, amount, fee, status, network, description
   ) VALUES (
     v_referral.referrer_id,
     'referral',

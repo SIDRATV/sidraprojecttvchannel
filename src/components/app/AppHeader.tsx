@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck, Loader2, Download } from 'lucide-react';
+import { Search, Bell, Moon, Sun, User, LogOut, Settings, Bookmark, Video, Wallet, Crown, Gift, Tag, CheckCheck, Loader2, Download, History, Play } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,6 +15,8 @@ import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { supabase } from '@/lib/supabase';
 import { useNotifications } from '@/hooks/queries/useNotifications';
 import type { Notification } from '@/hooks/queries/useNotifications';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
+import { TOAST_EVENT } from '@/components/app/NotificationToastContainer';
 
 interface AppHeaderProps {
   onSearch?: (query: string) => void;
@@ -35,6 +37,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const notificationRef = useRef<HTMLDivElement>(null);
   const { playSound, showBrowserNotification } = useNotificationSound();
   const { isInstallable, installApp } = usePWAInstall();
+  const { history: watchHistory } = useWatchHistory();
 
   // Notifications via React Query (cache 15s, poll 60s, refetch on focus)
   const {
@@ -100,7 +103,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
           const newNotif = payload.new as Notification;
           // Mise à jour du cache React Query directement — pas de re-fetch
           addRealtimeNotification(newNotif);
-          // Son + notification navigateur
+          // Son + notification navigateur + toast in-app
           if (previousUnreadCount.current !== null) {
             playSound();
             showBrowserNotification(newNotif.title, {
@@ -108,6 +111,19 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
               tag: `notification-${newNotif.id}`,
               link: newNotif.link || '/',
             });
+            // Toast in-app visible immédiatement sur l'écran
+            window.dispatchEvent(
+              new CustomEvent(TOAST_EVENT, {
+                detail: {
+                  id: newNotif.id,
+                  title: newNotif.title,
+                  message: newNotif.message,
+                  icon: newNotif.icon,
+                  link: newNotif.link || '/',
+                  createdAt: Date.now(),
+                },
+              })
+            );
           }
           previousUnreadCount.current = (previousUnreadCount.current ?? 0) + 1;
         }
@@ -351,7 +367,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden z-50"
+                  className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden z-50"
                 >
                   {/* User Info */}
                   <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
@@ -390,10 +406,63 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                         onClick={() => setProfileOpen(false)}
                         className="w-full flex items-center space-x-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-sm"
                       >
-                        <Bookmark size={16} />
-                        <span>Watchlist</span>
+                        <History size={16} />
+                        <span>Récemment regardés</span>
                       </button>
                     </Link>
+
+                    {/* Compact watch history preview (last 3 videos) */}
+                    {watchHistory.length > 0 && (
+                      <div className="px-3 pb-2 space-y-1.5">
+                        {watchHistory.slice(0, 3).map((item) => (
+                          <Link
+                            key={item.id}
+                            href={item.videoId ? '#' : `/watch/${item.id}`}
+                            onClick={(e) => {
+                              setProfileOpen(false);
+                              if (item.videoId) e.preventDefault(); // handled by modal on watchlist page
+                            }}
+                          >
+                            <div className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group cursor-pointer">
+                              {/* Tiny thumbnail */}
+                              <div className="relative w-14 h-9 rounded overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
+                                <img
+                                  src={item.image}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <Play size={10} fill="currentColor" className="text-white" />
+                                </div>
+                              </div>
+                              {/* Title + time */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate leading-tight">
+                                  {item.title}
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                  {(() => {
+                                    const diff = Date.now() - item.watchedAt;
+                                    const mins = Math.floor(diff / 60_000);
+                                    if (mins < 1) return "à l'instant";
+                                    if (mins < 60) return `il y a ${mins}min`;
+                                    const hrs = Math.floor(mins / 60);
+                                    return `il y a ${hrs}h`;
+                                  })()}
+                                </p>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                        {watchHistory.length > 3 && (
+                          <Link href="/watchlist" onClick={() => setProfileOpen(false)}>
+                            <p className="text-[11px] text-brand-500 hover:text-brand-400 text-right pr-1 transition-colors">
+                              +{watchHistory.length - 3} de plus →
+                            </p>
+                          </Link>
+                        )}
+                      </div>
+                    )}
                     <Link href="/settings">
                       <button
                         onClick={() => setProfileOpen(false)}

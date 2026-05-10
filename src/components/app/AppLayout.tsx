@@ -5,6 +5,7 @@ import { BottomNavBar } from '@/components/app/BottomNavBar';
 import { AppHeader } from '@/components/app/AppHeader';
 import { ProtectedRoute } from '@/components/app/ProtectedRoute';
 import { BlockedUserScreen } from '@/components/app/BlockedUserScreen';
+import { NotificationToastContainer } from '@/components/app/NotificationToastContainer';
 import { usePathname } from 'next/navigation';
 import { ProfileProvider } from '@/providers/ProfileProvider';
 import { useAuth } from '@/hooks/useAuth';
@@ -80,8 +81,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <ProfileProvider>
       <ProtectedRoute>
         <div className="flex flex-col min-h-screen bg-white dark:bg-gray-950">
-          <AppHeader showSearch={showSearch} />
-          <main className="flex-1 overflow-y-auto pb-24 isolate">
+          <AppHeader showSearch={showSearch} />          <NotificationToastContainer />          <main className="flex-1 overflow-y-auto pb-24 isolate">
             {children}
           </main>
           <BottomNavBar />

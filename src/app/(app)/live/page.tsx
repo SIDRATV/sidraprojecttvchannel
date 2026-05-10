@@ -66,6 +66,9 @@ export default function LivePage() {
   const streamsRef = useRef<LiveStream[]>([]);
   streamsRef.current = streams;
 
+  // Track whether we've already fetched viewers for the current streams list
+  const streamIdsRef = useRef<string>('');
+
   // Stable callback — reads streams from ref, so dependency array is empty
   const fetchYtViewers = useCallback(() => {
     const ids = streamsRef.current
@@ -83,15 +86,25 @@ export default function LivePage() {
       .catch(() => {});
   }, []); // no deps — streams accessed via ref
 
-  // Single interval, created once and never re-created
+  // Single interval — paused when tab is hidden to avoid wasted requests
   useEffect(() => {
-    refreshTimerRef.current = setInterval(fetchYtViewers, 60_000);
-    return () => clearInterval(refreshTimerRef.current);
+    const start = () => {
+      refreshTimerRef.current = setInterval(fetchYtViewers, 3 * 60_000); // every 3 min
+    };
+    const stop = () => clearInterval(refreshTimerRef.current);
+    const onVisibility = () => document.hidden ? stop() : start();
+    document.addEventListener('visibilitychange', onVisibility);
+    start();
+    return () => { stop(); document.removeEventListener('visibilitychange', onVisibility); };
   }, [fetchYtViewers]);
 
-  // Fetch viewers once when streams list arrives/changes
+  // Fetch viewers ONLY when the streams list ID set actually changes (not on every render)
   useEffect(() => {
-    fetchYtViewers();
+    const key = streams.map(s => (s as any).youtube_id || s.id).join(',');
+    if (key && key !== streamIdsRef.current) {
+      streamIdsRef.current = key;
+      fetchYtViewers();
+    }
   }, [streams, fetchYtViewers]);
 
   useEffect(() => {

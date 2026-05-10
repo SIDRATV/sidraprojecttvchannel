@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { invalidateCache } from '@/lib/clientCache';
 
@@ -28,64 +28,70 @@ async function fetchNotifications(accessToken: string): Promise<NotificationsRes
 }
 
 export function useNotifications() {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const queryClient = useQueryClient();
   const accessToken = session?.access_token ?? '';
+  // Use stable userId as queryKey — token changes on every refresh but userId never does
+  const userId = user?.id ?? '';
+  // Keep a ref to the latest token for use inside callbacks (avoids stale closure)
+  const tokenRef = useRef(accessToken);
+  tokenRef.current = accessToken;
+
+  // Stable queryKey: ['notifications', userId] — never invalidated by token refresh
+  const queryKey = ['notifications', userId];
 
   const query = useQuery<NotificationsResponse>({
-    queryKey: ['notifications', accessToken],
-    queryFn: () => fetchNotifications(accessToken),
-    enabled: !!accessToken,
+    queryKey,
+    queryFn: () => fetchNotifications(tokenRef.current),
+    enabled: !!userId && !!accessToken,
     staleTime: 10 * 60 * 1000,         // 10 min — Realtime handles live updates
     refetchInterval: false,            // no polling — Realtime subscription covers this
     refetchOnWindowFocus: false,       // Realtime couvre les retours d'onglet
   });
 
   const markAllRead = async () => {
-    if (!accessToken || (query.data?.unreadCount ?? 0) === 0) return;
+    if (!tokenRef.current || (query.data?.unreadCount ?? 0) === 0) return;
     try {
       await fetch('/api/notifications', {
         method: 'PATCH',
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${tokenRef.current}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ markAll: true }),
       });
       // Mise à jour optimiste locale
-      queryClient.setQueryData<NotificationsResponse>(
-        ['notifications', accessToken],
-        (old) =>
-          old
-            ? {
-                ...old,
-                unreadCount: 0,
-                notifications: old.notifications.map((n) => ({ ...n, read: true })),
-              }
-            : old
+      queryClient.setQueryData<NotificationsResponse>(queryKey, (old) =>
+        old
+          ? {
+              ...old,
+              unreadCount: 0,
+              notifications: old.notifications.map((n) => ({ ...n, read: true })),
+            }
+          : old
       );
       // Invalider aussi le cache clientCache pour cohérence
       invalidateCache('/api/notifications');
     } catch {}
   };
 
-  // Ajouter une notification venue du Realtime sans re-fetch
+  // Stable callback — uses queryKey (stable) and queryClient (stable)
   const addRealtimeNotification = useCallback((notif: Notification) => {
-    queryClient.setQueryData<NotificationsResponse>(
-      ['notifications', accessToken],
-      (old) =>
-        old
-          ? {
-              unreadCount: old.unreadCount + 1,
-              notifications: [notif, ...old.notifications.slice(0, 9)],
-            }
-          : { unreadCount: 1, notifications: [notif] }
+    queryClient.setQueryData<NotificationsResponse>(queryKey, (old) =>
+      old
+        ? {
+            unreadCount: old.unreadCount + 1,
+            notifications: [notif, ...old.notifications.slice(0, 9)],
+          }
+        : { unreadCount: 1, notifications: [notif] }
     );
-  }, [queryClient, accessToken]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, userId]); // userId stable; queryKey is derived from it
 
   const invalidate = useCallback(() =>
-    queryClient.invalidateQueries({ queryKey: ['notifications', accessToken] }),
-  [queryClient, accessToken]);
+    queryClient.invalidateQueries({ queryKey }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [queryClient, userId]);
 
   return {
     notifications: query.data?.notifications ?? [],

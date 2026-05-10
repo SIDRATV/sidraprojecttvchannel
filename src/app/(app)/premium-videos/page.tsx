@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Film, Search, Sparkles, Crown, Filter } from 'lucide-react';
 import { PremiumVideoCard } from '@/components/premium/PremiumVideoCard';
 import { premiumVideoService } from '@/services/premiumVideos';
@@ -23,9 +24,6 @@ const fadeUp = {
 
 export default function PremiumVideosPage() {
   const { user } = useAuth();
-  const [videos, setVideos] = useState<PremiumVideoWithRelations[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -33,16 +31,23 @@ export default function PremiumVideosPage() {
   const isPremiumUser = !!(user && user.premium_plan &&
     (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date()));
 
-  useEffect(() => {
-    categoryService.getCategories().then(setCategories).catch(() => {});
-  }, []);
+  // Categories — long cache (categories rarely change)
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['categories'],
+    queryFn: () => categoryService.getCategories(),
+    staleTime: 30 * 60 * 1000,    // 30 min
+    refetchOnWindowFocus: false,
+    gcTime: 60 * 60 * 1000,       // 1 hour
+  });
 
-  useEffect(() => {
-    premiumVideoService.getVideos(20, 0, selectedCategory || undefined).then((data) => {
-      setVideos(data);
-      setLoading(false);
-    });
-  }, [selectedCategory]);
+  // Premium videos — cached by selected category
+  const { data: videos = [], isLoading: loading } = useQuery<PremiumVideoWithRelations[]>({
+    queryKey: ['premium-videos', selectedCategory],
+    queryFn: () => premiumVideoService.getVideos(20, 0, selectedCategory || undefined),
+    staleTime: 5 * 60 * 1000,     // 5 min
+    refetchOnWindowFocus: false,
+    gcTime: 15 * 60 * 1000,
+  });
 
   const sortedVideos = [...videos].sort((a, b) => {
     const ao = (a as any).sort_order ?? 999999;

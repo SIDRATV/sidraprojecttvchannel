@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Coins, Clock, ChevronRight, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +29,10 @@ interface Survey {
 
 export function PaidSurveys() {
   const { session } = useAuth();
+  const tokenRef = useRef(session?.access_token ?? '');
+  tokenRef.current = session?.access_token ?? '';
+  const userId = session?.user?.id ?? '';
+
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
@@ -36,11 +40,12 @@ export function PaidSurveys() {
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Stable callback — reads token from ref so it's never recreated on token refresh
   const fetchSurveys = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!tokenRef.current) return;
     try {
       const res = await fetch('/api/surveys', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${tokenRef.current}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -49,9 +54,10 @@ export function PaidSurveys() {
     } catch {} finally {
       setLoading(false);
     }
-  }, [session?.access_token]);
+  }, []); // no deps — token read from ref
 
-  useEffect(() => { fetchSurveys(); }, [fetchSurveys]);
+  // Only fetch when user actually changes (login/logout), not on token refresh
+  useEffect(() => { if (userId) fetchSurveys(); }, [userId, fetchSurveys]);
 
   const handleSubmit = async () => {
     if (!activeSurvey || !session?.access_token) return;

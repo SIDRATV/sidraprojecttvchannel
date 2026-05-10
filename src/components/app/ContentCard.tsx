@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import { YouTubePlayerModal } from './YouTubePlayerModal';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface ContentCardProps {
   id: string;
@@ -29,8 +30,14 @@ export function ContentCard({
   videoId,
 }: ContentCardProps) {
   const [showPlayer, setShowPlayer] = useState(false);
+  const { addToHistory } = useWatchHistory();
   const isHorizontal = type === 'horizontal';
   const isYouTubeVideo = !!videoId;
+
+  const openPlayer = () => {
+    addToHistory({ id, title, image, duration, category, videoId });
+    setShowPlayer(true);
+  };
 
   const CardContent = (
     <motion.div
@@ -64,7 +71,7 @@ export function ContentCard({
           <motion.button
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setShowPlayer(true)}
+            onClick={openPlayer}
             className="p-4 bg-brand-500/90 hover:bg-brand-600 text-white rounded-full shadow-lg backdrop-blur-sm transition-all"
           >
             <Play size={28} fill="currentColor" />
@@ -99,9 +106,7 @@ export function ContentCard({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (isYouTubeVideo) {
-                    setShowPlayer(true);
-                  }
+                  if (isYouTubeVideo) openPlayer();
                 }}
               >
                 <Play size={16} fill="currentColor" />
@@ -131,11 +136,14 @@ export function ContentCard({
   return (
     <>
       {isYouTubeVideo ? (
-        <div onClick={() => setShowPlayer(true)}>
+        <div onClick={openPlayer}>
           {CardContent}
         </div>
       ) : (
-        <Link href={`/watch/${id}`}>
+        <Link
+          href={`/watch/${id}`}
+          onClick={() => addToHistory({ id, title, image, duration, category, videoId })}
+        >
           {CardContent}
         </Link>
       )}

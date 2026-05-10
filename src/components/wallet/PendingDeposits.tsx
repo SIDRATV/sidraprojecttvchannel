@@ -46,12 +46,18 @@ export function PendingDeposits({ authToken, onDepositConfirmed }: PendingDeposi
   const [isLoading, setIsLoading] = useState(true);
   // Keep a ref to track pending count for confirmed-deposit callback
   const pendingCountRef = useRef(0);
+  // Keep token in a ref so callbacks and realtime effects don't re-create on token refresh
+  const tokenRef = useRef(authToken);
+  tokenRef.current = authToken;
+  const onConfirmedRef = useRef(onDepositConfirmed);
+  onConfirmedRef.current = onDepositConfirmed;
 
+  // Stable callback — reads token from ref so never invalidated by token rotation
   const fetchPendingDeposits = useCallback(async () => {
-    if (!authToken) return;
+    if (!tokenRef.current) return;
     try {
       const res = await fetch('/api/wallet/deposits/pending', {
-        headers: { Authorization: `Bearer ${authToken}` },
+        headers: { Authorization: `Bearer ${tokenRef.current}` },
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -59,7 +65,7 @@ export function PendingDeposits({ authToken, onDepositConfirmed }: PendingDeposi
 
       // If we had pending deposits and now there are fewer, a deposit was confirmed
       if (pendingCountRef.current > 0 && newPending.length < pendingCountRef.current) {
-        onDepositConfirmed?.();
+        onConfirmedRef.current?.();
       }
       pendingCountRef.current = newPending.length;
       setPending(newPending);
@@ -69,28 +75,30 @@ export function PendingDeposits({ authToken, onDepositConfirmed }: PendingDeposi
     } finally {
       setIsLoading(false);
     }
-  }, [authToken, onDepositConfirmed]);
+  }, []); // no deps — all mutable values read from refs
 
-  // Initial load
+  // Initial load — runs once on mount (authToken available from parent by then)
   useEffect(() => {
     fetchPendingDeposits();
-  }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchPendingDeposits]);
 
   // ── Supabase Realtime: re-fetch when any deposit transaction changes ──
+  // Channel is created ONCE using userId decoded from the initial token.
+  // Token rotation (TOKEN_REFRESHED) does NOT recreate the channel.
   useEffect(() => {
     if (!authToken) return;
 
     // Decode user_id from JWT (sub claim) for the Realtime filter
-    let userId: string | null = null;
+    let channelUserId: string | null = null;
     try {
-      userId = JSON.parse(atob(authToken.split('.')[1])).sub ?? null;
+      channelUserId = JSON.parse(atob(authToken.split('.')[1])).sub ?? null;
     } catch {
       // If decode fails, fall through — no realtime filter, still works
     }
 
-    const channelName = userId
-      ? `pending_deposits_${userId}`
-      : `pending_deposits_${Math.random()}`;
+    const channelName = channelUserId
+      ? `pending_deposits_${channelUserId}`
+      : `pending_deposits_anon`;
 
     const channel = supabase
       .channel(channelName)
@@ -100,7 +108,7 @@ export function PendingDeposits({ authToken, onDepositConfirmed }: PendingDeposi
           event: '*',
           schema: 'public',
           table: 'wallet_transactions',
-          ...(userId ? { filter: `user_id=eq.${userId}` } : {}),
+          ...(channelUserId ? { filter: `user_id=eq.${channelUserId}` } : {}),
         },
         (payload) => {
           const row = payload.new as Record<string, unknown> | null;
@@ -115,7 +123,8 @@ export function PendingDeposits({ authToken, onDepositConfirmed }: PendingDeposi
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authToken, fetchPendingDeposits]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Created once on mount — token rotations handled via tokenRef
 
   const shortenHash = (hash: string) => `${hash.slice(0, 10)}…${hash.slice(-8)}`;
 

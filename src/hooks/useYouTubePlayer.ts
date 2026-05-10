@@ -115,7 +115,7 @@ export function useYouTubePlayer(videoId: string, containerId: string) {
 
     initPlayer().catch(err => console.error('Failed to init player:', err));
 
-    // Update time periodically
+    // Update time every second (was 500ms — halving state updates)
     const interval = setInterval(() => {
       if (playerRef.current && playerRef.current.getDuration) {
         setState((prev) => ({
@@ -124,7 +124,7 @@ export function useYouTubePlayer(videoId: string, containerId: string) {
           buffered: playerRef.current.getVideoLoadedFraction() * 100,
         }));
       }
-    }, 500);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [videoId, containerId]);

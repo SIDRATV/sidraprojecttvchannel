@@ -35,16 +35,11 @@ export async function GET(request: NextRequest) {
 // POST /api/premium/subscribe — subscribe to a plan
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient();
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const jwt = await verifyJwt(token);
+    if (!jwt) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const user = { id: jwt.sub as string };
 
     const body = await request.json();
     const { planId, duration, discountCode } = body;

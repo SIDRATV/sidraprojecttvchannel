@@ -229,6 +229,7 @@ export function PremiumVideoPlayer({
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
       onMouseLeave={() => isPlayingRef.current && setShowControls(false)}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {/* Video Element */}
       <video
@@ -236,8 +237,12 @@ export function PremiumVideoPlayer({
         src={streamUrl}
         className="w-full aspect-video cursor-pointer"
         onClick={togglePlay}
+        onContextMenu={(e) => e.preventDefault()}
         playsInline
         preload="auto"
+        controlsList="nodownload nofullscreen noremoteplayback"
+        disablePictureInPicture
+        style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
       />
 
       {/* Loading spinner */}

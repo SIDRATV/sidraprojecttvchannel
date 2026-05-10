@@ -1,48 +1,22 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Crown, Zap, Star, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks';
 
 export function PremiumBanner() {
-  const { session } = useAuth();
-  const [activePlan, setActivePlan] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use auth context — premium_plan is already loaded by AuthProvider (no extra API call needed)
+  const { user } = useAuth();
 
-  useEffect(() => {
-    // First check localStorage for immediate display
-    const localPlan = localStorage.getItem('activePremiumPlan');
-    if (localPlan) {
-      setActivePlan(localPlan);
-      setIsLoading(false);
-    }
+  const activePlan = user?.premium_plan &&
+    user.premium_plan !== 'free' &&
+    (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date())
+    ? user.premium_plan.toLowerCase()
+    : null;
 
-    // Then verify with DB if user is logged in
-    if (session?.access_token) {
-      fetch('/api/premium/subscribe', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.activeSubscription) {
-            const planName = data.activeSubscription.plan_name?.toLowerCase() || localPlan;
-            setActivePlan(planName);
-            if (planName) localStorage.setItem('activePremiumPlan', planName);
-          } else {
-            setActivePlan(null);
-            localStorage.removeItem('activePremiumPlan');
-          }
-        })
-        .catch(() => {})
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
-  }, [session?.access_token]);
-
-  if (isLoading || !activePlan) return null;
+  if (!activePlan) return null;
 
   const planConfig = {
     pro: { name: 'Pro', icon: Zap, color: 'from-brand-500 to-brand-400', bgColor: 'bg-brand-500/10', borderColor: 'border-brand-500/30' },

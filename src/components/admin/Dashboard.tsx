@@ -50,6 +50,7 @@ import {
   Gift,
   Pencil,
   GripVertical,
+  MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui';
@@ -81,9 +82,10 @@ import { AdminLiveManager } from '@/components/admin/AdminLiveManager';
 import AdminAdsManager from '@/components/admin/AdminAdsManager';
 import AdminEmailManager from '@/components/admin/AdminEmailManager';
 import { AdminReferralManager } from '@/components/admin/AdminReferralManager';
+import { AdminCommentsManager } from '@/components/admin/AdminCommentsManager';
 import type { Category } from '@/types';
 
-type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'advertisements' | 'email' | 'maintenance' | 'podcast' | 'live' | 'referral';
+type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'advertisements' | 'email' | 'maintenance' | 'podcast' | 'live' | 'referral' | 'comments';
 
 const COLORS = ['#0F7A5C', '#19C37D', '#D4AF37', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -137,6 +139,7 @@ export function AdminDashboard() {
     { id: 'live', label: 'Lives', icon: Radio },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'referral', label: 'Parrainage', icon: Gift },
+    { id: 'comments', label: 'Commentaires', icon: MessageSquare },
   ] as const;
 
   return (
@@ -316,6 +319,7 @@ export function AdminDashboard() {
             {activeTab === 'live' && <LiveTab />}
             {activeTab === 'maintenance' && <MaintenanceTab />}
             {activeTab === 'referral' && <ReferralTab />}
+            {activeTab === 'comments' && <CommentsTab />}
           </motion.div>
         </div>
       </div>
@@ -2084,6 +2088,21 @@ function ReferralTab() {
   const { session } = useAuth();
   if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
   return <AdminReferralManager token={session.access_token} />;
+}
+
+// ==================== COMMENTS TAB ====================
+function CommentsTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return (
+    <div className="p-6 space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-white">Modération des commentaires</h2>
+        <p className="text-sm text-slate-400 mt-1">Gérez les commentaires des vidéos premium et les mots interdits.</p>
+      </div>
+      <AdminCommentsManager token={session.access_token} />
+    </div>
+  );
 }
 
 // ==================== PODCAST TAB ====================

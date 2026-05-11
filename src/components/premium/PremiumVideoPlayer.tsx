@@ -13,6 +13,7 @@ import {
   Loader2,
   RotateCcw,
   RotateCw,
+  Cast,
 } from 'lucide-react';
 import { useRef, useState, useEffect, useCallback } from 'react';
 
@@ -53,6 +54,8 @@ export function PremiumVideoPlayer({
   const [buffered, setBuffered] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [volume, setVolume] = useState(1);
+  const [isCasting, setIsCasting] = useState(false);
+  const [castSupported, setCastSupported] = useState(false);
 
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout>>();
   const isPlayingRef = useRef(false);
@@ -212,6 +215,39 @@ export function PremiumVideoPlayer({
     resetHideTimer();
   };
 
+  // ─── Chromecast / Remote Playback ────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Remote Playback API (Chromecast, AirPlay via browser)
+    if ('remote' in video) {
+      setCastSupported(true);
+      const remote = (video as any).remote as EventTarget;
+      const onConnect = () => setIsCasting(true);
+      const onDisconnect = () => setIsCasting(false);
+      remote.addEventListener('connecting', onConnect);
+      remote.addEventListener('connect', onConnect);
+      remote.addEventListener('disconnect', onDisconnect);
+      return () => {
+        remote.removeEventListener('connecting', onConnect);
+        remote.removeEventListener('connect', onConnect);
+        remote.removeEventListener('disconnect', onDisconnect);
+      };
+    }
+  }, [streamUrl]);
+
+  const handleCast = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if ('remote' in video) {
+      try {
+        await (video as any).remote.prompt();
+      } catch {
+        // User cancelled or not supported
+      }
+    }
+  };
+
   const formatTime = (s: number) => {
     if (!isFinite(s)) return '0:00';
     const m = Math.floor(s / 60);
@@ -240,7 +276,7 @@ export function PremiumVideoPlayer({
         onContextMenu={(e) => e.preventDefault()}
         playsInline
         preload="auto"
-        controlsList="nodownload nofullscreen noremoteplayback"
+        controlsList="nodownload nofullscreen"
         disablePictureInPicture
         style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
       />
@@ -404,6 +440,21 @@ export function PremiumVideoPlayer({
                   </motion.div>
                 )}
               </div>
+
+              {/* Cast button (shown only when RemotePlayback API is available) */}
+              {castSupported && (
+                <button
+                  onClick={handleCast}
+                  title={isCasting ? 'Casting en cours' : 'Diffuser sur un écran'}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    isCasting
+                      ? 'bg-brand-500/30 text-brand-400'
+                      : 'hover:bg-white/10 text-white'
+                  }`}
+                >
+                  <Cast size={18} />
+                </button>
+              )}
 
               {/* Fullscreen */}
               <button onClick={toggleFullscreen} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">

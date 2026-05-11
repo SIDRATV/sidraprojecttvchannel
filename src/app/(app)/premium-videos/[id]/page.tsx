@@ -17,6 +17,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { PremiumVideoPlayer } from '@/components/premium/PremiumVideoPlayer';
+import { VideoComments } from '@/components/premium/VideoComments';
 import { premiumVideoService } from '@/services/premiumVideos';
 import { useAuth } from '@/hooks/useAuth';
 import { useMiniPlayer } from '@/providers/MiniPlayerProvider';
@@ -373,6 +374,11 @@ export default function WatchPremiumVideoPage() {
             </p>
           </motion.div>
         )}
+
+        {/* Comments */}
+        <motion.div variants={fadeUp}>
+          <VideoComments videoId={id} />
+        </motion.div>
 
         {/* Suggestions */}
         {suggestions.length > 0 && (

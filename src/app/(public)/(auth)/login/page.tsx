@@ -147,7 +147,7 @@ export default function LoginPage() {
                   exit={{ opacity: 0, y: -8 }}
                 >
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome Back</h1>
-                  <p className="text-gray-500 dark:text-gray-400">Sign in to your Sidra account</p>
+                  <p className="text-gray-500 dark:text-gray-400">Sign in to your Sidra Projects TV Channel account</p>
                 </motion.div>
               )}
             </AnimatePresence>

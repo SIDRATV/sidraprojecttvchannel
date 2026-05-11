@@ -101,7 +101,7 @@ function SignupForm() {
                 priority
               />
             </motion.div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Join Sidra</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Join Sidra Projects TV Channel</h1>
             <p className="text-gray-500 dark:text-gray-400">Create your premium account</p>
             {referralCode && (
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 border border-brand-500/30 rounded-full text-xs text-brand-600 dark:text-brand-400 font-medium">

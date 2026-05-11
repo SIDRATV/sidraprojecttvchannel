@@ -120,6 +120,31 @@ const APP_STATUS = [
   { value: 'rejected', label: 'Rejeté', color: 'text-red-400 bg-red-500/20 border-red-500/30', icon: XCircle },
 ];
 
+// Small reusable component — uses React state so onError never leaves stale display:none
+// on a reused DOM element when the URL changes.
+function PartnerLogoPreview({
+  url,
+  emoji,
+  className = 'w-full h-full object-contain p-1',
+  emojiClass = 'text-3xl leading-none',
+}: {
+  url: string;
+  emoji: string;
+  className?: string;
+  emojiClass?: string;
+}) {
+  const [error, setError] = React.useState(false);
+  React.useEffect(() => { setError(false); }, [url]);
+
+  if (!url || error) {
+    return <span className={emojiClass}>{emoji || '🏢'}</span>;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={url} alt="Logo" className={className} onError={() => setError(true)} />
+  );
+}
+
 export function AdminPartnershipsManager({ token }: { token: string }) {
   const [tab, setTab] = useState<'partners' | 'applications' | 'pricing' | 'banners' | 'logos'>('partners');
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -825,27 +850,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                   <div>
                     <label className="text-xs font-medium text-slate-400 mb-1.5 block">Logo strip</label>
                     <div className="w-[72px] h-[72px] bg-white/[0.06] border border-white/[0.1] rounded-xl flex items-center justify-center overflow-hidden">
-                      {form.logo_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={form.logo_url}
-                          alt="Logo"
-                          className="w-full h-full object-contain p-1"
-                          onError={(e) => {
-                            const img = e.target as HTMLImageElement;
-                            img.style.display = 'none';
-                            const fallback = img.nextElementSibling as HTMLElement | null;
-                            if (fallback) fallback.style.display = 'block';
-                          }}
-                        />
-                      ) : null}
-                      {/* Fallback emoji shown when no logo_url or image fails */}
-                      <span
-                        className="text-3xl leading-none"
-                        style={{ display: form.logo_url ? 'none' : 'block' }}
-                      >
-                        {form.logo_emoji || '🏢'}
-                      </span>
+                      <PartnerLogoPreview url={form.logo_url} emoji={form.logo_emoji} />
                     </div>
                     <p className="text-[10px] text-slate-600 mt-1 text-center leading-tight">aperçu</p>
                   </div>
@@ -891,9 +896,9 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                     placeholder="https://exemple.com/logo.png" className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                   {form.logo_url && (
                     <div className="mt-2 flex items-center gap-3 p-2 bg-white/[0.03] rounded-lg border border-white/[0.06]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={form.logo_url} alt="Logo preview" className="w-10 h-10 rounded-lg object-contain border border-white/10 bg-white/5"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <div className="w-10 h-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <PartnerLogoPreview url={form.logo_url} emoji={form.logo_emoji} className="w-full h-full object-contain" emojiClass="text-xl" />
+                      </div>
                       <span className="text-[11px] text-slate-500">Aperçu — rendu dans la bande défilante</span>
                     </div>
                   )}
@@ -1299,17 +1304,12 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
             {partners.map((p) => (
               <div key={p.id} className="flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.08] rounded-xl">
                 <div className="w-12 h-12 flex-shrink-0 bg-white/[0.06] rounded-xl flex items-center justify-center overflow-hidden border border-white/[0.08]">
-                  {p.logo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.logo_url} alt={p.name} className="w-full h-full object-contain"
-                      onError={(e) => {
-                        const img = e.target as HTMLImageElement;
-                        img.style.display = 'none';
-                        const fallback = img.nextElementSibling as HTMLElement | null;
-                        if (fallback) fallback.style.removeProperty('display');
-                      }} />
-                  ) : null}
-                  <span className="text-2xl" style={{ display: p.logo_url ? 'none' : 'block' }}>{p.logo_emoji || '🏢'}</span>
+                  <PartnerLogoPreview
+                    url={p.logo_url}
+                    emoji={p.logo_emoji}
+                    className="w-full h-full object-contain"
+                    emojiClass="text-2xl"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{p.name}</p>

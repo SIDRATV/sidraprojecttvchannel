@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     await (supabase as any).rpc('broadcast_notification', {
       p_type: 'system',
       p_title: 'Nouveau partenaire',
-      p_message: `${name} rejoint l'écosystème Sidra !`,
+      p_message: `${name} rejoint l'écosystème Sidra Projects TV Channel !`,
       p_icon: 'handshake',
       p_link: '/explore/partenariat',
     });

@@ -77,9 +77,11 @@ export async function DELETE(req: NextRequest) {
     });
 
     // Increment user warning count
-    await supabaseAdmin.rpc('increment_warning_count', { p_user_id: userId }).catch(() => {
+    try {
+      await supabaseAdmin.rpc('increment_warning_count', { p_user_id: userId });
+    } catch {
       // RPC may not exist yet — silently fail
-    });
+    }
   }
 
   return NextResponse.json({ success: true });

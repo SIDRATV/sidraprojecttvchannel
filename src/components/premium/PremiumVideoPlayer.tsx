@@ -215,11 +215,18 @@ export function PremiumVideoPlayer({
     resetHideTimer();
   };
 
-  // ─── Chromecast / Remote Playback ────────────────────────
+  // ─── Chromecast / Remote Playback (runs on mount only) ───
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    // Remote Playback API (Chromecast, AirPlay via browser)
+
+    // Safari AirPlay
+    video.setAttribute('x-webkit-airplay', 'allow');
+    if ('webkitShowPlaybackTargetPicker' in video) {
+      setCastSupported(true);
+    }
+
+    // Chrome/Edge Remote Playback API
     if ('remote' in video) {
       setCastSupported(true);
       const remote = (video as any).remote as EventTarget;
@@ -228,23 +235,33 @@ export function PremiumVideoPlayer({
       remote.addEventListener('connecting', onConnect);
       remote.addEventListener('connect', onConnect);
       remote.addEventListener('disconnect', onDisconnect);
+      // Check current availability
+      try {
+        (video as any).remote.watchAvailability((available: boolean) => {
+          setCastSupported(available);
+        });
+      } catch {
+        // watchAvailability may throw if src not set yet — that's fine
+      }
       return () => {
         remote.removeEventListener('connecting', onConnect);
         remote.removeEventListener('connect', onConnect);
         remote.removeEventListener('disconnect', onDisconnect);
       };
     }
-  }, [streamUrl]);
+  }, []); // mount only — videoRef.current is always set when JSX renders
 
   const handleCast = async () => {
     const video = videoRef.current;
     if (!video) return;
+    // Safari AirPlay
+    if ('webkitShowPlaybackTargetPicker' in video) {
+      (video as any).webkitShowPlaybackTargetPicker();
+      return;
+    }
+    // Chrome Remote Playback
     if ('remote' in video) {
-      try {
-        await (video as any).remote.prompt();
-      } catch {
-        // User cancelled or not supported
-      }
+      try { await (video as any).remote.prompt(); } catch { /* cancelled */ }
     }
   };
 

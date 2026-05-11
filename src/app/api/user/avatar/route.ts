@@ -84,19 +84,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }
-        .update({ avatar_url: serveUrl })
-        .eq('id', user.id);
-    }
-
-    await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      user_metadata: { avatar_url: serveUrl },
-    });
-
-    return NextResponse.json({ url: serveUrl });
-  } catch (err) {
-    console.error('Avatar upload error:', err);
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
-  }
-}
 
 

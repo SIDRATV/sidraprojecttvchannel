@@ -30,6 +30,9 @@ interface Partner {
   status: string;
   benefits: string[];
   join_date: string;
+  sda_amount?: number;
+  show_contact_email?: boolean;
+  contact_email?: string;
 }
 
 interface PricingItem {
@@ -108,6 +111,19 @@ const COUNTRIES_LIST = [
   'Côte d\'Ivoire', 'Cameroun', 'Belgique', 'Canada', 'Suisse',
   'Turquie', 'Arabie Saoudite', 'Émirats Arabes Unis', 'Mauritanie', 'Mali',
 ];
+
+/* ── Partner Logo with emoji fallback ───────────────────── */
+
+function PartnerLogo({ logo_url, logo_emoji, className = 'w-full h-full object-contain' }: { logo_url: string; logo_emoji: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  const [prevSrc, setPrevSrc] = useState(logo_url);
+  if (logo_url !== prevSrc) { setPrevSrc(logo_url); setFailed(false); }
+  if (!logo_url || failed) {
+    return <span className="text-3xl leading-none select-none">{logo_emoji || '🏢'}</span>;
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={logo_url} alt="" className={className} onError={() => setFailed(true)} />;
+}
 
 /* ── Main Page ─────────────────────────────────────────── */
 
@@ -410,8 +426,8 @@ export default function PartenariatPage() {
                       whileHover={{ y: -4 }} onClick={() => setSelectedPartner(partner)}
                       className="group bg-gradient-to-br from-gold-500/[0.08] to-transparent backdrop-blur-xl rounded-2xl border border-gold-500/20 p-6 cursor-pointer hover:border-gold-500/40 hover:shadow-lg hover:shadow-gold-500/10 transition-all">
                       <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-3xl flex-shrink-0 group-hover:scale-110 transition-transform">
-                          {partner.logo_emoji || '🏢'}
+                      <div className="w-14 h-14 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-3xl flex-shrink-0 group-hover:scale-110 transition-transform overflow-hidden">
+                          <PartnerLogo logo_url={partner.logo_url} logo_emoji={partner.logo_emoji} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -444,8 +460,8 @@ export default function PartenariatPage() {
                       whileHover={{ y: -3 }} onClick={() => setSelectedPartner(partner)}
                       className="group bg-white shadow-sm dark:shadow-none dark:bg-white/[0.03] backdrop-blur-xl rounded-xl border border-gray-200 dark:border-white/[0.08] p-5 cursor-pointer hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-500/5 transition-all">
                       <div className="flex items-start gap-3">
-                        <div className="w-11 h-11 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
-                          {partner.logo_emoji || '🏢'}
+                        <div className="w-11 h-11 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform overflow-hidden">
+                          <PartnerLogo logo_url={partner.logo_url} logo_emoji={partner.logo_emoji} className="w-full h-full object-contain" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{partner.name}</h3>
@@ -853,7 +869,9 @@ export default function PartenariatPage() {
                 className="w-full max-w-lg bg-white dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-gray-200 dark:border-white/[0.1] shadow-2xl overflow-hidden">
                 <div className="p-6 border-b border-gray-200 dark:border-white/[0.08]">
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-4xl flex-shrink-0">{selectedPartner.logo_emoji || '🏢'}</div>
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-4xl flex-shrink-0 overflow-hidden">
+                      <PartnerLogo logo_url={selectedPartner.logo_url} logo_emoji={selectedPartner.logo_emoji} className="w-full h-full object-contain" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedPartner.name}</h2>
@@ -867,22 +885,45 @@ export default function PartenariatPage() {
                 <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
                   <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{selectedPartner.description}</p>
                   <div className="grid grid-cols-3 gap-3">
+                    {/* Note admin */}
                     <div className="bg-gray-50 dark:bg-white/[0.04] rounded-xl p-3 text-center border border-gray-200 dark:border-white/[0.06]">
                       <Star size={16} className="text-gold-400 mx-auto mb-1" />
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{selectedPartner.rating?.toFixed(1)}</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">{selectedPartner.rating?.toFixed(1) || '—'}</p>
                       <p className="text-[10px] text-gray-500 dark:text-slate-500">Note</p>
                     </div>
+                    {/* SDA cumulés — only if admin set it */}
+                    {(selectedPartner.sda_amount ?? 0) > 0 ? (
+                      <div className="bg-gray-50 dark:bg-white/[0.04] rounded-xl p-3 text-center border border-gray-200 dark:border-white/[0.06]">
+                        <span className="text-gold-400 text-base mx-auto mb-1 block">🪙</span>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">{(selectedPartner.sda_amount ?? 0).toLocaleString('fr-FR')}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-slate-500">SDA cumulés</p>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 dark:bg-white/[0.04] rounded-xl p-3 text-center border border-gray-200 dark:border-white/[0.06]">
+                        <Globe size={16} className="text-brand-400 mx-auto mb-1" />
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{selectedPartner.category}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-slate-500">Secteur</p>
+                      </div>
+                    )}
+                    {/* Join date */}
                     <div className="bg-gray-50 dark:bg-white/[0.04] rounded-xl p-3 text-center border border-gray-200 dark:border-white/[0.06]">
-                      <Users size={16} className="text-brand-400 mx-auto mb-1" />
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{(selectedPartner.followers_count || 0).toLocaleString('fr-FR')}</p>
-                      <p className="text-[10px] text-gray-500 dark:text-slate-500">Followers</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-white/[0.04] rounded-xl p-3 text-center border border-gray-200 dark:border-white/[0.06]">
-                      <Eye size={16} className="text-purple-400 mx-auto mb-1" />
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{(selectedPartner.reviews_count || 0).toLocaleString('fr-FR')}</p>
-                      <p className="text-[10px] text-gray-500 dark:text-slate-500">Avis</p>
+                      <Award size={16} className="text-purple-400 mx-auto mb-1" />
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedPartner.join_date ? new Date(selectedPartner.join_date).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : '—'}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-slate-500">Membre depuis</p>
                     </div>
                   </div>
+
+                  {/* Contact email — only if admin enabled it */}
+                  {selectedPartner.show_contact_email && selectedPartner.contact_email && (
+                    <a href={`mailto:${selectedPartner.contact_email}`}
+                      className="flex items-center gap-3 px-4 py-3 bg-brand-500/5 hover:bg-brand-500/10 border border-brand-500/20 rounded-xl transition-colors">
+                      <Mail size={16} className="text-brand-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-gray-400 dark:text-slate-500">Contact professionnel</p>
+                        <p className="text-sm font-medium text-brand-600 dark:text-brand-400 truncate">{selectedPartner.contact_email}</p>
+                      </div>
+                    </a>
+                  )}
                   {selectedPartner.benefits?.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Avantages</p>

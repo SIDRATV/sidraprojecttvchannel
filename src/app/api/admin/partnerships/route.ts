@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Default: create partner
-    const { name, description, category, logo_emoji, logo_url, website_url, status, benefits } = body;
+    const { name, description, category, logo_emoji, logo_url, website_url, status, benefits, sda_amount, show_contact_email, contact_email } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -136,6 +136,9 @@ export async function POST(request: NextRequest) {
         website_url: website_url || '',
         status: status || 'active',
         benefits: benefits || [],
+        sda_amount: sda_amount || 0,
+        show_contact_email: show_contact_email ?? false,
+        contact_email: contact_email || '',
       })
       .select()
       .single();
@@ -176,7 +179,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (target === 'partner') {
-      const allowedFields = ['name', 'description', 'category', 'logo_emoji', 'logo_url', 'website_url', 'rating', 'reviews_count', 'followers_count', 'status', 'benefits'];
+      const allowedFields = ['name', 'description', 'category', 'logo_emoji', 'logo_url', 'website_url', 'rating', 'reviews_count', 'followers_count', 'status', 'benefits', 'sda_amount', 'show_contact_email', 'contact_email'];
       const safeUpdates: Record<string, any> = {};
       for (const key of allowedFields) {
         if (updates[key] !== undefined) safeUpdates[key] = updates[key];

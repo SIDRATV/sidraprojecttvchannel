@@ -121,6 +121,12 @@ export default function ProfilePage() {
     setUploadingPhoto(true);
     setUploadError('');
     try {
+      // Client-side size check (500 KB)
+      if (file.size > 500 * 1024) {
+        setUploadError('Fichier trop volumineux (max 500 Ko)');
+        setUploadingPhoto(false);
+        return;
+      }
       const form = new FormData();
       form.append('file', file);
       const res = await fetch('/api/user/avatar', {

@@ -8,7 +8,7 @@ export async function GET() {
 
     const { data: partners, error } = await (supabase as any)
       .from('partners')
-      .select('id, name, description, category, logo_emoji, logo_url, website_url, rating, reviews_count, followers_count, status, benefits, join_date')
+      .select('id, name, description, category, logo_emoji, logo_url, website_url, rating, reviews_count, followers_count, status, benefits, join_date, sda_amount, show_contact_email, contact_email')
       .in('status', ['active', 'featured'])
       .order('status', { ascending: true }) // featured first
       .order('rating', { ascending: false })

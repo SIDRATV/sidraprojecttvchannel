@@ -171,6 +171,10 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
     website_url: '',
     status: 'active',
     benefits: '',
+    rating: 0,
+    sda_amount: 0,
+    show_contact_email: false,
+    contact_email: '',
   });
 
   const [bannerForm, setBannerForm] = useState({
@@ -209,7 +213,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const resetForm = () => {
-    setForm({ name: '', description: '', category: 'Technologie', logo_emoji: '🏢', logo_url: '', website_url: '', status: 'active', benefits: '' });
+    setForm({ name: '', description: '', category: 'Technologie', logo_emoji: '🏢', logo_url: '', website_url: '', status: 'active', benefits: '', rating: 0, sda_amount: 0, show_contact_email: false, contact_email: '' });
     setEditingPartner(null);
   };
 
@@ -226,6 +230,10 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
       website_url: p.website_url || '',
       status: p.status,
       benefits: (p.benefits || []).join(', '),
+      rating: p.rating || 0,
+      sda_amount: (p as any).sda_amount || 0,
+      show_contact_email: (p as any).show_contact_email ?? false,
+      contact_email: (p as any).contact_email || '',
     });
     setShowModal(true);
   };
@@ -916,6 +924,40 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                   <input type="text" value={form.benefits} onChange={(e) => setForm({ ...form, benefits: e.target.value })}
                     placeholder="Avantage 1, Avantage 2..." className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
                 </div>
+
+                {/* Admin-managed fields */}
+                <div className="pt-2 border-t border-white/[0.08]">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Informations affichées publiquement</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Note (0–5)</label>
+                      <input type="number" min={0} max={5} step={0.1} value={form.rating}
+                        onChange={(e) => setForm({ ...form, rating: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">SDA cumulés (campagne)</label>
+                      <input type="number" min={0} step={1} value={form.sda_amount}
+                        onChange={(e) => setForm({ ...form, sda_amount: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Email de contact professionnel</label>
+                    <input type="email" value={form.contact_email}
+                      onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
+                      placeholder="contact@entreprise.com"
+                      className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                  <div className="mt-3 flex items-center gap-3">
+                    <button type="button"
+                      onClick={() => setForm({ ...form, show_contact_email: !form.show_contact_email })}
+                      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${form.show_contact_email ? 'bg-brand-500' : 'bg-white/20'}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.show_contact_email ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                    <span className="text-xs text-slate-400">Afficher l&#39;email sur la page publique</span>
+                  </div>
+                </div>
               </div>
               <div className="p-6 border-t border-white/[0.08] flex items-center justify-end gap-3">
                 <button onClick={() => setShowModal(false)}
@@ -1316,7 +1358,7 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                   <p className="text-xs text-slate-500 truncate mt-0.5">{p.logo_url || 'Aucun logo URL'}</p>
                 </div>
                 <button
-                  onClick={() => { setEditingPartner(p); setForm({ name: p.name, description: p.description || '', category: p.category || 'Technologie', logo_emoji: p.logo_emoji || '🏢', logo_url: p.logo_url || '', website_url: p.website_url || '', status: p.status || 'active', benefits: (p.benefits || []).join(', ') }); setShowModal(true); }}
+                  onClick={() => { setEditingPartner(p); setForm({ name: p.name, description: p.description || '', category: p.category || 'Technologie', logo_emoji: p.logo_emoji || '🏢', logo_url: p.logo_url || '', website_url: p.website_url || '', status: p.status || 'active', benefits: (p.benefits || []).join(', '), rating: p.rating || 0, sda_amount: (p as any).sda_amount || 0, show_contact_email: (p as any).show_contact_email ?? false, contact_email: (p as any).contact_email || '' }); setShowModal(true); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] rounded-lg text-xs text-slate-300 transition-colors"
                 >
                   ✏️ Modifier le logo

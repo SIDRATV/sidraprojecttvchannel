@@ -18,7 +18,7 @@ interface Shortcut {
 /* ─── Professional animated SVG icons ─── */
 
 const LiveIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
     {/* Pulsing wifi-style broadcast */}
     <circle cx="12" cy="15" r="2" fill="white" />
     <path d="M8.5 11.5a5 5 0 0 1 7 0" stroke="white" strokeWidth="1.8" strokeLinecap="round" className="animate-[dash_1.5s_ease-in-out_infinite]" />
@@ -28,7 +28,7 @@ const LiveIcon = () => (
 );
 
 const FilmIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
     {/* Film reel */}
     <rect x="2" y="5" width="20" height="14" rx="2" stroke="white" strokeWidth="1.8" fill="none" />
     <path d="M2 9h20M2 15h20" stroke="white" strokeWidth="1.5" />
@@ -44,7 +44,7 @@ const FilmIcon = () => (
 );
 
 const SeriesIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
     {/* Monitor + play */}
     <rect x="2" y="3" width="20" height="14" rx="2" stroke="white" strokeWidth="1.8" fill="none" />
     <path d="M8 21h8M12 17v4" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
@@ -53,7 +53,7 @@ const SeriesIcon = () => (
 );
 
 const SportIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
     {/* Soccer ball */}
     <circle cx="12" cy="12" r="9.5" stroke="white" strokeWidth="1.8" fill="none" />
     <path d="M12 2.5l2.5 3.5-2.5 2-2.5-2z" stroke="white" strokeWidth="1.3" fill="white" fillOpacity="0.5" />
@@ -66,7 +66,7 @@ const SportIcon = () => (
 );
 
 const AnimeIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
     {/* Stylized star / sparkle with sakura feel */}
     <path d="M12 2l2.4 7.2H22l-6.2 4.5 2.4 7.3L12 16.5l-6.2 4.5 2.4-7.3L2 9.2h7.6z"
       stroke="white" strokeWidth="1.6" fill="white" fillOpacity="0.25" strokeLinejoin="round" />
@@ -75,7 +75,7 @@ const AnimeIcon = () => (
 );
 
 const KidsIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
     {/* Smiley face in balloon */}
     <circle cx="12" cy="10" r="7.5" stroke="white" strokeWidth="1.8" fill="none" />
     <path d="M12 17.5l-1 3.5h2l-1-3.5z" fill="white" />
@@ -88,7 +88,7 @@ const KidsIcon = () => (
 );
 
 const AllIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
     {/* 3×3 grid with animated center */}
     <rect x="3" y="3" width="5" height="5" rx="1.2" fill="white" fillOpacity="0.9" />
     <rect x="9.5" y="3" width="5" height="5" rx="1.2" fill="white" fillOpacity="0.7" />
@@ -195,16 +195,16 @@ export function QuickShortcuts() {
           >
             {/* Icon circle */}
             <div
-              className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${shortcut.bgFrom} ${shortcut.bgTo} flex items-center justify-center shadow-lg ${shortcut.glowColor} group-hover:scale-110 group-hover:shadow-xl group-active:scale-95 transition-all duration-200`}
+              className={`relative w-11 h-11 rounded-xl bg-gradient-to-br ${shortcut.bgFrom} ${shortcut.bgTo} flex items-center justify-center shadow-md ${shortcut.glowColor} group-hover:scale-110 group-hover:shadow-lg group-active:scale-95 transition-all duration-200`}
             >
               {/* Shine overlay */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
 
               {/* Live pulse dot */}
               {shortcut.pulse && (
-                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                <span className="absolute top-1 right-1 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-80" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
                 </span>
               )}
 

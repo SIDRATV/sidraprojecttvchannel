@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
 import { Bell, Lock, Volume2, Eye, Moon, AlertCircle, LogOut, Trash2, ShieldAlert, Clock, X } from 'lucide-react';
+import { useTheme } from '@/providers/ThemeProvider';
 import { authService } from '@/services/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -82,6 +83,8 @@ function SettingToggle({
 export default function SettingsPage() {
   const router = useRouter();
   const { session, user } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
+  const [fontSize, setFontSize] = useState('normal');
   const [successMessage, setSuccessMessage] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
@@ -91,6 +94,14 @@ export default function SettingsPage() {
   const [deleteError, setDeleteError] = useState('');
   const [deletionStatus, setDeletionStatus] = useState<any>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Load font size from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('settings_font_size') || 'normal';
+    setFontSize(saved);
+    const sizeMap: Record<string, string> = { small: '13px', normal: '16px', large: '18px', 'very-large': '20px' };
+    document.documentElement.style.fontSize = sizeMap[saved] || '16px';
+  }, []);
 
   const updateNotificationsEnabled = useCallback(async (val: boolean) => {
     if (!session?.access_token) return;
@@ -219,21 +230,27 @@ export default function SettingsPage() {
           label="Autoplay next video"
           description="Automatically play the next video in a series"
           defaultValue={true}
+          storageKey="settings_video_autoplay_next"
         />
         <SettingToggle
           label="Autoplay similar content"
           description="Continue playback with similar videos"
           defaultValue={false}
+          storageKey="settings_video_autoplay_similar"
         />
-        <div className="pt-2 border-t border-gray-700">
-          <label className="block text-sm font-medium mb-2">
+        <div className="pt-2 border-t border-gray-300 dark:border-gray-700">
+          <label className="block text-sm font-medium mb-2 text-gray-950 dark:text-white">
             Default playback quality
           </label>
-          <select className="w-full md:w-48 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:border-brand-500 outline-none transition-colors">
-            <option>Auto (recommended)</option>
-            <option>1080p</option>
-            <option>720p</option>
-            <option>480p</option>
+          <select
+            defaultValue={typeof window !== 'undefined' ? (localStorage.getItem('settings_video_quality') || 'auto') : 'auto'}
+            onChange={e => { localStorage.setItem('settings_video_quality', e.target.value); }}
+            className="w-full md:w-48 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-950 dark:text-white focus:border-brand-500 outline-none transition-colors"
+          >
+            <option value="auto">Auto (recommended)</option>
+            <option value="1080p">1080p</option>
+            <option value="720p">720p</option>
+            <option value="480p">480p</option>
           </select>
         </div>
       </SettingsSection>
@@ -297,98 +314,69 @@ export default function SettingsPage() {
           label="Profile visibility"
           description="Allow others to see your profile"
           defaultValue={true}
+          storageKey="settings_privacy_profile_visible"
         />
         <SettingToggle
           label="Show watch history"
           description="Display your watch history in your profile"
           defaultValue={false}
+          storageKey="settings_privacy_watch_history"
         />
         <SettingToggle
           label="Allow recommendations"
           description="Help improve recommendations by sharing viewing patterns"
           defaultValue={true}
+          storageKey="settings_privacy_recommendations"
         />
       </SettingsSection>
 
       {/* Display */}
       <SettingsSection title="Display" description="Customize your viewing experience">
         <div className="space-y-3">
-          <p className="text-sm font-medium">Theme</p>
+          <p className="text-sm font-medium text-gray-950 dark:text-white">Theme</p>
           <div className="flex items-center space-x-4">
             <label className="flex items-center space-x-2 cursor-pointer">
-              <input type="radio" name="theme" defaultChecked className="w-4 h-4" />
-              <span className="text-sm">Dark (Default)</span>
+              <input
+                type="radio"
+                name="theme"
+                checked={isDark}
+                onChange={() => { if (!isDark) toggleTheme(); }}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">Sombre</span>
             </label>
             <label className="flex items-center space-x-2 cursor-pointer">
-              <input type="radio" name="theme" className="w-4 h-4" />
-              <span className="text-sm">Light</span>
+              <input
+                type="radio"
+                name="theme"
+                checked={!isDark}
+                onChange={() => { if (isDark) toggleTheme(); }}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">Clair</span>
             </label>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-gray-700">
-          <label className="block text-sm font-medium mb-2">Font size</label>
-          <select className="w-full md:w-48 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:border-brand-500 outline-none transition-colors">
-            <option>Small</option>
-            <option>Normal (default)</option>
-            <option>Large</option>
-            <option>Very Large</option>
+        <div className="pt-2 border-t border-gray-300 dark:border-gray-700">
+          <label className="block text-sm font-medium mb-2 text-gray-950 dark:text-white">Taille du texte</label>
+          <select
+            value={fontSize}
+            onChange={e => {
+              const val = e.target.value;
+              setFontSize(val);
+              localStorage.setItem('settings_font_size', val);
+              const sizeMap: Record<string, string> = { small: '13px', normal: '16px', large: '18px', 'very-large': '20px' };
+              document.documentElement.style.fontSize = sizeMap[val] || '16px';
+            }}
+            className="w-full md:w-48 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-950 dark:text-white focus:border-brand-500 outline-none transition-colors"
+          >
+            <option value="small">Petite</option>
+            <option value="normal">Normale (défaut)</option>
+            <option value="large">Grande</option>
+            <option value="very-large">Très grande</option>
           </select>
         </div>
-      </SettingsSection>
-
-      {/* Security */}
-      <SettingsSection
-        title="Security"
-        description="Protect your account and data"
-      >
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full flex items-center justify-between p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors text-left"
-        >
-          <div className="flex items-center space-x-3">
-            <Lock size={18} />
-            <div>
-              <p className="font-medium text-sm">Change password</p>
-              <p className="text-xs text-gray-400">Update your password regularly</p>
-            </div>
-          </div>
-          <span className="text-gray-400">→</span>
-        </motion.button>
-
-        <SettingToggle
-          label="Two-factor authentication"
-          description="Add an extra layer of security"
-          defaultValue={false}
-        />
-      </SettingsSection>
-
-      {/* Data & Storage */}
-      <SettingsSection title="Data & Storage" description="Manage your data and storage">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full flex items-center justify-between p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors text-left"
-        >
-          <div>
-            <p className="font-medium text-sm">Clear watch history</p>
-            <p className="text-xs text-gray-400">Remove all watched videos from history</p>
-          </div>
-          <span className="text-gray-400">→</span>
-        </motion.button>
-
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full flex items-center justify-between p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors text-left"
-        >
-          <div>
-            <p className="font-medium text-sm">Download my data</p>
-            <p className="text-xs text-gray-400">Export all your personal data</p>
-          </div>
-          <span className="text-gray-400">→</span>
-        </motion.button>
       </SettingsSection>
 
       {/* Danger Zone */}

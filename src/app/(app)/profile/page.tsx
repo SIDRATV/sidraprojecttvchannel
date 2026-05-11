@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
-import { User, Mail, Calendar, Trophy, Clock, Edit2, Package, Save, X, Upload, Settings, Bell, Lock, LogOut, Shield } from 'lucide-react';
+import { User, Mail, Calendar, Trophy, Clock, Edit2, Package, Save, X, Upload, Settings, Bell, Lock, LogOut, Shield, Camera } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBuildInfo } from '@/hooks/useBuildInfo';
 import { authService } from '@/services/auth';
@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
@@ -101,24 +102,39 @@ export default function ProfilePage() {
       updateProfile(editData);
       setProfileData(editData);
       setIsEditing(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Failed to save profile');
     }
   };
 
-  // Handle profile photo upload
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  // Handle profile photo upload → Cloudflare R2
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditData({
-          ...editData,
-          profilePhoto: reader.result as string,
-        });
-      };
-      reader.readAsDataURL(file);
+    if (!file || !session?.access_token) return;
+
+    setUploadingPhoto(true);
+    setUploadError('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/user/avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: form,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Upload failed');
+      setEditData(prev => ({ ...prev, profilePhoto: json.url }));
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -231,6 +247,17 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8 bg-white dark:bg-gray-950 min-h-screen transition-colors">
+      {/* Save success toast */}
+      {saveSuccess && (
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -30 }}
+          className="fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3 bg-green-500 text-white rounded-xl shadow-2xl font-semibold text-sm"
+        >
+          ✓ Profil mis à jour avec succès !
+        </motion.div>
+      )}
       {/* Profile Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -353,20 +380,49 @@ export default function ProfilePage() {
                 boxShadow: '0 0 60px rgba(59, 130, 246, 0.8)',
               }}
             >
-              {profileData.profilePhoto ? (
-                <img src={profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+              {(isEditing ? editData.profilePhoto : profileData.profilePhoto) ? (
+                <img src={(isEditing ? editData.profilePhoto : profileData.profilePhoto)!} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <User size={80} className="text-white" />
               )}
             </motion.div>
+
+            {/* Upload overlay — always visible when editing */}
             {isEditing && (
               <motion.button
                 initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                animate={{ opacity: 1 }}
+                onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
+                className="absolute inset-0 bg-black/60 rounded-3xl flex flex-col items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Upload size={32} className="text-white" />
+                {uploadingPhoto ? (
+                  <>
+                    <div className="w-7 h-7 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="text-white text-xs font-semibold">Envoi en cours…</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={28} className="text-white" />
+                    <span className="text-white text-xs font-semibold">Ajouter une photo</span>
+                    <span className="text-white/70 text-[10px]">↑ Cliquez ici</span>
+                  </>
+                )}
+              </motion.button>
+            )}
+            {uploadError && (
+              <p className="absolute -bottom-6 left-0 right-0 text-center text-xs text-red-500">{uploadError}</p>
+            )}
+
+            {/* Camera badge — always visible when not editing and no photo */}
+            {!isEditing && !profileData.profilePhoto && (
+              <motion.button
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                onClick={() => setIsEditing(true)}
+                title="Ajouter une photo de profil"
+                className="absolute -bottom-2 -right-2 w-10 h-10 bg-brand-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-gray-950"
+              >
+                <Camera size={18} className="text-white" />
               </motion.button>
             )}
             <input

@@ -7,8 +7,8 @@ const supabaseAdmin = createClient(
 );
 
 // GET /api/premium-videos/[id]/comments
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const videoId = params.id;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: videoId } = await params;
   const url = new URL(req.url);
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '30'), 100);
   const offset = parseInt(url.searchParams.get('offset') || '0');
@@ -29,8 +29,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // POST /api/premium-videos/[id]/comments — requires auth
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const videoId = params.id;
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: videoId } = await params;
   const auth = req.headers.get('authorization');
   if (!auth?.startsWith('Bearer ')) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const token = auth.slice(7);
@@ -66,7 +66,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 // DELETE /api/premium-videos/[id]/comments?commentId=xxx — own comment only
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  await params; // consume to satisfy Next.js 15 type
   const auth = req.headers.get('authorization');
   if (!auth?.startsWith('Bearer ')) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const token = auth.slice(7);

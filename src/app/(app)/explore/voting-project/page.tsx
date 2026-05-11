@@ -9,11 +9,9 @@ import {
   ThumbsDown,
   Users,
   Clock,
-  TrendingUp,
   Award,
   Loader2,
   Sparkles,
-  ArrowRight,
   BarChart3,
   Calendar,
   CheckCircle2,
@@ -118,7 +116,7 @@ export default function VotingProjectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
@@ -130,7 +128,7 @@ export default function VotingProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-[#0a1a14] to-slate-950 p-4 md:p-8 overflow-hidden">
+    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-slate-950 dark:via-[#0a1a14] dark:to-slate-950 p-4 md:p-8 overflow-hidden">
       {/* Animated background orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <motion.div
@@ -141,7 +139,7 @@ export default function VotingProjectPage() {
         <motion.div
           animate={{ x: [0, -50, 0], y: [0, 40, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute bottom-20 right-10 w-96 h-96 bg-gold-500/8 rounded-full blur-[140px]"
+          className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-500/5 rounded-full blur-[140px]"
         />
         <motion.div
           animate={{ scale: [1, 1.15, 1] }}
@@ -165,17 +163,17 @@ export default function VotingProjectPage() {
             <Sparkles className="text-white" size={28} />
           </motion.div>
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white via-brand-400 to-emerald-300 bg-clip-text text-transparent">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-brand-600 to-emerald-600 dark:from-white dark:via-brand-400 dark:to-emerald-300 bg-clip-text text-transparent">
               Projets Communautaires
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
               Votez pour les projets qui comptent pour la communauté Sidra
             </p>
           </div>
         </div>
       </motion.div>
 
-      {/* Filter Tabs — Glassmorphism */}
+      {/* Filter Tabs */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -193,10 +191,10 @@ export default function VotingProjectPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => setFilterStatus(key)}
-            className={`px-4 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition-all border backdrop-blur-xl ${
+            className={`px-4 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition-all border ${
               filterStatus === key
-                ? 'bg-brand-500/20 text-brand-400 border-brand-500/40 shadow-lg shadow-brand-500/10'
-                : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
+                ? 'bg-brand-500/20 text-brand-600 dark:text-brand-400 border-brand-500/40 shadow-lg shadow-brand-500/10'
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <Icon size={15} />
@@ -205,7 +203,7 @@ export default function VotingProjectPage() {
         ))}
       </motion.div>
 
-      {/* Stats Row — Glassmorphism Cards */}
+      {/* Stats Row */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -214,7 +212,7 @@ export default function VotingProjectPage() {
       >
         {[
           { label: 'Projets Totaux', value: projects.length, icon: Award, color: 'from-brand-500 to-emerald-400' },
-          { label: 'Votes Actifs', value: totalVotesAll, icon: ThumbsUp, color: 'from-blue-500 to-cyan-400' },
+          { label: 'Votes Totaux', value: totalVotesAll, icon: ThumbsUp, color: 'from-blue-500 to-cyan-400' },
           { label: 'Terminés', value: projects.filter(p => p.status === 'completed').length, icon: CheckCircle2, color: 'from-emerald-500 to-green-400' },
         ].map((stat, i) => {
           const Icon = stat.icon;
@@ -225,18 +223,16 @@ export default function VotingProjectPage() {
               whileHover={{ y: -4, scale: 1.02 }}
               className="relative group"
             >
-              {/* Glass card */}
-              <div className="relative bg-white/[0.04] backdrop-blur-2xl rounded-2xl p-5 border border-white/[0.08] overflow-hidden">
-                {/* Glow accent */}
-                <div className={`absolute -top-6 -right-6 w-16 h-16 bg-gradient-to-br ${stat.color} rounded-full blur-2xl opacity-30 group-hover:opacity-50 transition-opacity`} />
+              <div className="relative bg-white dark:bg-white/[0.04] rounded-2xl p-5 border border-gray-200 dark:border-white/[0.08] shadow-sm dark:shadow-none overflow-hidden">
+                <div className={`absolute -top-6 -right-6 w-16 h-16 bg-gradient-to-br ${stat.color} rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity`} />
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{stat.label}</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500 font-medium uppercase tracking-wide">{stat.label}</p>
                     <div className={`w-8 h-8 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center`}>
                       <Icon className="text-white" size={15} />
                     </div>
                   </div>
-                  <p className="text-2xl md:text-3xl font-bold text-white">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</p>
+                  <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</p>
                 </div>
               </div>
             </motion.div>
@@ -271,11 +267,11 @@ export default function VotingProjectPage() {
                 {/* Outer glow on hover */}
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-brand-500/20 to-emerald-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-sm" />
 
-                {/* Glass card */}
-                <div className={`relative bg-white/[0.03] backdrop-blur-2xl rounded-2xl overflow-hidden border transition-all ${
+                {/* Card */}
+                <div className={`relative bg-white dark:bg-white/[0.03] rounded-2xl overflow-hidden border transition-all shadow-sm dark:shadow-none ${
                   selectedProject === project.id
                     ? 'border-brand-500/50 shadow-lg shadow-brand-500/10'
-                    : 'border-white/[0.08] hover:border-white/[0.15]'
+                    : 'border-gray-200 dark:border-white/[0.08] hover:border-gray-300 dark:hover:border-white/[0.15]'
                 }`}>
                   {/* Image */}
                   <div className="relative h-52 overflow-hidden">
@@ -289,7 +285,7 @@ export default function VotingProjectPage() {
                         <Sparkles size={48} className="text-brand-400/50" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
                     {/* Status Badge */}
                     <div className="absolute top-4 right-4">
@@ -318,24 +314,24 @@ export default function VotingProjectPage() {
 
                   {/* Content */}
                   <div className="p-6">
-                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-brand-400 transition-colors">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                       {project.title}
                     </h3>
-                    <p className="text-slate-400 text-sm mb-5 line-clamp-2 leading-relaxed">
+                    <p className="text-gray-500 dark:text-slate-400 text-sm mb-5 line-clamp-2 leading-relaxed">
                       {project.description}
                     </p>
 
                     {/* Vote Progress Bar */}
                     <div className="mb-5">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                        <p className="text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wide">
                           Vote Communautaire
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-gray-400 dark:text-slate-500">
                           {project.total_votes.toLocaleString()} votes
                         </p>
                       </div>
-                      <div className="flex h-2.5 bg-white/5 rounded-full overflow-hidden gap-px">
+                      <div className="flex h-2.5 bg-gray-200 dark:bg-white/5 rounded-full overflow-hidden gap-px">
                         <motion.div
                           className="h-full bg-gradient-to-r from-brand-500 to-emerald-400 rounded-l-full"
                           initial={{ width: 0 }}
@@ -350,30 +346,30 @@ export default function VotingProjectPage() {
                         />
                       </div>
                       <div className="flex items-center justify-between mt-2 text-xs">
-                        <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                           <ThumbsUp size={11} /> {votePercentage.toFixed(1)}%
                         </span>
-                        <span className="text-red-400 font-semibold flex items-center gap-1">
+                        <span className="text-red-600 dark:text-red-400 font-semibold flex items-center gap-1">
                           <ThumbsDown size={11} /> {(100 - votePercentage).toFixed(1)}%
                         </span>
                       </div>
                     </div>
 
-                    {/* Info Row — Glass pills */}
+                    {/* Info Row */}
                     <div className="flex gap-3 mb-5">
-                      <div className="flex-1 bg-white/[0.04] backdrop-blur-xl rounded-xl p-3 border border-white/[0.06]">
-                        <p className="text-[10px] text-slate-500 flex items-center gap-1 mb-1">
+                      <div className="flex-1 bg-gray-50 dark:bg-white/[0.04] rounded-xl p-3 border border-gray-200 dark:border-white/[0.06]">
+                        <p className="text-[10px] text-gray-400 dark:text-slate-500 flex items-center gap-1 mb-1">
                           <Clock size={11} /> Jours restants
                         </p>
-                        <p className="text-base font-bold text-white">
+                        <p className="text-base font-bold text-gray-900 dark:text-white">
                           {daysLeft < 0 ? '∞' : daysLeft === 0 ? 'Terminé' : daysLeft}
                         </p>
                       </div>
-                      <div className="flex-1 bg-white/[0.04] backdrop-blur-xl rounded-xl p-3 border border-white/[0.06]">
-                        <p className="text-[10px] text-slate-500 flex items-center gap-1 mb-1">
+                      <div className="flex-1 bg-gray-50 dark:bg-white/[0.04] rounded-xl p-3 border border-gray-200 dark:border-white/[0.06]">
+                        <p className="text-[10px] text-gray-400 dark:text-slate-500 flex items-center gap-1 mb-1">
                           <Users size={11} /> Participants
                         </p>
-                        <p className="text-base font-bold text-white">
+                        <p className="text-base font-bold text-gray-900 dark:text-white">
                           {project.total_votes.toLocaleString()}
                         </p>
                       </div>
@@ -390,10 +386,10 @@ export default function VotingProjectPage() {
                             e.stopPropagation();
                             handleVote(project.id, 'up');
                           }}
-                          className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-all border backdrop-blur-xl ${
+                          className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-all border ${
                             userVote === 'up'
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
-                              : 'bg-white/[0.04] text-slate-400 border-white/[0.08] hover:bg-emerald-500/10 hover:text-emerald-300 hover:border-emerald-500/30'
+                              ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                              : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-slate-400 border-gray-200 dark:border-white/[0.08] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 hover:border-emerald-500/30'
                           } disabled:opacity-40 disabled:cursor-not-allowed`}
                         >
                           {isVoting ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} />}
@@ -407,10 +403,10 @@ export default function VotingProjectPage() {
                             e.stopPropagation();
                             handleVote(project.id, 'down');
                           }}
-                          className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-all border backdrop-blur-xl ${
+                          className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-all border ${
                             userVote === 'down'
-                              ? 'bg-red-500/20 text-red-300 border-red-500/40 shadow-lg shadow-red-500/10'
-                              : 'bg-white/[0.04] text-slate-400 border-white/[0.08] hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/30'
+                              ? 'bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/40 shadow-lg shadow-red-500/10'
+                              : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-slate-400 border-gray-200 dark:border-white/[0.08] hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300 hover:border-red-500/30'
                           } disabled:opacity-40 disabled:cursor-not-allowed`}
                         >
                           {isVoting ? <Loader2 size={16} className="animate-spin" /> : <ThumbsDown size={16} />}
@@ -422,13 +418,13 @@ export default function VotingProjectPage() {
                     {/* Completed badge */}
                     {project.status === 'completed' && (
                       <div className="flex items-center gap-2 py-3 px-4 bg-brand-500/10 rounded-xl border border-brand-500/20">
-                        <CheckCircle2 size={16} className="text-brand-400" />
-                        <span className="text-sm font-medium text-brand-300">Projet terminé avec succès</span>
+                        <CheckCircle2 size={16} className="text-brand-500 dark:text-brand-400" />
+                        <span className="text-sm font-medium text-brand-700 dark:text-brand-300">Projet terminé avec succès</span>
                       </div>
                     )}
 
                     {!session && project.status === 'active' && (
-                      <p className="text-xs text-slate-500 text-center mt-3">
+                      <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-3">
                         Connectez-vous pour voter
                       </p>
                     )}
@@ -447,11 +443,11 @@ export default function VotingProjectPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center py-20"
         >
-          <div className="w-20 h-20 mx-auto mb-6 bg-white/[0.04] backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/[0.08]">
-            <Award size={36} className="text-slate-500" />
+          <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-white/[0.04] rounded-2xl flex items-center justify-center border border-gray-200 dark:border-white/[0.08]">
+            <Award size={36} className="text-gray-400 dark:text-slate-500" />
           </div>
-          <p className="text-slate-400 text-lg font-medium">Aucun projet dans cette catégorie</p>
-          <p className="text-slate-600 text-sm mt-2">Les projets apparaîtront ici une fois créés par l&apos;administration</p>
+          <p className="text-gray-500 dark:text-slate-400 text-lg font-medium">Aucun projet dans cette catégorie</p>
+          <p className="text-gray-400 dark:text-slate-600 text-sm mt-2">Les projets apparaîtront ici une fois créés par l&apos;administration</p>
         </motion.div>
       )}
     </div>

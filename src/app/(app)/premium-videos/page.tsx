@@ -7,20 +7,28 @@ import { useSearchParams } from 'next/navigation';
 import { Film, Search, Sparkles, Crown, ChevronRight } from 'lucide-react';
 import { PremiumVideoCard } from '@/components/premium/PremiumVideoCard';
 import { premiumVideoService } from '@/services/premiumVideos';
+import { categoryService } from '@/services/categories';
 import { useAuth } from '@/hooks/useAuth';
 import type { PremiumVideoWithRelations } from '@/types/premium';
 import Link from 'next/link';
 
-// Premium category definitions (must match DB category names)
-const PREMIUM_CATEGORIES = [
-  { slug: 'films',         label: 'Films',         emoji: '🎬' },
-  { slug: 'series',        label: 'Séries',        emoji: '📺' },
-  { slug: 'sport',         label: 'Sport',         emoji: '⚽' },
-  { slug: 'anime',         label: 'Anime',         emoji: '⭐' },
-  { slug: 'documentaires', label: 'Documentaires', emoji: '🎥' },
-  { slug: 'enfants',       label: 'Enfants',       emoji: '🧒' },
-  { slug: 'masterclasses', label: 'Masterclasses', emoji: '🎓' },
-];
+// Visual config for known categories (emoji + preferred order)
+const CATEGORY_CONFIG: Record<string, { emoji: string; order: number }> = {
+  'films':         { emoji: '🎬', order: 1 },
+  'séries':        { emoji: '📺', order: 2 },
+  'series':        { emoji: '📺', order: 2 },
+  'sport':         { emoji: '⚽', order: 3 },
+  'anime':         { emoji: '⭐', order: 4 },
+  'documentaires': { emoji: '🎥', order: 5 },
+  'documentary':   { emoji: '🎥', order: 5 },
+  'enfants':       { emoji: '🧒', order: 6 },
+  'masterclasses': { emoji: '🎓', order: 7 },
+  'innovation':    { emoji: '💡', order: 8 },
+  'news':          { emoji: '📰', order: 9 },
+  'podcasts':      { emoji: '🎙️', order: 10 },
+  'inspiration':   { emoji: '❤️', order: 11 },
+  'trending':      { emoji: '⚡', order: 12 },
+};
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -107,6 +115,15 @@ function PremiumVideosContent() {
     refetchOnWindowFocus: false,
   });
 
+  // Load DB categories with long cache — used to build dynamic category tabs
+  const { data: dbCategories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoryService.getCategories(),
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
   const sorted = useMemo(
     () =>
       [...allVideos].sort((a, b) => {
@@ -118,22 +135,53 @@ function PremiumVideosContent() {
     [allVideos],
   );
 
-  const grouped = useMemo(() => {
-    const map: Record<string, PremiumVideoWithRelations[]> = {};
-    for (const cat of PREMIUM_CATEGORIES) {
-      map[cat.slug] = sorted.filter((v) => {
-        const name = (v.categories?.name ?? '').toLowerCase().replace(/\s+/g, '-');
-        return name === cat.slug || name === cat.label.toLowerCase();
-      });
-    }
-    const matched = new Set(Object.values(map).flatMap((vs) => vs.map((v) => v.id)));
-    const others = sorted.filter((v) => !matched.has(v.id));
-    if (others.length) map['__autres__'] = others;
-    return map;
-  }, [sorted]);
+  // Build category list from DB — only categories that actually have videos
+  const activeCategories = useMemo(() => {
+    const cats = dbCategories.map((cat) => {
+      const key = cat.name.toLowerCase();
+      const config = CATEGORY_CONFIG[key] ?? { emoji: '📹', order: 99 };
+      const videos = sorted.filter(
+        (v) => v.categories?.name?.toLowerCase() === key,
+      );
+      return {
+        slug: key.replace(/\s+/g, '-'),
+        label: cat.name,
+        emoji: config.emoji,
+        order: config.order,
+        videos,
+      };
+    }).filter((c) => c.videos.length > 0);
 
+    // Also include any video categories not covered by DB (orphaned data)
+    const coveredKeys = new Set(cats.map((c) => c.label.toLowerCase()));
+    const orphanMap: Record<string, PremiumVideoWithRelations[]> = {};
+    for (const v of sorted) {
+      const name = v.categories?.name;
+      if (name && !coveredKeys.has(name.toLowerCase())) {
+        if (!orphanMap[name]) orphanMap[name] = [];
+        orphanMap[name].push(v);
+      }
+    }
+    const orphans = Object.entries(orphanMap).map(([name, videos]) => ({
+      slug: name.toLowerCase().replace(/\s+/g, '-'),
+      label: name,
+      emoji: '📹',
+      order: 99,
+      videos,
+    }));
+
+    return [...cats, ...orphans].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+  }, [dbCategories, sorted]);
+
+  // Videos for the selected category tab or search
   const filteredVideos = useMemo(() => {
-    let base = selectedSlug ? (grouped[selectedSlug] ?? sorted) : sorted;
+    let base: PremiumVideoWithRelations[];
+    if (selectedSlug) {
+      const cat = activeCategories.find((c) => c.slug === selectedSlug);
+      base = cat ? cat.videos : sorted;
+    } else {
+      base = sorted;
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       base = base.filter(
@@ -143,7 +191,7 @@ function PremiumVideosContent() {
       );
     }
     return base;
-  }, [selectedSlug, grouped, sorted, searchQuery]);
+  }, [selectedSlug, activeCategories, sorted, searchQuery]);
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-gray-950 transition-colors overflow-hidden">
@@ -212,7 +260,7 @@ function PremiumVideosContent() {
             >
               ✨ Tout
             </button>
-            {PREMIUM_CATEGORIES.map((cat) => (
+            {activeCategories.map((cat) => (
               <button
                 key={cat.slug}
                 onClick={() => setSelectedSlug(cat.slug)}
@@ -243,25 +291,16 @@ function PremiumVideosContent() {
           </motion.div>
         ) : !selectedSlug && !searchQuery ? (
           <motion.div variants={stagger} className="space-y-8">
-            {PREMIUM_CATEGORIES.map((cat) => (
+            {activeCategories.map((cat) => (
               <CategoryRow
                 key={cat.slug}
                 label={cat.label}
                 emoji={cat.emoji}
                 slug={cat.slug}
-                videos={grouped[cat.slug] ?? []}
+                videos={cat.videos}
                 isPremiumUser={isPremiumUser}
               />
             ))}
-            {(grouped['__autres__']?.length ?? 0) > 0 && (
-              <CategoryRow
-                label="Autres"
-                emoji="🎞️"
-                slug="__autres__"
-                videos={grouped['__autres__'] ?? []}
-                isPremiumUser={isPremiumUser}
-              />
-            )}
             {sorted.length === 0 && (
               <motion.div variants={fadeUp} className="text-center py-20">
                 <Film size={48} className="text-gray-300 dark:text-gray-700 mx-auto mb-4" />

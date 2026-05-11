@@ -65,12 +65,10 @@ export function ReferralProgram() {
   const [showRewards, setShowRewards] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
+    if (!user || !session?.access_token) return;
     setLoading(true);
     setError('');
     try {
-      if (!session?.access_token) throw new Error('Non authentifié');
-
       const res = await fetch('/api/referral', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -82,7 +80,8 @@ export function ReferralProgram() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, session?.access_token]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

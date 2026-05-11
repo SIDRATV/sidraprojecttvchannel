@@ -12,6 +12,7 @@ interface Partner {
 
 export function PartnerLogosStrip() {
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,6 +27,10 @@ export function PartnerLogosStrip() {
   // Duplicate list for seamless infinite scroll
   const items = [...partners, ...partners];
 
+  const handleImgError = (key: string) => {
+    setFailedLogos(prev => new Set([...prev, key]));
+  };
+
   return (
     <div className="w-full overflow-hidden py-3 border-y border-gray-200/60 dark:border-white/[0.06] bg-white/60 dark:bg-white/[0.02] backdrop-blur-sm">
       <div
@@ -33,27 +38,33 @@ export function PartnerLogosStrip() {
         className="flex gap-8 items-center partner-scroll-track"
         style={{ width: 'max-content' }}
       >
-        {items.map((p, i) => (
-          <div
-            key={`${p.id}-${i}`}
-            className="flex items-center gap-2.5 flex-shrink-0 select-none"
-            title={p.name}
-          >
-            {p.logo_url ? (
-              <img
-                src={p.logo_url}
-                alt={p.name}
-                className="h-8 w-auto max-w-[80px] object-contain opacity-90 hover:opacity-100 transition-opacity"
-                draggable={false}
-              />
-            ) : (
-              <div className="h-8 px-3 flex items-center gap-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg border border-gray-200 dark:border-white/[0.08] opacity-90 hover:opacity-100 transition-opacity">
-                <span className="text-base leading-none">{p.logo_emoji || '🤝'}</span>
-                <span className="text-xs font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">{p.name}</span>
-              </div>
-            )}
-          </div>
-        ))}
+        {items.map((p, i) => {
+          const key = `${p.id}-${i}`;
+          const showImage = p.logo_url && !failedLogos.has(key);
+          return (
+            <div
+              key={key}
+              className="flex items-center gap-2.5 flex-shrink-0 select-none"
+              title={p.name}
+            >
+              {showImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={p.logo_url}
+                  alt={p.name}
+                  className="h-8 w-auto max-w-[80px] object-contain opacity-90 hover:opacity-100 transition-opacity"
+                  draggable={false}
+                  onError={() => handleImgError(key)}
+                />
+              ) : (
+                <div className="h-8 px-3 flex items-center gap-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg border border-gray-200 dark:border-white/[0.08] opacity-90 hover:opacity-100 transition-opacity">
+                  <span className="text-base leading-none">{p.logo_emoji || '🤝'}</span>
+                  <span className="text-xs font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">{p.name}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

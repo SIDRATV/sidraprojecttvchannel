@@ -199,7 +199,7 @@ export default function ActualiterPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
           <Loader2 size={40} className="text-brand-400" />
         </motion.div>
@@ -208,7 +208,16 @@ export default function ActualiterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-[#0a1a14] to-slate-950 p-4 md:p-8 overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-[#0a1a14] dark:to-slate-950 p-4 md:p-8 overflow-hidden relative">
+      {/* Diagonal stripe pattern – light mode only */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-20 dark:hidden"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(135deg, transparent 0px, transparent 28px, rgba(0,0,0,0.018) 28px, rgba(0,0,0,0.018) 29px)',
+        }}
+      />
+
       {/* Animated background orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <motion.div
@@ -243,10 +252,10 @@ export default function ActualiterPage() {
             <Newspaper className="text-white" size={28} />
           </motion.div>
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white via-orange-300 to-amber-200 bg-clip-text text-transparent">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-orange-600 to-amber-700 dark:from-white dark:via-orange-300 dark:to-amber-200 bg-clip-text text-transparent">
               Actualités
             </h1>
-            <p className="text-slate-400 text-sm mt-1">Dernières nouvelles de la communauté Sidra</p>
+            <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Dernières nouvelles de la communauté Sidra</p>
           </div>
         </div>
       </motion.div>
@@ -259,13 +268,13 @@ export default function ActualiterPage() {
         className="mb-6"
       >
         <div className="relative max-w-xl">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
           <input
             type="text"
             placeholder="Rechercher un article..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+            className="w-full pl-11 pr-4 py-3 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] rounded-xl text-gray-900 dark:text-white text-sm placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 transition-colors shadow-sm dark:shadow-none"
           />
         </div>
       </motion.div>
@@ -281,10 +290,10 @@ export default function ActualiterPage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => setSelectedCategory(null)}
-          className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-all border backdrop-blur-xl ${
+          className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-all border ${
             selectedCategory === null
-              ? 'bg-orange-500/20 text-orange-300 border-orange-500/40 shadow-lg shadow-orange-500/10'
-              : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
+              ? 'bg-orange-500/20 text-orange-600 dark:text-orange-300 border-orange-500/40 shadow-lg shadow-orange-500/10'
+              : 'bg-white dark:bg-white/5 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
           <Flame size={14} /> Tout
@@ -295,10 +304,10 @@ export default function ActualiterPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all border backdrop-blur-xl ${
+            className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all border ${
               selectedCategory === cat
-                ? 'bg-orange-500/20 text-orange-300 border-orange-500/40 shadow-lg shadow-orange-500/10'
-                : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
+                ? 'bg-orange-500/20 text-orange-600 dark:text-orange-300 border-orange-500/40 shadow-lg shadow-orange-500/10'
+                : 'bg-white dark:bg-white/5 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             {cat}
@@ -309,8 +318,8 @@ export default function ActualiterPage() {
       {/* Featured Articles */}
       {featuredArticles.length > 0 && (
         <motion.section variants={containerVariants} initial="hidden" animate="visible" className="mb-12">
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <Sparkles size={20} className="text-orange-400" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Sparkles size={20} className="text-orange-500 dark:text-orange-400" />
             À la Une
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -323,7 +332,7 @@ export default function ActualiterPage() {
                 onClick={() => setSelectedArticle(article)}
               >
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-sm" />
-                <div className="relative bg-white/[0.03] backdrop-blur-2xl rounded-2xl overflow-hidden border border-white/[0.08] hover:border-white/[0.15] transition-all">
+                <div className="relative bg-white dark:bg-white/[0.03] rounded-2xl overflow-hidden border border-gray-200 dark:border-white/[0.08] hover:border-gray-300 dark:hover:border-white/[0.15] transition-all shadow-sm dark:shadow-none">
                   <div className="relative h-56 overflow-hidden">
                     {article.image_url ? (
                       <div
@@ -335,7 +344,7 @@ export default function ActualiterPage() {
                         <Newspaper size={48} className="text-orange-400/50" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     <span className="absolute top-4 right-4 px-3 py-1.5 bg-red-500/20 backdrop-blur-xl text-red-300 text-xs font-bold rounded-full border border-red-500/30">
                       À LA UNE
                     </span>
@@ -344,13 +353,13 @@ export default function ActualiterPage() {
                     </span>
                   </div>
                   <div className="p-6">
-                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-orange-300 transition-colors line-clamp-2">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-orange-600 dark:group-hover:text-orange-300 transition-colors line-clamp-2">
                       {article.title}
                     </h3>
-                    <p className="text-slate-400 text-sm mb-4 line-clamp-2 leading-relaxed">
+                    <p className="text-gray-500 dark:text-slate-400 text-sm mb-4 line-clamp-2 leading-relaxed">
                       {article.description}
                     </p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mb-4 py-3 border-y border-white/[0.06]">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-slate-500 mb-4 py-3 border-y border-gray-200 dark:border-white/[0.06]">
                       <span className="flex items-center gap-1"><User size={12} /> {article.author}</span>
                       <span className="flex items-center gap-1"><Clock size={12} /> {timeAgo(article.published_at)}</span>
                       <span className="flex items-center gap-1"><BookOpen size={12} /> {article.read_time} min</span>
@@ -359,13 +368,13 @@ export default function ActualiterPage() {
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleLike(article.id); }}
                         className={`flex items-center gap-1.5 text-sm transition-colors ${
-                          likedArticles.has(article.id) ? 'text-red-400' : 'text-slate-500 hover:text-red-400'
+                          likedArticles.has(article.id) ? 'text-red-500' : 'text-gray-400 dark:text-slate-500 hover:text-red-500'
                         }`}
                       >
                         <Heart size={15} fill={likedArticles.has(article.id) ? 'currentColor' : 'none'} />
                         {article.likes_count}
                       </button>
-                      <span className="flex items-center gap-1.5 text-sm text-slate-500">
+                      <span className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-slate-500">
                         <MessageCircle size={15} /> {article.comments_count}
                       </span>
                     </div>
@@ -379,7 +388,7 @@ export default function ActualiterPage() {
 
       {/* Regular Articles */}
       <motion.section variants={containerVariants} initial="hidden" animate="visible">
-        <h2 className="text-xl font-bold text-white mb-6">Derniers Articles</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Derniers Articles</h2>
         <div className="space-y-4">
           {regularArticles.map((article) => (
             <motion.div
@@ -389,7 +398,7 @@ export default function ActualiterPage() {
               className="relative group cursor-pointer"
               onClick={() => setSelectedArticle(article)}
             >
-              <div className="flex gap-4 md:gap-6 p-4 bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/[0.08] hover:border-white/[0.15] transition-all">
+              <div className="flex gap-4 md:gap-6 p-4 bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.08] hover:border-gray-300 dark:hover:border-white/[0.15] transition-all shadow-sm dark:shadow-none">
                 {article.image_url ? (
                   <div
                     className="w-24 h-24 md:w-32 md:h-28 rounded-xl bg-cover bg-center flex-shrink-0"
@@ -402,17 +411,17 @@ export default function ActualiterPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-0.5 bg-orange-500/15 text-orange-400 text-xs font-semibold rounded-lg">
+                    <span className="px-2 py-0.5 bg-orange-500/15 text-orange-600 dark:text-orange-400 text-xs font-semibold rounded-lg">
                       {article.category}
                     </span>
-                    <span className="text-xs text-slate-600">{timeAgo(article.published_at)}</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-600">{timeAgo(article.published_at)}</span>
                   </div>
-                  <h3 className="text-base font-bold text-white mb-1 line-clamp-2 group-hover:text-orange-300 transition-colors">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1 line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-300 transition-colors">
                     {article.title}
                   </h3>
-                  <p className="text-slate-400 text-sm mb-3 line-clamp-1">{article.description}</p>
+                  <p className="text-gray-500 dark:text-slate-400 text-sm mb-3 line-clamp-1">{article.description}</p>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
                       <span className="flex items-center gap-1"><User size={12} /> {article.author}</span>
                       <span><BookOpen size={12} className="inline" /> {article.read_time} min</span>
                     </div>
@@ -420,13 +429,13 @@ export default function ActualiterPage() {
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleLike(article.id); }}
                         className={`flex items-center gap-1 transition-colors ${
-                          likedArticles.has(article.id) ? 'text-red-400' : 'text-slate-500 hover:text-red-400'
+                          likedArticles.has(article.id) ? 'text-red-500' : 'text-gray-400 dark:text-slate-500 hover:text-red-500'
                         }`}
                       >
                         <Heart size={13} fill={likedArticles.has(article.id) ? 'currentColor' : 'none'} />
                         {article.likes_count}
                       </button>
-                      <span className="flex items-center gap-1 text-slate-500">
+                      <span className="flex items-center gap-1 text-gray-400 dark:text-slate-500">
                         <MessageCircle size={13} /> {article.comments_count}
                       </span>
                     </div>
@@ -441,11 +450,11 @@ export default function ActualiterPage() {
       {/* Empty State */}
       {filteredArticles.length === 0 && !loading && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20">
-          <div className="w-20 h-20 mx-auto mb-6 bg-white/[0.04] backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/[0.08]">
-            <Newspaper size={36} className="text-slate-500" />
+          <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-white/[0.04] rounded-2xl flex items-center justify-center border border-gray-200 dark:border-white/[0.08]">
+            <Newspaper size={36} className="text-gray-400 dark:text-slate-500" />
           </div>
-          <p className="text-slate-400 text-lg font-medium">Aucun article trouvé</p>
-          <p className="text-slate-600 text-sm mt-2">Les articles apparaîtront ici une fois publiés</p>
+          <p className="text-gray-500 dark:text-slate-400 text-lg font-medium">Aucun article trouvé</p>
+          <p className="text-gray-400 dark:text-slate-600 text-sm mt-2">Les articles apparaîtront ici une fois publiés</p>
         </motion.div>
       )}
 
@@ -464,50 +473,54 @@ export default function ActualiterPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl my-8 bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-white/[0.1] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+              className="w-full max-w-3xl my-8 bg-white dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-gray-200 dark:border-white/[0.1] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
             >
               <div className="absolute top-4 right-4 z-20">
-                <button onClick={() => setSelectedArticle(null)} className="p-2 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-lg transition-colors text-slate-300">
+                <button onClick={() => setSelectedArticle(null)} className="p-2 bg-black/30 dark:bg-black/40 backdrop-blur-xl hover:bg-black/50 dark:hover:bg-white/10 rounded-lg transition-colors text-white">
                   <X size={18} />
                 </button>
               </div>
 
               <div className="overflow-y-auto flex-1">
                 {selectedArticle.image_url && (
-                  <div
-                    className="w-full h-48 md:h-64 bg-cover bg-center flex-shrink-0"
-                    style={{ backgroundImage: `url(${selectedArticle.image_url})` }}
-                  />
+                  <div className="relative w-full h-52 md:h-72 flex-shrink-0 overflow-hidden">
+                    <img
+                      src={selectedArticle.image_url}
+                      alt={selectedArticle.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  </div>
                 )}
 
                 <div className="p-5 md:p-8">
-                  <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-white/[0.08]">
-                    <span className="px-3 py-1 bg-orange-500/15 text-orange-400 rounded-full text-xs font-semibold">
+                  <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-white/[0.08]">
+                    <span className="px-3 py-1 bg-orange-500/15 text-orange-600 dark:text-orange-400 rounded-full text-xs font-semibold">
                       {selectedArticle.category}
                     </span>
-                    <span className="text-xs text-slate-500 flex items-center gap-1"><User size={12} /> {selectedArticle.author}</span>
-                    <span className="text-xs text-slate-500 flex items-center gap-1"><Clock size={12} /> {timeAgo(selectedArticle.published_at)}</span>
-                    <span className="text-xs text-slate-500 flex items-center gap-1"><BookOpen size={12} /> {selectedArticle.read_time} min</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-1"><User size={12} /> {selectedArticle.author}</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-1"><Clock size={12} /> {timeAgo(selectedArticle.published_at)}</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-1"><BookOpen size={12} /> {selectedArticle.read_time} min</span>
                   </div>
 
-                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-6">{selectedArticle.title}</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">{selectedArticle.title}</h1>
 
                   <div className="mb-8">
                     {selectedArticle.content.split('\n\n').map((paragraph, idx) => (
-                      <p key={idx} className="text-sm md:text-base text-slate-300 mb-4 leading-relaxed">
+                      <p key={idx} className="text-sm md:text-base text-gray-700 dark:text-slate-300 mb-4 leading-relaxed">
                         {paragraph}
                       </p>
                     ))}
                   </div>
 
                   {/* Share + Like Row */}
-                  <div className="flex flex-wrap items-center gap-3 py-4 border-y border-white/[0.08] mb-6">
-                    <span className="text-xs font-semibold text-slate-400">Partager:</span>
+                  <div className="flex flex-wrap items-center gap-3 py-4 border-y border-gray-200 dark:border-white/[0.08] mb-6">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-slate-400">Partager:</span>
                     {['facebook', 'twitter', 'linkedin'].map((platform) => (
                       <button
                         key={platform}
                         onClick={() => shareArticle(platform)}
-                        className="px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] rounded-lg text-xs text-slate-400 capitalize transition-colors"
+                        className="px-3 py-1.5 bg-gray-100 dark:bg-white/[0.05] hover:bg-gray-200 dark:hover:bg-white/[0.1] border border-gray-200 dark:border-white/[0.08] rounded-lg text-xs text-gray-600 dark:text-slate-400 capitalize transition-colors"
                       >
                         {platform}
                       </button>
@@ -515,10 +528,10 @@ export default function ActualiterPage() {
                     <div className="flex-1" />
                     <button
                       onClick={() => toggleLike(selectedArticle.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all border backdrop-blur-xl ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all border ${
                         likedArticles.has(selectedArticle.id)
-                          ? 'bg-red-500/20 text-red-300 border-red-500/30'
-                          : 'bg-white/[0.04] text-slate-400 border-white/[0.08] hover:text-red-300'
+                          ? 'bg-red-500/20 text-red-600 dark:text-red-300 border-red-500/30'
+                          : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-slate-400 border-gray-200 dark:border-white/[0.08] hover:text-red-500 dark:hover:text-red-300'
                       }`}
                     >
                       <Heart size={15} fill={likedArticles.has(selectedArticle.id) ? 'currentColor' : 'none'} />
@@ -528,7 +541,7 @@ export default function ActualiterPage() {
 
                   {/* Comments Section */}
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                       <MessageCircle size={18} />
                       Commentaires ({selectedArticle.comments_count})
                     </h3>
@@ -541,7 +554,7 @@ export default function ActualiterPage() {
                           value={newComment}
                           onChange={(e) => setNewComment(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                          className="flex-1 px-4 py-2.5 bg-white/[0.06] border border-white/[0.1] rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+                          className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/[0.1] rounded-xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-brand-500/50 transition-colors"
                         />
                         <motion.button
                           whileHover={{ scale: 1.03 }}
@@ -554,12 +567,12 @@ export default function ActualiterPage() {
                         </motion.button>
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500 mb-6">Connectez-vous pour commenter</p>
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mb-6">Connectez-vous pour commenter</p>
                     )}
 
                     {commentsLoading ? (
                       <div className="flex justify-center py-6">
-                        <Loader2 size={20} className="animate-spin text-slate-500" />
+                        <Loader2 size={20} className="animate-spin text-gray-400 dark:text-slate-500" />
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -568,20 +581,20 @@ export default function ActualiterPage() {
                             key={comment.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="p-3 bg-white/[0.03] rounded-xl border border-white/[0.06]"
+                            className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06]"
                           >
                             <div className="flex items-center gap-2 mb-1.5">
                               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-emerald-400 flex items-center justify-center text-xs text-white font-bold">
                                 {(comment.author_name || 'U').charAt(0).toUpperCase()}
                               </div>
-                              <span className="text-xs font-semibold text-white">{comment.author_name || 'Utilisateur'}</span>
-                              <span className="text-[10px] text-slate-600">{timeAgo(comment.created_at)}</span>
+                              <span className="text-xs font-semibold text-gray-900 dark:text-white">{comment.author_name || 'Utilisateur'}</span>
+                              <span className="text-[10px] text-gray-400 dark:text-slate-600">{timeAgo(comment.created_at)}</span>
                             </div>
-                            <p className="text-sm text-slate-300 pl-8">{comment.content}</p>
+                            <p className="text-sm text-gray-700 dark:text-slate-300 pl-8">{comment.content}</p>
                           </motion.div>
                         ))}
                         {comments.length === 0 && (
-                          <p className="text-sm text-slate-600 text-center py-4">Aucun commentaire pour le moment</p>
+                          <p className="text-sm text-gray-400 dark:text-slate-600 text-center py-4">Aucun commentaire pour le moment</p>
                         )}
                       </div>
                     )}

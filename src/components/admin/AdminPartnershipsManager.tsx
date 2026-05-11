@@ -831,7 +831,12 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                           src={form.logo_url}
                           alt="Logo"
                           className="w-full h-full object-contain p-1"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }}
+                          onError={(e) => {
+                            const img = e.target as HTMLImageElement;
+                            img.style.display = 'none';
+                            const fallback = img.nextElementSibling as HTMLElement | null;
+                            if (fallback) fallback.style.display = 'block';
+                          }}
                         />
                       ) : null}
                       {/* Fallback emoji shown when no logo_url or image fails */}
@@ -1297,10 +1302,14 @@ export function AdminPartnershipsManager({ token }: { token: string }) {
                   {p.logo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={p.logo_url} alt={p.name} className="w-full h-full object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  ) : (
-                    <span className="text-2xl">{p.logo_emoji || '🏢'}</span>
-                  )}
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = 'none';
+                        const fallback = img.nextElementSibling as HTMLElement | null;
+                        if (fallback) fallback.style.removeProperty('display');
+                      }} />
+                  ) : null}
+                  <span className="text-2xl" style={{ display: p.logo_url ? 'none' : 'block' }}>{p.logo_emoji || '🏢'}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{p.name}</p>

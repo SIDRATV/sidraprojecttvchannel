@@ -44,7 +44,7 @@ export default function PremiumModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
           >
             <div className="relative w-full max-w-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-brand-500/50 rounded-2xl overflow-hidden">
               {/* Close Button */}

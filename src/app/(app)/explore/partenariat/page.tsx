@@ -863,7 +863,7 @@ export default function PartenariatPage() {
         <AnimatePresence>
           {selectedPartner && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPartner(null)}>
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPartner(null)}>
               <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-lg bg-white dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-gray-200 dark:border-white/[0.1] shadow-2xl overflow-hidden">
@@ -948,7 +948,7 @@ export default function PartenariatPage() {
           {/* Edit Application Modal */}
           {editingApp && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setEditingApp(null)}>
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setEditingApp(null)}>
               <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-lg bg-white dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-gray-200 dark:border-white/[0.1] shadow-2xl overflow-hidden">

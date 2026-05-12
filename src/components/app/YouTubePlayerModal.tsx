@@ -74,7 +74,7 @@ export function YouTubePlayerModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2 md:p-4"
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-2 md:p-4"
         >
           {/* Modal Container */}
           <motion.div

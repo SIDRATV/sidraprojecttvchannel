@@ -3,9 +3,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { User, Mail, Calendar, Trophy, Clock, Edit2, Package, Save, X, Upload, Settings, Bell, Lock, LogOut, Shield, Camera } from 'lucide-react';
+import { User, Mail, Calendar, Trophy, Clock, Edit2, Package, Save, X, Upload, Settings, Bell, BellOff, BellRing, Lock, LogOut, Shield, Camera, RefreshCw, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBuildInfo } from '@/hooks/useBuildInfo';
+import { usePWAUpdate } from '@/hooks/usePWAUpdate';
+import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { authService } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
@@ -28,6 +30,10 @@ interface ProfileData {
 export default function ProfilePage() {
   const { user, session } = useAuth();
   const { buildInfo, loading } = useBuildInfo();
+  const { updateAvailable, currentVersion, latestVersion, isUpdating, applyUpdate } = usePWAUpdate();
+  const { permission: notifPermission, canRequest: canRequestNotif, requestPermission: requestNotifPermission, softEnabled: notifSoftEnabled, setSoftEnabled: setNotifSoftEnabled } = useNotificationPermission();
+  const [notifRequesting, setNotifRequesting] = useState(false);
+  const [notifRequestResult, setNotifRequestResult] = useState<'granted' | 'denied' | null>(null);
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
@@ -606,11 +612,110 @@ export default function ProfilePage() {
             transition={{ delay: 0.3 }}
             className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800"
           >
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-5">
               <Bell size={24} className="text-brand-500 dark:text-brand-400" />
-              <h3 className="font-bold text-lg">Notification Preferences</h3>
+              <h3 className="font-bold text-lg flex-1">Notifications</h3>
             </div>
-            <div className="space-y-3">
+
+            {/* System permission status */}
+            <div className="mb-4 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {notifPermission === 'granted' ? (
+                    <CheckCircle size={15} className="text-emerald-500" />
+                  ) : notifPermission === 'denied' ? (
+                    <AlertCircle size={15} className="text-red-500" />
+                  ) : (
+                    <BellRing size={15} className="text-amber-500" />
+                  )}
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Notifications système
+                  </span>
+                </div>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  notifPermission === 'granted'
+                    ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                    : notifPermission === 'denied'
+                    ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'
+                    : notifPermission === 'unsupported'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-500'
+                    : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400'
+                }`}>
+                  {notifPermission === 'granted' ? 'Autorisé' :
+                   notifPermission === 'denied' ? 'Refusé' :
+                   notifPermission === 'unsupported' ? 'Non supporté' :
+                   'En attente'}
+                </span>
+              </div>
+
+              {notifPermission === 'denied' && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Pour réactiver : Paramètres de votre appareil → Notifications → Sidra TV → Autoriser.
+                </p>
+              )}
+
+              {notifPermission === 'default' && (
+                <button
+                  onClick={async () => {
+                    setNotifRequesting(true);
+                    const r = await requestNotifPermission();
+                    setNotifRequesting(false);
+                    setNotifRequestResult(r === 'granted' ? 'granted' : 'denied');
+                    setTimeout(() => setNotifRequestResult(null), 3000);
+                  }}
+                  disabled={notifRequesting}
+                  className="w-full flex items-center justify-center gap-2 py-2 mt-1 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition-colors disabled:opacity-60"
+                >
+                  {notifRequesting
+                    ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    : <Bell size={13} />}
+                  Autoriser les notifications
+                </button>
+              )}
+
+              {notifRequestResult === 'granted' && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <CheckCircle size={12} /> Notifications activées !
+                </p>
+              )}
+              {notifRequestResult === 'denied' && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle size={12} /> Refusé. Activez-les depuis les paramètres de l'appareil.
+                </p>
+              )}
+            </div>
+
+            {/* Soft on/off toggle (only relevant when 'granted') */}
+            {notifPermission === 'granted' && (
+              <label className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer">
+                <div className="flex items-center gap-2">
+                  {notifSoftEnabled ? (
+                    <BellRing size={16} className="text-brand-500" />
+                  ) : (
+                    <BellOff size={16} className="text-gray-400" />
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Recevoir les notifications</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Sons & alertes Sidra TV</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={notifSoftEnabled}
+                  onClick={() => setNotifSoftEnabled(!notifSoftEnabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    notifSoftEnabled ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                    notifSoftEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </label>
+            )}
+
+            <div className="space-y-2 mt-3">
               <label className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                 <input
                   type="checkbox"
@@ -619,8 +724,8 @@ export default function ProfilePage() {
                   className="w-5 h-5 rounded accent-brand-500 cursor-pointer"
                 />
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-950 dark:text-white">Email Recommendations</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Get personalized content suggestions</p>
+                  <p className="font-semibold text-gray-950 dark:text-white text-sm">Recommandations par email</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Suggestions de contenus personnalisées</p>
                 </div>
               </label>
               <label className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
@@ -631,8 +736,8 @@ export default function ProfilePage() {
                   className="w-5 h-5 rounded accent-brand-500 cursor-pointer"
                 />
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-950 dark:text-white">New Content Alerts</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Notify me about new videos and updates</p>
+                  <p className="font-semibold text-gray-950 dark:text-white text-sm">Alertes nouvelles vidéos</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Soyez informé des nouveaux contenus</p>
                 </div>
               </label>
               <label className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
@@ -643,8 +748,8 @@ export default function ProfilePage() {
                   className="w-5 h-5 rounded accent-brand-500 cursor-pointer"
                 />
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-950 dark:text-white">Weekly Digest</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Receive a summary of the week's highlights</p>
+                  <p className="font-semibold text-gray-950 dark:text-white text-sm">Résumé hebdomadaire</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Récapitulatif de la semaine</p>
                 </div>
               </label>
             </div>
@@ -653,7 +758,7 @@ export default function ProfilePage() {
                 onClick={handleSaveProfile}
                 className="mt-4 w-full py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-semibold transition-colors"
               >
-                Save Preferences
+                Enregistrer les préférences
               </button>
             )}
           </motion.div>
@@ -661,7 +766,7 @@ export default function ProfilePage() {
 
         {/* Right Column - App Info & More */}
         <div className="space-y-6">
-          {/* App Information */}
+          {/* App Version & Update */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -670,23 +775,51 @@ export default function ProfilePage() {
           >
             <div className="flex items-center gap-3 mb-4">
               <Package size={24} className="text-brand-500 dark:text-brand-400" />
-              <h3 className="font-bold text-lg">App Version</h3>
+              <h3 className="font-bold text-lg flex-1">Version de l'app</h3>
+              {updateAvailable && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-400/20 border border-amber-400/30 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full animate-pulse">
+                  <Sparkles size={11} />
+                  Mise à jour
+                </span>
+              )}
             </div>
+
             {loading ? (
-              <p className="text-sm text-gray-600 dark:text-gray-400">Loading...</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p>
             ) : buildInfo ? (
-              <div className="space-y-3">
-                <div className="p-3 bg-white dark:bg-gray-800 rounded-lg">
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Version</p>
-                  <p className="font-semibold text-gray-950 dark:text-white">v{buildInfo.version}</p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Version installée</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      v{currentVersion ?? buildInfo.version}
+                    </p>
+                  </div>
+                  {updateAvailable && latestVersion && (
+                    <div className="text-right">
+                      <p className="text-xs text-brand-500 dark:text-brand-400 mb-0.5">Disponible</p>
+                      <p className="font-semibold text-brand-600 dark:text-brand-400">v{latestVersion}</p>
+                    </div>
+                  )}
                 </div>
                 <div className="p-3 bg-white dark:bg-gray-800 rounded-lg">
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Build Date</p>
-                  <p className="font-semibold text-gray-950 dark:text-white text-sm">{buildInfo.buildTime}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Build</p>
+                  <p className="font-medium text-gray-900 dark:text-white text-xs">{buildInfo.buildTime}</p>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-gray-600 dark:text-gray-400">Unable to load version info</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Impossible de charger</p>
+            )}
+
+            {updateAvailable && (
+              <button
+                onClick={applyUpdate}
+                disabled={isUpdating}
+                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-colors disabled:opacity-60"
+              >
+                <RefreshCw size={14} className={isUpdating ? 'animate-spin' : ''} />
+                {isUpdating ? 'Mise à jour en cours…' : 'Mettre à jour maintenant'}
+              </button>
             )}
           </motion.div>
 

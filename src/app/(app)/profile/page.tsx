@@ -259,7 +259,7 @@ export default function ProfilePage() {
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -30 }}
-          className="fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3 bg-green-500 text-white rounded-xl shadow-2xl font-semibold text-sm"
+          className="fixed top-5 right-5 z-[200] flex items-center gap-3 px-5 py-3 bg-green-500 text-white rounded-xl shadow-2xl font-semibold text-sm"
         >
           ✓ Profil mis à jour avec succès !
         </motion.div>

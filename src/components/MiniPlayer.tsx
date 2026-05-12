@@ -38,16 +38,9 @@ export function MiniPlayer() {
 
   const handleExpand = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Capture current time from the actual video element
     const currentTime = videoRef.current?.currentTime ?? 0;
-    const video = videoRef.current;
-    if (video) { video.pause(); }
-    // expandMiniPlayer stores resumeData (streamUrl + currentTime) in the provider
-    const data = expandMiniPlayer();
-    if (data) {
-      // Override with the live currentTime from the video element
-      data.currentTime = currentTime;
-    }
+    if (videoRef.current) videoRef.current.pause();
+    expandMiniPlayer(currentTime);           // pass live time directly to provider
     router.push(`/premium-videos/${miniPlayer?.videoId}`);
   };
 

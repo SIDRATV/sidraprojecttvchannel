@@ -25,8 +25,8 @@ interface MiniPlayerContextValue {
   animating: 'shrink' | 'expand' | null;
   startMiniPlayer: (data: MiniPlayerData) => void;
   closeMiniPlayer: () => void;
-  /** Called when expanding: sets resumeData, clears mini-player, triggers expand animation */
-  expandMiniPlayer: () => ResumeData | null;
+  /** Called when expanding: pass the live currentTime from the video element */
+  expandMiniPlayer: (currentTime: number) => void;
   consumeResumeData: () => void;
   setAnimating: (v: 'shrink' | 'expand' | null) => void;
 }
@@ -37,7 +37,7 @@ const MiniPlayerContext = createContext<MiniPlayerContextValue>({
   animating: null,
   startMiniPlayer: () => {},
   closeMiniPlayer: () => {},
-  expandMiniPlayer: () => null,
+  expandMiniPlayer: () => {},
   consumeResumeData: () => {},
   setAnimating: () => {},
 });
@@ -47,13 +47,9 @@ export function MiniPlayerProvider({ children }: { children: ReactNode }) {
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [animating, setAnimating] = useState<'shrink' | 'expand' | null>(null);
 
-  // Keep a ref to the video element's current time (updated by MiniPlayer component)
-  const currentTimeRef = { current: 0 };
-
   const startMiniPlayer = useCallback((data: MiniPlayerData) => {
     setAnimating('shrink');
     setMiniPlayer({ ...data, active: true });
-    // Clear shrink animation after it plays
     setTimeout(() => setAnimating(null), 500);
   }, []);
 
@@ -62,18 +58,16 @@ export function MiniPlayerProvider({ children }: { children: ReactNode }) {
     setAnimating(null);
   }, []);
 
-  const expandMiniPlayer = useCallback((): ResumeData | null => {
-    if (!miniPlayer) return null;
-    const data: ResumeData = {
+  const expandMiniPlayer = useCallback((currentTime: number) => {
+    if (!miniPlayer) return;
+    setResumeData({
       videoId: miniPlayer.videoId,
       streamUrl: miniPlayer.streamUrl,
-      currentTime: miniPlayer.startTime, // Will be overridden by MiniPlayer component
-    };
-    setResumeData(data);
+      currentTime,                     // ← live time from the actual video element
+    });
     setAnimating('expand');
     setMiniPlayer(null);
     setTimeout(() => setAnimating(null), 500);
-    return data;
   }, [miniPlayer]);
 
   const consumeResumeData = useCallback(() => {

@@ -66,6 +66,8 @@ export default function WatchPremiumVideoPage() {
 
   // If coming back from mini-player via expand for this video, use its resume data
   const resumeConsumedRef = useRef(false);
+  // When true, fetchVideo must NOT overwrite streamUrl (we already have it from resumeData)
+  const resumedFromMiniPlayerRef = useRef(false);
   useEffect(() => {
     if (resumeConsumedRef.current) return;
     // Close mini-player if it's still active for this video
@@ -75,6 +77,7 @@ export default function WatchPremiumVideoPage() {
     // If we have resumeData from expand, use streamUrl + currentTime directly
     if (resumeData && resumeData.videoId === id) {
       resumeConsumedRef.current = true;
+      resumedFromMiniPlayerRef.current = true; // tell fetchVideo to keep this streamUrl
       setStreamUrl(resumeData.streamUrl);
       setStartTime(resumeData.currentTime);
       consumeResumeData();
@@ -115,7 +118,12 @@ export default function WatchPremiumVideoPage() {
         return;
       }
       setVideo(data.video);
-      setStreamUrl(data.stream_url);
+      // Don't overwrite the streamUrl when resuming from mini-player —
+      // the resumed URL is already set and the video element must not reload.
+      if (!resumedFromMiniPlayerRef.current) {
+        setStreamUrl(data.stream_url);
+      }
+      resumedFromMiniPlayerRef.current = false; // consume the flag
       setQuality(data.quality);
       setAvailableQualities(data.available_qualities);
       setLoading(false);
@@ -253,11 +261,11 @@ export default function WatchPremiumVideoPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors">
-      {/* Video Player */}
+      {/* Video Player — sticky so it stays visible while scrolling (YouTube-style) */}
       <motion.div
-        className="w-full bg-black"
-        initial={animating === 'expand' ? { scale: 0.3, opacity: 0, y: 200 } : false}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
+        className="w-full bg-black sticky top-0 z-10"
+        initial={animating === 'expand' ? { scale: 0.3, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', damping: 20, stiffness: 200 }}
       >
         <div className="max-w-6xl mx-auto">

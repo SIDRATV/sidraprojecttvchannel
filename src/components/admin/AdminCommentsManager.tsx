@@ -17,6 +17,8 @@ interface AdminComment {
   id: string;
   content: string;
   likes: number;
+  dislikes: number;
+  parent_id: string | null;
   is_deleted: boolean;
   deleted_reason: string | null;
   created_at: string;
@@ -42,6 +44,8 @@ export function AdminCommentsManager({ token }: AdminCommentsManagerProps) {
   // ── Comments state ──────────────────────────────────────
   const [comments, setComments] = useState<AdminComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsOffset, setCommentsOffset] = useState(0);
+  const [commentsHasMore, setCommentsHasMore] = useState(false);
   const [searchVideo, setSearchVideo] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [warningModal, setWarningModal] = useState<AdminComment | null>(null);
@@ -63,21 +67,22 @@ export function AdminCommentsManager({ token }: AdminCommentsManagerProps) {
   }, [token]);
 
   // ── Fetch comments ──────────────────────────────────────
-  const fetchComments = useCallback(async () => {
+  const fetchComments = useCallback(async (append = false, offset = 0) => {
     setCommentsLoading(true);
     try {
-      const url = new URL('/api/admin/comments', window.location.origin);
-      url.searchParams.set('limit', '100');
-      const res = await fetch(url.toString(), { headers: authHeaders });
+      const res = await fetch(`/api/admin/comments?limit=50&offset=${offset}`, { headers: authHeaders });
       const data = await res.json();
-      setComments(data.comments || []);
+      const incoming: AdminComment[] = data.comments || [];
+      setComments(prev => append ? [...prev, ...incoming] : incoming);
+      setCommentsHasMore(incoming.length === 50);
+      setCommentsOffset(offset + incoming.length);
     } catch {}
     setCommentsLoading(false);
   }, [token]);
 
   useEffect(() => {
     if (tab === 'words') fetchWords();
-    else fetchComments();
+    else { setCommentsOffset(0); fetchComments(false, 0); }
   }, [tab]);
 
   // ── Add banned word ─────────────────────────────────────
@@ -248,7 +253,7 @@ export function AdminCommentsManager({ token }: AdminCommentsManagerProps) {
               Afficher supprimés
             </label>
             <button
-              onClick={fetchComments}
+              onClick={() => { setCommentsOffset(0); fetchComments(false, 0); }}
               disabled={commentsLoading}
               className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
@@ -276,6 +281,11 @@ export function AdminCommentsManager({ token }: AdminCommentsManagerProps) {
                       <span className="text-xs font-semibold text-gray-800 dark:text-white">
                         {comment.users?.full_name || 'Utilisateur inconnu'}
                       </span>
+                      {comment.parent_id && (
+                        <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded font-medium">
+                          Réponse
+                        </span>
+                      )}
                       <span className="text-xs text-gray-400">•</span>
                       <span className="text-xs text-brand-500 truncate max-w-xs">
                         {comment.premium_videos?.title || comment.premium_video_id}
@@ -285,9 +295,17 @@ export function AdminCommentsManager({ token }: AdminCommentsManagerProps) {
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{comment.content}</p>
-                    {comment.is_deleted && comment.deleted_reason && (
-                      <p className="text-xs text-red-500">Raison : {comment.deleted_reason}</p>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {comment.is_deleted && comment.deleted_reason && (
+                        <p className="text-xs text-red-500">Raison : {comment.deleted_reason}</p>
+                      )}
+                      {!comment.is_deleted && (
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <span>👍 {comment.likes ?? 0}</span>
+                          {comment.dislikes > 0 && <span>👎 {comment.dislikes}</span>}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {!comment.is_deleted && (
@@ -317,6 +335,19 @@ export function AdminCommentsManager({ token }: AdminCommentsManagerProps) {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Load more */}
+          {!commentsLoading && commentsHasMore && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => fetchComments(true, commentsOffset)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl transition-colors"
+              >
+                <RefreshCw size={13} />
+                Charger plus
+              </button>
             </div>
           )}
         </div>

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Radio, Plus, Trash2, Edit3, Save, X, Loader2, Youtube,
   Image as ImageIcon, Link2, Star, StarOff, Search, RefreshCw,
-  CheckCircle, XCircle, Wifi, WifiOff,
+  CheckCircle, XCircle, Wifi, WifiOff, GripVertical,
 } from 'lucide-react';
 import { Card } from '@/components/ui';
 
@@ -22,6 +22,7 @@ interface LiveStream {
   streamer: string;
   is_live: boolean;
   is_featured: boolean;
+  sort_order?: number;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +60,11 @@ export function AdminLiveManager({ token }: Props) {
   });
   const [createLoading, setCreateLoading] = useState(false);
   const [editForm, setEditForm] = useState<Partial<LiveStream>>({});
+
+  // Drag-to-reorder
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
 
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
@@ -132,6 +138,31 @@ export function AdminLiveManager({ token }: Props) {
     load();
   };
 
+  // ---- Patch (sort_order or any field) ----
+  const patchStream = async (id: string, patch: object) => {
+    await fetch('/api/admin/live', { method: 'PATCH', headers, body: JSON.stringify({ id, ...patch }) });
+  };
+
+  // ---- Drag-to-reorder ----
+  const handleDropLive = async (targetId: string) => {
+    const fromId = dragIdRef.current;
+    if (!fromId || fromId === targetId) return;
+    const fromIdx = sortedStreams.findIndex((s) => s.id === fromId);
+    const toIdx = sortedStreams.findIndex((s) => s.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const reordered = [...sortedStreams];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    const updated = reordered.map((s, i) => ({ ...s, sort_order: i * 10 }));
+    setStreams(updated);
+    const prevSnapshot = streams;
+    const changed = updated.filter((s) => {
+      const old = prevSnapshot.find((o) => o.id === s.id);
+      return !old || old.sort_order !== s.sort_order;
+    });
+    await Promise.all(changed.map((s) => patchStream(s.id, { sort_order: s.sort_order })));
+  };
+
   // ---- Toggle live ----
   const toggleLive = async (s: LiveStream) => {
     await fetch('/api/admin/live', { method: 'PATCH', headers, body: JSON.stringify({ id: s.id, is_live: !s.is_live }) });
@@ -150,7 +181,14 @@ export function AdminLiveManager({ token }: Props) {
     return m ? m[1] : null;
   };
 
-  const filtered = streams.filter(s =>
+  const sortedStreams = [...streams].sort((a, b) => {
+    const ao = a.sort_order ?? 9999;
+    const bo = b.sort_order ?? 9999;
+    if (ao !== bo) return ao - bo;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const filtered = sortedStreams.filter(s =>
     s.title.toLowerCase().includes(search.toLowerCase()) ||
     s.streamer.toLowerCase().includes(search.toLowerCase())
   );
@@ -434,7 +472,19 @@ export function AdminLiveManager({ token }: Props) {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 px-3 sm:px-6 py-3 sm:py-4 hover:bg-slate-700/20 transition-all group">
+                  <div
+                    className={`flex items-center gap-3 px-3 sm:px-6 py-3 sm:py-4 hover:bg-slate-700/20 transition-all group ${
+                      dragOverId === s.id ? 'border-t-2 border-red-400' : ''
+                    } ${draggingId === s.id ? 'opacity-40' : ''}`}
+                    draggable={!search}
+                    onDragStart={() => { dragIdRef.current = s.id; setDraggingId(s.id); }}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverId(s.id); }}
+                    onDrop={() => { handleDropLive(s.id); setDraggingId(null); setDragOverId(null); }}
+                    onDragEnd={() => { setDraggingId(null); setDragOverId(null); dragIdRef.current = null; }}
+                  >
+                    {!search && (
+                      <GripVertical size={14} className="text-slate-600 cursor-grab flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
                     <div className="relative w-16 h-11 sm:w-20 sm:h-14 rounded-lg overflow-hidden flex-shrink-0 bg-slate-700">
                       {s.image ? (
                         <img src={s.image} alt={s.title} className="w-full h-full object-cover" />

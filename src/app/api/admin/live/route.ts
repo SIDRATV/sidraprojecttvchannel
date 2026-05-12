@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await (supabase as any)
     .from('live_streams')
     .select('*')
+    .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

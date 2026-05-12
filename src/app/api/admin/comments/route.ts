@@ -32,10 +32,9 @@ export async function GET(req: NextRequest) {
   let query = supabaseAdmin
     .from('premium_video_comments')
     .select(`
-      id, content, likes, is_deleted, deleted_reason, created_at,
-      premium_video_id,
-      users:user_id (id, full_name, avatar_url),
-      premium_videos:premium_video_id (title)
+      id, content, likes, dislikes, is_deleted, deleted_reason, created_at,
+      premium_video_id, parent_id,
+      users:user_id (id, full_name, avatar_url)
     `)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -44,7 +43,24 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ comments: data });
+
+  // Manually resolve video titles (avoids dependency on FK definition in Supabase)
+  const videoIds = [...new Set((data ?? []).map((c: any) => c.premium_video_id).filter(Boolean))];
+  const videoMap: Record<string, string> = {};
+  if (videoIds.length > 0) {
+    const { data: videos } = await supabaseAdmin
+      .from('premium_videos')
+      .select('id, title')
+      .in('id', videoIds as string[]);
+    for (const v of videos ?? []) videoMap[v.id] = v.title;
+  }
+
+  const comments = (data ?? []).map((c: any) => ({
+    ...c,
+    premium_videos: c.premium_video_id ? { title: videoMap[c.premium_video_id] ?? null } : null,
+  }));
+
+  return NextResponse.json({ comments, total: comments.length });
 }
 
 // DELETE /api/admin/comments  body: { commentId, reason?, sendWarning?, userId? }

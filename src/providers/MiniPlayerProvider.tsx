@@ -8,6 +8,10 @@ export interface MiniPlayerData {
   thumbnail: string;
   videoId: string;
   startTime: number;
+  /** Full video object — stored so expand skips the API call */
+  videoData?: any;
+  quality?: string;
+  availableQualities?: string[];
 }
 
 /** Data stored after mini-player is closed via "expand" so the video page can resume */
@@ -15,6 +19,9 @@ export interface ResumeData {
   videoId: string;
   streamUrl: string;
   currentTime: number;
+  videoData?: any;
+  quality?: string;
+  availableQualities?: string[];
 }
 
 interface MiniPlayerContextValue {
@@ -63,7 +70,10 @@ export function MiniPlayerProvider({ children }: { children: ReactNode }) {
     setResumeData({
       videoId: miniPlayer.videoId,
       streamUrl: miniPlayer.streamUrl,
-      currentTime,                     // ← live time from the actual video element
+      currentTime,
+      videoData: miniPlayer.videoData,
+      quality: miniPlayer.quality,
+      availableQualities: miniPlayer.availableQualities,
     });
     setAnimating('expand');
     setMiniPlayer(null);

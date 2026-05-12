@@ -28,6 +28,8 @@ interface PremiumVideoPlayerProps {
   startTime?: number;
   /** Called on every timeupdate and play/pause — update a ref, not state */
   onStateChange?: (state: { currentTime: number; isPlaying: boolean }) => void;
+  /** When true the player auto-starts as soon as it can play (used on mini-player expand) */
+  autoPlay?: boolean;
 }
 
 export function PremiumVideoPlayer({
@@ -39,6 +41,7 @@ export function PremiumVideoPlayer({
   onBack,
   startTime,
   onStateChange,
+  autoPlay,
 }: PremiumVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,6 +65,9 @@ export function PremiumVideoPlayer({
   // Keep a stable ref to the callback so event listeners never go stale
   const onStateChangeRef = useRef(onStateChange);
   useEffect(() => { onStateChangeRef.current = onStateChange; }, [onStateChange]);
+  // Auto-play flag (fires once, resets after first play)
+  const autoPlayRef = useRef(autoPlay ?? false);
+  useEffect(() => { autoPlayRef.current = autoPlay ?? false; }, [autoPlay]);
   // Track whether startTime has been applied (reset when streamUrl changes)
   const startTimeAppliedRef = useRef(false);
   const startTimeRef = useRef(startTime);
@@ -97,6 +103,11 @@ export function PremiumVideoPlayer({
       if (!startTimeAppliedRef.current && startTimeRef.current && startTimeRef.current > 0) {
         startTimeAppliedRef.current = true;
         video.currentTime = startTimeRef.current;
+      }
+      // Auto-play once (e.g. when resuming from mini-player)
+      if (autoPlayRef.current) {
+        autoPlayRef.current = false;
+        video.play().catch(() => {});
       }
     };
     const onPlay = () => {

@@ -54,15 +54,20 @@ export default function WatchPremiumVideoPage() {
   const [likeCount, setLikeCount] = useState(0);
   const [liking, setLiking] = useState(false);
   const [suggestions, setSuggestions] = useState<PremiumVideoWithRelations[]>([]);
+  const [autoPlay, setAutoPlay] = useState(false);
 
   // Refs to track player state for mini-player activation on navigation
   const playerStateRef = useRef({ currentTime: 0, isPlaying: false });
   const streamUrlRef = useRef('');
   const videoDataRef = useRef<PremiumVideoWithRelations | null>(null);
+  const qualityRef = useRef(quality);
+  const availableQualitiesRef = useRef(availableQualities);
   const startMiniPlayerRef = useRef(startMiniPlayer);
   useEffect(() => { startMiniPlayerRef.current = startMiniPlayer; }, [startMiniPlayer]);
   useEffect(() => { streamUrlRef.current = streamUrl; }, [streamUrl]);
   useEffect(() => { videoDataRef.current = video; }, [video]);
+  useEffect(() => { qualityRef.current = quality; }, [quality]);
+  useEffect(() => { availableQualitiesRef.current = availableQualities; }, [availableQualities]);
 
   // If coming back from mini-player via expand for this video, use its resume data
   const resumeConsumedRef = useRef(false);
@@ -70,16 +75,20 @@ export default function WatchPremiumVideoPage() {
   const resumedFromMiniPlayerRef = useRef(false);
   useEffect(() => {
     if (resumeConsumedRef.current) return;
-    // Close mini-player if it's still active for this video
-    if (miniPlayer?.videoId === id) {
-      closeMiniPlayer();
-    }
-    // If we have resumeData from expand, use streamUrl + currentTime directly
+    if (miniPlayer?.videoId === id) closeMiniPlayer();
     if (resumeData && resumeData.videoId === id) {
       resumeConsumedRef.current = true;
-      resumedFromMiniPlayerRef.current = true; // tell fetchVideo to keep this streamUrl
+      resumedFromMiniPlayerRef.current = true;
       setStreamUrl(resumeData.streamUrl);
       setStartTime(resumeData.currentTime);
+      setAutoPlay(true); // continue playing seamlessly
+      // If we have the full video object, populate everything instantly — no loading screen
+      if (resumeData.videoData) {
+        setVideo(resumeData.videoData);
+        if (resumeData.quality) setQuality(resumeData.quality);
+        if (resumeData.availableQualities?.length) setAvailableQualities(resumeData.availableQualities);
+        setLoading(false);
+      }
       consumeResumeData();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -99,6 +108,9 @@ export default function WatchPremiumVideoPage() {
           thumbnail: videoDataRef.current.thumbnail_url ?? '',
           videoId: id,
           startTime: playerStateRef.current.currentTime,
+          videoData: videoDataRef.current,
+          quality: qualityRef.current,
+          availableQualities: availableQualitiesRef.current,
         });
       }
     };
@@ -135,6 +147,20 @@ export default function WatchPremiumVideoPage() {
   useEffect(() => {
     if (!isPremiumUser) {
       setLoading(false);
+      return;
+    }
+    // Skip full fetch when resuming from mini-player — all data already in state
+    if (resumedFromMiniPlayerRef.current) {
+      resumedFromMiniPlayerRef.current = false;
+      // Only update like status in background (lightweight)
+      if (session?.access_token) {
+        fetch(`/api/premium-videos/${id}/like`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+          .then(r => r.json())
+          .then(d => setLiked(!!d.liked))
+          .catch(() => {});
+      }
       return;
     }
     fetchVideo(quality);
@@ -260,14 +286,9 @@ export default function WatchPremiumVideoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors">
-      {/* Video Player — sticky so it stays visible while scrolling (YouTube-style) */}
-      <motion.div
-        className="w-full bg-black sticky top-0 z-10"
-        initial={animating === 'expand' ? { scale: 0.3, opacity: 0 } : false}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-      >
+    <div className="bg-white dark:bg-gray-950 transition-colors">
+      {/* Video Player — sticky at top of <main> scroll container, never scrolls away */}
+      <div className="w-full bg-black sticky top-0 z-10">
         <div className="max-w-6xl mx-auto">
           <PremiumVideoPlayer
             streamUrl={streamUrl}
@@ -278,9 +299,10 @@ export default function WatchPremiumVideoPage() {
             onBack={() => router.push('/premium-videos')}
             startTime={startTime}
             onStateChange={(state) => { playerStateRef.current = state; }}
+            autoPlay={autoPlay}
           />
         </div>
-      </motion.div>
+      </div>
 
       {/* Video Info */}
       <motion.div

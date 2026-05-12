@@ -80,7 +80,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileProvider>
       <ProtectedRoute>
-        <div className="flex flex-col min-h-screen bg-white dark:bg-gray-950">
+        <div className="flex flex-col h-screen bg-white dark:bg-gray-950">
           <AppHeader showSearch={showSearch} />          <NotificationToastContainer />          <main className="flex-1 overflow-y-auto pb-24 isolate">
             {children}
           </main>

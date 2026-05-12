@@ -1,7 +1,8 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { User, Mail, Calendar, Trophy, Clock, Edit2, Package, Save, X, Upload, Settings, Bell, Lock, LogOut, Shield, Camera } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBuildInfo } from '@/hooks/useBuildInfo';
@@ -253,16 +254,21 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8 bg-white dark:bg-gray-950 min-h-screen transition-colors">
-      {/* Save success toast */}
-      {saveSuccess && (
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -30 }}
-          className="fixed top-5 right-5 z-[200] flex items-center gap-3 px-5 py-3 bg-green-500 text-white rounded-xl shadow-2xl font-semibold text-sm"
-        >
-          ✓ Profil mis à jour avec succès !
-        </motion.div>
+      {/* Save success toast — portal to document.body to escape the isolate stacking context */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {saveSuccess && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 bg-green-500 text-white rounded-xl shadow-2xl font-semibold text-sm pointer-events-none"
+            >
+              ✓ Profil mis à jour avec succès !
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
       {/* Profile Header */}
       <motion.div

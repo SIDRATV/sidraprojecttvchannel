@@ -60,6 +60,15 @@ html {
   background: linear-gradient(135deg, #19C37D, #0F7A5C);
 }
 
+/* Hide scrollbar on main app scroll container */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
 /* Focus Visible */
 :focus-visible {
   /* stylelint-disable-next-line at-rule-no-unknown */

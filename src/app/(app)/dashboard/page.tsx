@@ -85,7 +85,7 @@ export default function DashboardPage() {
         {/* Latest Videos Section */}
         {recentVideos.length > 0 && (
           <motion.section variants={fadeInUp} className="space-y-5">
-            <SectionHeader icon={Sparkles} title="Latest Videos" description="Recently added to the platform" gold />
+            <SectionHeader icon={Sparkles} title="Dernières Vidéos" description="Récemment ajoutées sur la plateforme" gold />
             <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
               <div className="flex gap-5 pb-4">
                 {recentVideos.map((video, idx) => (
@@ -151,12 +151,12 @@ export default function DashboardPage() {
         {/* Exclusive / Premium Content */}
         <motion.section variants={fadeInUp} className="space-y-5">
           <div className="flex items-end justify-between gap-4">
-            <SectionHeader icon={Sparkles} title="Exclusive Content" description="Premium documentaries and masterclasses" gold />
+            <SectionHeader icon={Sparkles} title="Contenu Exclusif" description="Documentaires et masterclasses premium" gold />
             <Link
               href="/premium-videos"
               className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-400 text-gray-900 text-sm font-semibold shadow hover:shadow-gold-500/30 hover:brightness-105 transition-all duration-200 mb-1"
             >
-              View All
+              Voir tout
               <ArrowRight size={15} />
             </Link>
           </div>

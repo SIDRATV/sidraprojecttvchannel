@@ -20,27 +20,27 @@ interface ExploreCard {
 const exploreCards: ExploreCard[] = [
   {
     href: '/explore/wallet',
-    title: 'My Wallet',
-    description: 'Manage your digital assets and track all your transactions securely in one place',
+    title: 'Mon Portefeuille',
+    description: 'Gérez vos actifs numériques et suivez toutes vos transactions en toute sécurité',
     icon: Wallet,
     gradient: 'from-purple-500 to-brand-500',
-    stats: '10+ Digital Currencies',
+    stats: '10+ Devises numériques',
   },
   {
     href: '/explore/voting-project',
-    title: 'Voting Projects',
-    description: 'Participate in community decisions and vote on innovative projects that matter',
+    title: 'Projets de Vote',
+    description: 'Participez aux décisions de la communauté et votez pour les projets innovants qui comptent',
     icon: TrendingUp,
     gradient: 'from-brand-500 to-cyan-500',
-    stats: '2,500+ Active Votes',
+    stats: '2 500+ Votes actifs',
   },
   {
     href: '/explore/partenariat',
-    title: 'Partnership',
-    description: 'Connect with visionary partners and build meaningful collaborations across borders',
+    title: 'Partenariat',
+    description: 'Connectez-vous avec des partenaires visionnaires et créez des collaborations significatives',
     icon: Users,
     gradient: 'from-pink-500 to-rose-500',
-    stats: '45+ Countries',
+    stats: '45+ Pays',
   },
   {
     href: '/explore/publicite',
@@ -52,8 +52,8 @@ const exploreCards: ExploreCard[] = [
   },
   {
     href: '/explore/actualiter',
-    title: 'Latest News',
-    description: 'Stay informed with breaking news and inspiring stories from our global community',
+    title: 'Actualités',
+    description: 'Restez informé avec les dernières nouvelles et histoires inspirantes de notre communauté mondiale',
     icon: Newspaper,
     gradient: 'from-orange-500 to-red-500',
     stats: '150+ Articles',
@@ -91,10 +91,10 @@ export default function ExplorePage() {
             className="mb-16"
           >
             <h1 className="text-5xl font-bold text-gray-950 dark:text-white mb-4">
-              Explore Sidra TV
+              Explorer Sidra TV
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400">
-              Discover our comprehensive platform features and services
+              Découvrez toutes les fonctionnalités et services de notre plateforme
             </p>
           </motion.div>
 
@@ -126,7 +126,7 @@ export default function ExplorePage() {
                         <p className="font-semibold text-sm md:text-base line-clamp-1">{card.stats}</p>
                       </div>
                       <button className="inline-flex items-center gap-2 px-4 md:px-6 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-semibold transition-colors text-sm md:text-base">
-                        Explore →
+                        Explorer →
                       </button>
                     </div>
                   </motion.div>

@@ -213,7 +213,7 @@ function PremiumVideosContent() {
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gold-400 via-gold-500 to-gold-300 bg-clip-text text-transparent">
-                Premium Videos
+                Vidéos Premium
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Contenu exclusif pour abonnés premium

@@ -52,14 +52,14 @@ export default function ProfilePage() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [twoFactorError, setTwoFactorError] = useState('');
   const [profileData, setProfileData] = useState<ProfileData>({
-    fullName: user?.full_name || 'User',
+    fullName: user?.full_name || 'Utilisateur',
     bio: user?.bio || '',
     profilePhoto: user?.avatar_url || null,
     accountTier: 'free',
     emailNotifications: true,
     contentNotifications: true,
     weeklyDigest: false,
-    memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
+        memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
   });
   const [editData, setEditData] = useState<ProfileData>(profileData);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +70,7 @@ export default function ProfilePage() {
       // Use DB premium_plan as source of truth
       const dbTier = (user.premium_plan as ProfileData['accountTier']) || 'free';
       const data: ProfileData = {
-        fullName: user.full_name || user.username || user.email?.split('@')[0] || 'User',
+        fullName: user.full_name || user.username || user.email?.split('@')[0] || 'Utilisateur',
         bio: user.bio || '',
         profilePhoto: user.avatar_url || null,
         accountTier: dbTier,
@@ -113,7 +113,7 @@ export default function ProfilePage() {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert('Failed to save profile');
+      alert('Erreur lors de la sauvegarde du profil');
     }
   };
 
@@ -145,7 +145,7 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(json.error || 'Upload failed');
       setEditData(prev => ({ ...prev, profilePhoto: json.url }));
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+      setUploadError(err instanceof Error ? err.message : 'Échec du téléchargement');
     } finally {
       setUploadingPhoto(false);
     }
@@ -180,22 +180,22 @@ export default function ProfilePage() {
     setPasswordSuccess('');
 
     if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
-      setPasswordError('Please fill in all fields');
+      setPasswordError('Veuillez remplir tous les champs');
       return;
     }
 
     if (passwordData.new !== passwordData.confirm) {
-      setPasswordError('New passwords do not match');
+      setPasswordError('Les nouveaux mots de passe ne correspondent pas');
       return;
     }
 
     if (passwordData.new.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
     // In a real app, this would call an API to change password
-    setPasswordSuccess('Password changed successfully!');
+    setPasswordSuccess('Mot de passe modifié avec succès !');
     setPasswordData({ current: '', new: '', confirm: '' });
     setTimeout(() => {
       setShowPasswordChange(false);
@@ -253,9 +253,9 @@ export default function ProfilePage() {
   };
 
   const stats = [
-    { label: 'Member Since', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—', icon: '📅', color: 'from-brand-500 to-cyan-500' },
-    { label: 'Username', value: user?.username ? `@${user.username}` : '—', icon: '👤', color: 'from-purple-500 to-pink-500' },
-    { label: 'Account', value: user?.is_admin ? 'Admin' : 'Member', icon: '⭐', color: 'from-yellow-500 to-orange-500' },
+    { label: 'Membre depuis', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : '—', icon: '📅', color: 'from-brand-500 to-cyan-500' },
+    { label: "Nom d'utilisateur", value: user?.username ? `@${user.username}` : '—', icon: '👤', color: 'from-purple-500 to-pink-500' },
+    { label: 'Compte', value: user?.is_admin ? 'Administrateur' : 'Membre', icon: '⭐', color: 'from-yellow-500 to-orange-500' },
   ];
 
   return (
@@ -345,7 +345,7 @@ export default function ProfilePage() {
               className="text-center"
             >
               <h2 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg mb-2">
-                My Profile
+                Mon Profil
               </h2>
               <motion.div
                 className="h-1 bg-white rounded-full"
@@ -461,13 +461,13 @@ export default function ProfilePage() {
                   value={editData.fullName}
                   onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
                   className="text-3xl font-bold bg-transparent border-b-2 border-brand-500 focus:outline-none text-gray-950 dark:text-white w-full"
-                  placeholder="Your Name"
+                  placeholder="Votre nom"
                 />
                 <textarea
                   value={editData.bio}
                   onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
                   className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="Add a bio..."
+                  placeholder="Ajouter une bio..."
                   rows={2}
                 />
               </div>
@@ -477,7 +477,7 @@ export default function ProfilePage() {
                   {profileData.fullName}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mb-3">{profileData.bio}</p>
-                <p className="text-gray-500 dark:text-gray-500 text-sm">Member since {profileData.memberSince}</p>
+                <p className="text-gray-500 dark:text-gray-500 text-sm">Membre depuis {profileData.memberSince}</p>
               </>
             )}
 
@@ -502,7 +502,7 @@ export default function ProfilePage() {
                     className="flex items-center space-x-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-semibold"
                   >
                     <Save size={18} />
-                    <span>Save Changes</span>
+                    <span>Enregistrer</span>
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -514,7 +514,7 @@ export default function ProfilePage() {
                     className="flex items-center space-x-2 px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-semibold"
                   >
                     <X size={18} />
-                    <span>Cancel</span>
+                    <span>Annuler</span>
                   </motion.button>
                 </>
               ) : (
@@ -525,7 +525,7 @@ export default function ProfilePage() {
                   className="flex items-center space-x-2 px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors font-semibold"
                 >
                   <Edit2 size={18} />
-                  <span>Edit Profile</span>
+                  <span>Modifier le profil</span>
                 </motion.button>
               )}
             </div>
@@ -571,24 +571,24 @@ export default function ProfilePage() {
           >
             <div className="flex items-center gap-3 mb-6">
               <Lock size={24} className="text-brand-500 dark:text-brand-400" />
-              <h3 className="font-bold text-lg">Account Information</h3>
+              <h3 className="font-bold text-lg">Informations du compte</h3>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Mail size={18} className="text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Email Address</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Adresse email</p>
                     <p className="font-semibold text-gray-950 dark:text-white">{user?.email}</p>
                   </div>
                 </div>
-                <span className="text-green-600 text-sm font-semibold">Verified</span>
+                <span className="text-green-600 text-sm font-semibold">Vérifié</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Calendar size={18} className="text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Member Since</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Membre depuis</p>
                     <p className="font-semibold text-gray-950 dark:text-white">{profileData.memberSince}</p>
                   </div>
                 </div>
@@ -597,7 +597,7 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-3">
                   <Trophy size={18} className="text-yellow-500" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Account Status</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Statut du compte</p>
                     <p className="font-semibold text-gray-950 dark:text-white capitalize">{profileData.accountTier}</p>
                   </div>
                 </div>
@@ -830,7 +830,7 @@ export default function ProfilePage() {
             transition={{ delay: 0.4 }}
             className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800 space-y-3"
           >
-            <h3 className="font-bold text-lg mb-4">Account Settings</h3>
+            <h3 className="font-bold text-lg mb-4">Paramètres du compte</h3>
             <button
               onClick={() => setShowPasswordChange(true)}
               className="w-full p-3 text-left font-semibold text-gray-950 dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
@@ -853,7 +853,7 @@ export default function ProfilePage() {
               className="w-full p-3 text-left font-semibold text-red-600 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors flex items-center gap-2"
             >
               <LogOut size={18} />
-              Logout
+              Déconnexion
             </button>
           </motion.div>
         </div>
@@ -877,14 +877,14 @@ export default function ProfilePage() {
           >
             <div className="text-center">
               <div className="text-6xl mb-4">😢</div>
-              <h3 className="text-2xl font-bold text-gray-950 dark:text-white mb-2">Are you leaving?</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">We'll miss you! Are you sure you want to logout?</p>
+              <h3 className="text-2xl font-bold text-gray-950 dark:text-white mb-2">Vous partez ?</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">Vous allez nous manquer ! Êtes-vous sûr de vouloir vous déconnecter ?</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowLogoutConfirm(false)}
                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-950 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   onClick={() => {
@@ -893,7 +893,7 @@ export default function ProfilePage() {
                   }}
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
                 >
-                  Yes, Logout
+                  Oui, se déconnecter
                 </button>
               </div>
             </div>
@@ -918,7 +918,7 @@ export default function ProfilePage() {
             className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-sm w-full border border-gray-200 dark:border-gray-800"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-950 dark:text-white">Change Password</h3>
+              <h3 className="text-2xl font-bold text-gray-950 dark:text-white">Changer le mot de passe</h3>
               <button
                 onClick={() => setShowPasswordChange(false)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -930,38 +930,38 @@ export default function ProfilePage() {
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
-                  Current Password
+                  Mot de passe actuel
                 </label>
                 <input
                   type="password"
                   value={passwordData.current}
                   onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="Enter current password"
+                  placeholder="Entrez votre mot de passe actuel"
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
-                  New Password
+                  Nouveau mot de passe
                 </label>
                 <input
                   type="password"
                   value={passwordData.new}
                   onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="Enter new password"
+                  placeholder="Entrez un nouveau mot de passe"
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-950 dark:text-white mb-2">
-                  Confirm Password
+                  Confirmer le mot de passe
                 </label>
                 <input
                   type="password"
                   value={passwordData.confirm}
                   onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="Confirm new password"
+                  placeholder="Confirmez le nouveau mot de passe"
                 />
               </div>
             </div>
@@ -983,13 +983,13 @@ export default function ProfilePage() {
                 onClick={() => setShowPasswordChange(false)}
                 className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-950 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
-                Cancel
+                Annuler
               </button>
               <button
                 onClick={handleChangePassword}
                 className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg font-semibold hover:bg-brand-600 transition-colors"
               >
-                Change
+                Modifier
               </button>
             </div>
           </motion.div>

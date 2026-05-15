@@ -139,7 +139,7 @@ export default function SettingsPage() {
   };
 
   const handleSaveSettings = () => {
-    setSuccessMessage('Settings saved successfully!');
+    setSuccessMessage('Paramètres enregistrés avec succès !');
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
@@ -206,8 +206,8 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-4xl font-bold text-gray-950 dark:text-white mb-2">Settings</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage your account and preferences</p>
+        <h1 className="text-4xl font-bold text-gray-950 dark:text-white mb-2">Paramètres</h1>
+        <p className="text-gray-600 dark:text-gray-400">Gérez votre compte et vos préférences</p>
       </motion.div>
 
       {/* Success Message */}
@@ -223,31 +223,31 @@ export default function SettingsPage() {
 
       {/* Video Settings */}
       <SettingsSection
-        title="Video Settings"
-        description="Adjust your viewing experience"
+        title="Paramètres vidéo"
+        description="Ajustez votre expérience de visionnage"
       >
         <SettingToggle
-          label="Autoplay next video"
-          description="Automatically play the next video in a series"
+          label="Lecture automatique de la prochaine vidéo"
+          description="Lire automatiquement la prochaine vidéo d'une série"
           defaultValue={true}
           storageKey="settings_video_autoplay_next"
         />
         <SettingToggle
-          label="Autoplay similar content"
-          description="Continue playback with similar videos"
+          label="Lecture automatique de contenus similaires"
+          description="Continuer la lecture avec des vidéos similaires"
           defaultValue={false}
           storageKey="settings_video_autoplay_similar"
         />
         <div className="pt-2 border-t border-gray-300 dark:border-gray-700">
           <label className="block text-sm font-medium mb-2 text-gray-950 dark:text-white">
-            Default playback quality
+            Qualité de lecture par défaut
           </label>
           <select
             defaultValue={typeof window !== 'undefined' ? (localStorage.getItem('settings_video_quality') || 'auto') : 'auto'}
             onChange={e => { localStorage.setItem('settings_video_quality', e.target.value); }}
             className="w-full md:w-48 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-950 dark:text-white focus:border-brand-500 outline-none transition-colors"
           >
-            <option value="auto">Auto (recommended)</option>
+            <option value="auto">Auto (recommandé)</option>
             <option value="1080p">1080p</option>
             <option value="720p">720p</option>
             <option value="480p">480p</option>
@@ -258,7 +258,7 @@ export default function SettingsPage() {
       {/* Notifications */}
       <SettingsSection
         title="Notifications"
-        description="Control how and when you're notified"
+        description="Contrôlez comment et quand vous êtes notifié"
       >
         <div className="space-y-4">
           <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-lg p-3">
@@ -309,29 +309,29 @@ export default function SettingsPage() {
       </SettingsSection>
 
       {/* Privacy */}
-      <SettingsSection title="Privacy & Safety" description="Manage your privacy settings">
+      <SettingsSection title="Confidentialité & Sécurité" description="Gérez vos paramètres de confidentialité">
         <SettingToggle
-          label="Profile visibility"
-          description="Allow others to see your profile"
+          label="Visibilité du profil"
+          description="Permettre aux autres de voir votre profil"
           defaultValue={true}
           storageKey="settings_privacy_profile_visible"
         />
         <SettingToggle
-          label="Show watch history"
-          description="Display your watch history in your profile"
+          label="Afficher l'historique de visionnage"
+          description="Afficher votre historique dans votre profil"
           defaultValue={false}
           storageKey="settings_privacy_watch_history"
         />
         <SettingToggle
-          label="Allow recommendations"
-          description="Help improve recommendations by sharing viewing patterns"
+          label="Autoriser les recommandations"
+          description="Améliorer les recommandations en partageant vos habitudes"
           defaultValue={true}
           storageKey="settings_privacy_recommendations"
         />
       </SettingsSection>
 
       {/* Display */}
-      <SettingsSection title="Display" description="Customize your viewing experience">
+      <SettingsSection title="Affichage" description="Personnalisez votre expérience de visionnage">
         <div className="space-y-3">
           <p className="text-sm font-medium text-gray-950 dark:text-white">Theme</p>
           <div className="flex items-center space-x-4">
@@ -563,7 +563,7 @@ export default function SettingsPage() {
         onClick={handleSaveSettings}
         className="w-full md:w-48 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-semibold transition-colors"
       >
-        Save Changes
+        Enregistrer les modifications
       </motion.button>
     </div>
   );

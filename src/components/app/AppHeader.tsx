@@ -17,6 +17,8 @@ import { useNotifications } from '@/hooks/queries/useNotifications';
 import type { Notification } from '@/hooks/queries/useNotifications';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { TOAST_EVENT } from '@/components/app/NotificationToastContainer';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
+import { GlobalSearchOverlay } from '@/components/app/GlobalSearchOverlay';
 
 interface AppHeaderProps {
   onSearch?: (query: string) => void;
@@ -25,6 +27,9 @@ interface AppHeaderProps {
 
 export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const { results: searchResults, loading: searchLoading } = useGlobalSearch(searchQuery);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -168,6 +173,9 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setNotificationsOpen(false);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setSearchFocused(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -189,9 +197,11 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSearch) {
-      onSearch(searchQuery);
-    }
+  };
+
+  const closeSearch = () => {
+    setSearchFocused(false);
+    setSearchQuery('');
   };
 
   return (
@@ -512,7 +522,7 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
                       className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors text-sm font-medium rounded-lg"
                     >
                       <LogOut size={16} />
-                      <span>Logout</span>
+                      <span>Déconnecter</span>
                     </motion.button>
                   </div>
                 </motion.div>
@@ -581,16 +591,26 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
     {showSearch && (
       <div className="sticky top-0 z-49 border-t border-gray-200 dark:border-gray-800 px-4 lg:px-8 py-3 bg-gray-50 dark:bg-gray-800/50 transition-colors">
         <form onSubmit={handleSearch} className="max-w-7xl mx-auto">
-          <motion.div whileFocus={{ scale: 1.01 }} className="relative">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div ref={searchContainerRef} className="relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
             <input
               type="text"
-              placeholder="Search videos, channels, categories..."
+              placeholder="Rechercher des vidéos, live, actualités…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              autoComplete="off"
               className="w-full pl-12 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400/50 transition-all"
             />
-          </motion.div>
+            {searchFocused && (
+              <GlobalSearchOverlay
+                query={searchQuery}
+                results={searchResults}
+                loading={searchLoading}
+                onClose={closeSearch}
+              />
+            )}
+          </div>
         </form>
       </div>
     )}

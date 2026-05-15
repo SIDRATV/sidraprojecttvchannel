@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { deleteFromR2 } from '@/lib/r2';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 export async function DELETE(
   request: NextRequest,
@@ -10,22 +11,21 @@ export async function DELETE(
     const { id } = await params;
     const supabase = createServerClient();
 
-    // Auth check
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Auth check (local JWT — no network round-trip)
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     const { data: profile } = await supabase
       .from('users')
       .select('is_admin')
-      .eq('id', user.id)
+      .eq('id', jwtPayload.sub)
       .single();
 
     if (!profile?.is_admin) {
@@ -83,15 +83,15 @@ export async function PATCH(
     if (!authHeader?.startsWith('Bearer '))
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user)
+    const token = extractBearerToken(authHeader);
+    const jwtPayload = token ? await verifyJwt(token) : null;
+    if (!jwtPayload)
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
     const { data: profile } = await supabase
       .from('users')
       .select('is_admin')
-      .eq('id', user.id)
+      .eq('id', jwtPayload.sub)
       .single();
 
     if (!profile?.is_admin)

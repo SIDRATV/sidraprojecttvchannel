@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 export interface AdminUser {
   id: string;
@@ -77,23 +78,23 @@ export async function requireAdmin(
     return { ok: true, admin: fakeAdmin, supabase };
   }
 
-  // Bearer token auth
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  // Bearer token auth — local JWT verification (no Supabase network call)
+  const token = extractBearerToken(request.headers.get('authorization'));
+  if (!token) {
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
+  const jwtPayload = await verifyJwt(token);
+  if (!jwtPayload) {
     return { ok: false, response: NextResponse.json({ error: 'Invalid token' }, { status: 401 }) };
   }
+  const userId = jwtPayload.sub;
 
   // Fetch user profile
   const { data: profile } = await supabase
     .from('users')
     .select('id, email, full_name, is_admin')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
 
   if (!profile?.is_admin) {
@@ -103,9 +104,9 @@ export async function requireAdmin(
         type: 'admin_access_unauthorized',
         severity: 'high',
         title: 'Tentative d\'accès admin non autorisée',
-        description: `Utilisateur ${user.email} a tenté d'accéder à une page admin`,
-        user_id: user.id,
-        metadata: { email: user.email, path: request.nextUrl.pathname },
+        description: `Utilisateur ${jwtPayload.email} a tenté d'accéder à une page admin`,
+        user_id: userId,
+        metadata: { email: jwtPayload.email, path: request.nextUrl.pathname },
       }]);
     } catch {}
 
@@ -116,7 +117,7 @@ export async function requireAdmin(
   const { data: assignment } = await (supabase as any)
     .from('admin_assignments')
     .select('role_id, admin_roles(id, name, type, permissions)')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single();
 
   const role: AdminRole | null = assignment?.admin_roles

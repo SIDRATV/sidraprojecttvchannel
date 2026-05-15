@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
+import { rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
 
 // GET /api/advertisements — public: list active advertisements
 export async function GET() {
@@ -26,17 +28,32 @@ export async function GET() {
 
 // POST /api/advertisements — authenticated user creates an ad with payment
 export async function POST(request: NextRequest) {
+  // 5 submissions per IP per hour — prevents ad spam
+  const rl = rateLimit(request, { limit: 5, windowMs: 60 * 60_000, prefix: 'ads-post' });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   try {
     const supabase = createServerClient();
 
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+    const user = { id: jwtPayload.sub, email: jwtPayload.email };
+
+    // Reject oversized bodies (max 32 KB) — prevents memory exhaustion attacks
+    const contentLength = Number(request.headers.get('content-length') || 0);
+    if (contentLength > 32_768) {
+      return NextResponse.json({ error: 'Request body too large.' }, { status: 413 });
     }
 
     const body = await request.json();

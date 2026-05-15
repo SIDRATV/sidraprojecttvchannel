@@ -5,6 +5,7 @@ import {
   buildVideoKey,
   buildThumbnailKey,
 } from '@/lib/r2';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 const ALLOWED_VIDEO_TYPES = [
   'video/mp4',
@@ -25,15 +26,15 @@ export async function POST(request: NextRequest) {
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
+    const token = extractBearerToken(authHeader);
+    const jwtPayload = token ? await verifyJwt(token) : null;
+    if (!jwtPayload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
     const { data: profile } = await supabase
       .from('users')
       .select('is_admin')
-      .eq('id', user.id)
+      .eq('id', jwtPayload.sub)
       .single();
     if (!profile?.is_admin) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });

@@ -11,16 +11,17 @@ import {
   resolveFraudAlert,
 } from '@/lib/premium/service';
 
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
+
 async function requireAdmin(request: NextRequest) {
   const supabase = createServerClient();
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) throw new Error('Invalid token');
-  const { data: profile } = await supabase.from('users').select('is_admin').eq('id', user.id).single();
+  const token = extractBearerToken(request.headers.get('authorization'));
+  if (!token) throw new Error('Unauthorized');
+  const payload = await verifyJwt(token);
+  if (!payload) throw new Error('Invalid token');
+  const { data: profile } = await supabase.from('users').select('is_admin').eq('id', payload.sub).single();
   if (!profile?.is_admin) throw new Error('Admin required');
-  return user;
+  return { id: payload.sub, email: payload.email };
 }
 
 // GET /api/admin/premium — full admin premium dashboard data

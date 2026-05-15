@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
-// Helper: verify admin
 async function verifyAdmin(supabase: any, token: string) {
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-  const { data: profile } = await supabase.from('users').select('is_admin').eq('id', user.id).single();
+  const payload = await verifyJwt(token);
+  if (!payload) return null;
+  const { data: profile } = await supabase.from('users').select('is_admin').eq('id', payload.sub).single();
   if (!profile?.is_admin) return null;
-  return user;
+  return { id: payload.sub, email: payload.email };
 }
 
 // GET /api/admin/surveys — list all surveys with response counts

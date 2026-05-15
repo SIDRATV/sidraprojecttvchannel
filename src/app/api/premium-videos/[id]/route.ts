@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { getSignedVideoUrl, getSignedThumbnailUrl } from '@/lib/r2';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,26 +21,25 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid quality' }, { status: 400 });
     }
 
-    // Require auth token
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const token = authHeader.replace('Bearer ', '');
 
     const supabase = createServerClient();
 
-    // Verify user identity
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
+    // Verify user identity (local JWT — no Supabase network call)
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+    const userId = jwtPayload.sub;
 
     // Verify active, non-expired subscription
     const { data: userRow } = await (supabase as any)
       .from('users')
       .select('premium_plan, premium_expires_at')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     const hasPlan = !!userRow?.premium_plan;

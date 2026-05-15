@@ -111,7 +111,7 @@ function PremiumVideosContent() {
     queryKey: ['premium-videos-all'],
     queryFn: () => premiumVideoService.getVideos(200, 0),
     staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 

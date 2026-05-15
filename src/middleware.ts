@@ -81,10 +81,35 @@ async function verifyAdminCookie(token: string): Promise<boolean> {
 
 // ─── Security headers applied to every page response ─────────────────────────
 
+/**
+ * Content-Security-Policy tuned for a Next.js 15 streaming app:
+ *  - YouTube embeds (frame-src)
+ *  - Supabase Realtime (wss connect-src)
+ *  - Google Fonts (style-src / font-src)
+ *  - unsafe-eval / unsafe-inline required by Next.js hydration & Tailwind
+ */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://www.youtube-nocookie.com https://www.gstatic.com https://apis.google.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.googleapis.com https://*.googleapis.com",
+  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+  "frame-ancestors 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
+
 function applySecurityHeaders(response: NextResponse): void {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  response.headers.set('Content-Security-Policy', CSP);
 }
 
 // ─── Middleware entry point ───────────────────────────────────────────────────

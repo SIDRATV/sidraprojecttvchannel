@@ -30,14 +30,6 @@ export async function GET(req: Request) {
     }, { status: 500 });
   }
 
-  // DEBUG: Log environment info
-  console.log('API KEY DEBUG:', {
-    keyExists: !!key,
-    keyLength: key?.length,
-    keyPrefix: key?.substring(0, 10),
-    environment: process.env.NODE_ENV,
-    platform: process.platform,
-  });
 
   try {
     // Check cache first
@@ -45,13 +37,11 @@ export async function GET(req: Request) {
     const cachedVideos = videosCache.get(cacheKey);
     
     if (cachedVideos) {
-      console.log(`✓ Cache hit for query: ${q} (${cachedVideos.length} videos)`);
       return NextResponse.json(cachedVideos, {
         headers: { 'X-Cache': 'HIT' }
       });
     }
 
-    console.log(`🔍 Cache miss for query: ${q} - fetching from YouTube API`);
 
     // 1) Search for videos to get IDs (French content, FR region)
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(q)}&maxResults=${maxResults}&relevanceLanguage=fr&regionCode=FR&key=${key}`;
@@ -68,7 +58,6 @@ export async function GET(req: Request) {
     const ids = (searchData.items || []).map((it: any) => it.id?.videoId).filter(Boolean);
 
     if (ids.length === 0) {
-      console.warn(`No videos found for query: ${q}`);
       return NextResponse.json([]);
     }
 
@@ -100,7 +89,6 @@ export async function GET(req: Request) {
 
     // Store in cache for 10 hours
     videosCache.set(cacheKey, items);
-    console.log(`✓ Cached ${items.length} videos for query: ${q}`);
 
     return NextResponse.json(items, {
       headers: { 'X-Cache': 'MISS' }

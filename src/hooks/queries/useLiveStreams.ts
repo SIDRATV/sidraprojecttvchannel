@@ -25,9 +25,9 @@ export function useLiveStreams(options: LiveStreamsOptions = {}) {
   const query = useQuery<LiveStream[]>({
     queryKey: ['live-streams', viewType, category],
     queryFn: () => fetchLiveStreams({ viewType, category: category || undefined }),
-    staleTime: 2 * 60 * 1000,     // 2 min — live data, no need for 30s
+    staleTime: 2 * 60 * 1000,     // 2 min — live data
     refetchInterval: false,        // no background polling; user can manually refresh
-    refetchOnWindowFocus: true,    // refresh when user comes back to tab
+    refetchOnWindowFocus: false,   // avoid storm of refetches on tab switch
     gcTime: 5 * 60 * 1000,
   });
 

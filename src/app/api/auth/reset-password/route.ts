@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { sendPasswordResetEmail } from '@/lib/email/resend';
+import { rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
+  // 3 reset attempts per IP per 15 minutes — prevents email bombing
+  const rl = rateLimit(request, { limit: 3, windowMs: 15 * 60_000, prefix: 'reset-pw' });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many reset attempts. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   try {
     const { email } = await request.json();
 

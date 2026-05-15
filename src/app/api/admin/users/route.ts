@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const supabase = createServerClient();
 
-  // Auth check — admin only
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  // Auth check — admin only (local JWT)
+  const token = extractBearerToken(request.headers.get('authorization'));
+  if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
+  const jwtPayload = await verifyJwt(token);
+  if (!jwtPayload) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
   const { data: profile } = await supabase
     .from('users')
     .select('is_admin')
-    .eq('id', user.id)
+    .eq('id', jwtPayload.sub)
     .single();
 
   if (!profile?.is_admin) {
@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
   }
 
   const url = new URL(request.url);
-  const search = url.searchParams.get('search') || '';
+  const rawSearch = url.searchParams.get('search') || '';
+  const search = rawSearch.slice(0, 100); // prevent DoS via oversized LIKE queries
   const ids = url.searchParams.get('ids') || '';
   const limit = Math.min(Number(url.searchParams.get('limit') || '50'), 100);
 
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 
   return NextResponse.json({ users: data ?? [] });

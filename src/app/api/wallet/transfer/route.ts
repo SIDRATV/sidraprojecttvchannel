@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { internalTransfer, requireAuthenticatedUser, requireOptional2FA } from '@/lib/wallet';
+import { rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
+  // 10 transfers per IP per minute — blocks automated transfer flooding
+  const rl = rateLimit(request, { limit: 10, windowMs: 60_000, prefix: 'wallet-transfer' });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many transfer requests. Please slow down.' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   try {
     const user = await requireAuthenticatedUser(request);
     requireOptional2FA(request);

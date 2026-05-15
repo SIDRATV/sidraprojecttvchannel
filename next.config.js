@@ -38,17 +38,21 @@ const nextConfig = {
   },
   headers: async () => {
     return [
-      // API Routes - Short cache with background revalidation
+      // API Routes — no CDN cache, no credential cookies cross-origin
+      // Bearer-token auth does not need Allow-Credentials (that's for cookies).
+      // Origin is restricted to the app domain; OPTIONS pre-flight is handled per-route.
       {
         source: "/api/:path*",
         headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" },
+          {
+            key: "Access-Control-Allow-Origin",
+            value: process.env.NEXT_PUBLIC_SITE_URL || "https://sidraprojecttvchannel-drab.vercel.app",
+          },
           { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
-          { key: "Cache-Control", value: "public, max-age=5, must-revalidate, s-maxage=10" },
+          { key: "Cache-Control", value: "private, no-store" },
           {
             key: "Access-Control-Allow-Headers",
-            value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
+            value: "Authorization, Content-Type, Accept, X-Requested-With",
           },
         ],
       },

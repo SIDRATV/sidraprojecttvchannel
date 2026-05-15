@@ -2,10 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { provisionUserWallet } from '@/lib/wallet';
 import { sendWelcomeEmail } from '@/lib/email/resend';
+import { rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 
 export async function POST(request: NextRequest) {
+  // 3 registrations per IP per 10 minutes — blocks account-creation bots
+  const rl = rateLimit(request, { limit: 3, windowMs: 10 * 60_000, prefix: 'register' });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many registration attempts. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   try {
     const body = await request.json();
     const { email, password, fullName, username, referralCode } = body;

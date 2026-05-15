@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 import {
   uploadToR2,
   buildVideoKey,
@@ -22,6 +23,34 @@ const ALLOWED_IMAGE_TYPES = [
   'image/webp',
 ];
 
+/**
+ * Verify actual file content against known magic bytes.
+ * Prevents attackers from renaming malicious files to pass MIME type checks.
+ */
+function isValidVideoMagic(buf: Buffer): boolean {
+  if (buf.length < 12) return false;
+  // MP4 / MOV: "ftyp" box at byte 4
+  if (buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70) return true;
+  // WebM / MKV: EBML header 0x1A 0x45 0xDF 0xA3
+  if (buf[0] === 0x1A && buf[1] === 0x45 && buf[2] === 0xDF && buf[3] === 0xA3) return true;
+  // AVI: RIFF....AVI
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf[8] === 0x41 && buf[9] === 0x56 && buf[10] === 0x49 && buf[11] === 0x20) return true;
+  return false;
+}
+
+function isValidImageMagic(buf: Buffer): boolean {
+  if (buf.length < 12) return false;
+  // JPEG: FF D8 FF
+  if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return true;
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return true;
+  // WebP: RIFF....WEBP
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return true;
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Auth check — admin only
@@ -31,9 +60,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
+    const token = extractBearerToken(authHeader);
+    const jwtPayload = token ? await verifyJwt(token) : null;
+    if (!jwtPayload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
@@ -41,7 +70,7 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await supabase
       .from('users')
       .select('is_admin')
-      .eq('id', user.id)
+      .eq('id', jwtPayload.sub)
       .single();
 
     if (!profile?.is_admin) {
@@ -108,9 +137,17 @@ export async function POST(request: NextRequest) {
     const videoKey = buildVideoKey(`${timestamp}_${baseName}.${videoExt}`, quality);
     const thumbnailKey = buildThumbnailKey(`${timestamp}_${baseName}.${thumbExt}`);
 
-    // 5. Upload to R2
+    // 5. Read buffers and verify magic bytes before uploading
+    // This catches files renamed to appear as video/image (e.g. malware.exe renamed to video.mp4)
     const videoBuffer = Buffer.from(await videoFile.arrayBuffer());
     const thumbnailBuffer = Buffer.from(await thumbnailFile.arrayBuffer());
+
+    if (!isValidVideoMagic(videoBuffer)) {
+      return NextResponse.json({ error: 'File content does not match a supported video format.' }, { status: 400 });
+    }
+    if (!isValidImageMagic(thumbnailBuffer)) {
+      return NextResponse.json({ error: 'Thumbnail content does not match a supported image format.' }, { status: 400 });
+    }
 
     const [videoResult, thumbnailResult] = await Promise.all([
       uploadToR2(videoKey, videoBuffer, videoFile.type),
@@ -130,7 +167,7 @@ export async function POST(request: NextRequest) {
       file_size: videoResult.size,
       is_premium: true,
       min_plan: minPlan,
-      uploaded_by: user.id,
+      uploaded_by: jwtPayload.sub,
     };
 
     const { data: video, error: insertError } = await (supabase as any)

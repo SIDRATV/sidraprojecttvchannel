@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
 
 // POST /api/account/delete — request or cancel account deletion
 export async function POST(request: NextRequest) {
+  // 3 requests per IP per 5 minutes — irreversible operation, strict limit
+  const rl = rateLimit(request, { limit: 3, windowMs: 5 * 60_000, prefix: 'account-delete' });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   try {
     const supabase = createServerClient();
     const authHeader = request.headers.get('authorization');

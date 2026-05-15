@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
+import { rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
 
 // GET /api/news — public: list published articles with stats
 export async function GET() {
@@ -56,18 +58,27 @@ export async function GET() {
 
 // POST /api/news — authenticated user actions: like, comment
 export async function POST(request: NextRequest) {
+  // 20 actions per IP per minute — prevents comment flooding
+  const rl = rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'news-post' });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please slow down.' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   try {
     const supabase = createServerClient();
 
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
+    const user = { id: jwtPayload.sub, email: jwtPayload.email };
 
     const body = await request.json();
     const { action, articleId, content } = body;

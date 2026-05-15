@@ -24,12 +24,14 @@ export async function GET(request: NextRequest) {
   const to = from + limit - 1;
 
   // If searching by user email/name, resolve to user IDs first
+  // Length cap prevents DoS via oversized LIKE queries on the users table
+  const safeUserSearch = filterUserSearch.slice(0, 100);
   let resolvedUserIds: string[] | null = null;
-  if (filterUserSearch) {
+  if (safeUserSearch) {
     const { data: matchedUsers } = await supabase
       .from('users')
       .select('id')
-      .or(`email.ilike.%${filterUserSearch}%,full_name.ilike.%${filterUserSearch}%,username.ilike.%${filterUserSearch}%`)
+      .or(`email.ilike.%${safeUserSearch}%,full_name.ilike.%${safeUserSearch}%,username.ilike.%${safeUserSearch}%`)
       .limit(50);
     resolvedUserIds = matchedUsers?.map((u: any) => u.id) ?? [];
   }

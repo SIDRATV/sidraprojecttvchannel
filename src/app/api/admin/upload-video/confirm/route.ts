@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
 export async function POST(request: NextRequest) {
   try {
-    // Auth — admin only
+    // Auth — admin only (local JWT)
     const supabase = createServerClient();
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const token = extractBearerToken(request.headers.get('authorization'));
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
+    const jwtPayload = await verifyJwt(token);
+    if (!jwtPayload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
     const { data: profile } = await supabase
       .from('users')
       .select('is_admin')
-      .eq('id', user.id)
+      .eq('id', jwtPayload.sub)
       .single();
     if (!profile?.is_admin) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       file_size: videoSize || 0,
       is_premium: true,
       min_plan: minPlan,
-      uploaded_by: user.id,
+      uploaded_by: jwtPayload.sub,
     };
 
     const { data: video, error: insertError } = await (supabase as any)

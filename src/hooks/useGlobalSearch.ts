@@ -46,28 +46,29 @@ export function useGlobalSearch(query: string) {
     const timer = setTimeout(async () => {
       const pattern = `%${trimmed}%`;
 
+      const db = supabase as any;
       const [videosRes, premiumRes, liveRes, podcastRes, newsRes] = await Promise.allSettled([
         supabase
           .from('videos')
           .select('id, title, thumbnail_url, youtube_url')
           .ilike('title', pattern)
           .limit(5),
-        supabase
+        db
           .from('premium_videos')
           .select('id, title, thumbnail_url')
           .ilike('title', pattern)
           .limit(5),
-        supabase
+        db
           .from('live_streams')
           .select('id, title, image, is_live')
           .ilike('title', pattern)
           .limit(5),
-        supabase
+        db
           .from('podcasts')
           .select('id, title, image, creator')
           .ilike('title', pattern)
           .limit(5),
-        supabase
+        db
           .from('news_articles')
           .select('id, title, image_url, category')
           .ilike('title', pattern)

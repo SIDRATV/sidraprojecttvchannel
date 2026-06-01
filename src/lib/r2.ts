@@ -178,6 +178,36 @@ export async function listR2Objects(prefix: string, maxKeys = 100) {
  * Generate a presigned PUT URL for direct browser-to-R2 upload (avoids server body limit)
  * CRITICAL: ContentType must match exactly between presign generation and PUT request
  */
+/**
+ * Fix presigned URL to ensure proper format for path-style R2 access
+ * AWS SDK may not always include bucket in path correctly
+ */
+function fixPresignedUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    
+    // Check if bucket is already in the path
+    if (urlObj.pathname.startsWith(`/${R2_BUCKET}/`)) {
+      // Already correct
+      return url;
+    }
+    
+    // If bucket is missing from path, add it
+    if (!urlObj.pathname.startsWith(`/${R2_BUCKET}`)) {
+      // Move all path content after bucket
+      const existingPath = urlObj.pathname.startsWith('/') ? urlObj.pathname : `/${urlObj.pathname}`;
+      urlObj.pathname = `/${R2_BUCKET}${existingPath}`;
+    }
+    
+    const correctedUrl = urlObj.toString();
+    console.log(`🔧 Fixed presigned URL: ${url.substring(0, 80)}... → ${correctedUrl.substring(0, 80)}...`);
+    return correctedUrl;
+  } catch (err) {
+    console.warn(`⚠️ Could not fix presigned URL format: ${err}`);
+    return url; // Return original if fix fails
+  }
+}
+
 export async function getPresignedUploadUrl(
   key: string,
   contentType: string,
@@ -199,8 +229,13 @@ export async function getPresignedUploadUrl(
       },
     });
 
-    const url = await getSignedUrl(r2Client, command, { expiresIn });
-    console.log(`✅ Presigned URL generated for key: ${key}, ContentType: ${contentType}, URL length: ${url.length}`);
+    let url = await getSignedUrl(r2Client, command, { expiresIn });
+    
+    // CRITICAL: Fix the presigned URL to ensure bucket is in path for Cloudflare R2
+    url = fixPresignedUrl(url);
+    
+    console.log(`✅ Presigned URL generated for key: ${key}, ContentType: ${contentType}`);
+    console.log(`   📍 Presigned URL: ${url.substring(0, 120)}...`);
     return url;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

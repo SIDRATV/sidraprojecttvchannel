@@ -152,7 +152,13 @@ export const premiumVideoService = {
           console.error(`   - Upload URL: ${videoUploadUrl.substring(0, 100)}...`);
           console.error(`   - Video size: ${videoFile.size} bytes`);
           console.error(`   - Content-Type: ${videoFile.type}`);
-          reject(new Error('Network connection failed uploading to Cloudflare R2. Check your credentials, endpoint, and CORS settings in R2.'));
+          
+          // Check if it's a CORS issue
+          const corsMessage = videoUploadUrl.includes('r2.cloudflarestorage.com')
+            ? ' (Check CORS settings in Cloudflare R2 Dashboard > Settings > CORS rules)'
+            : '';
+          
+          reject(new Error(`Network connection failed uploading to Cloudflare R2${corsMessage}. Verify: 1) Endpoint format (no bucket name in URL), 2) CORS configured in R2, 3) Credentials valid`));
         });
 
         xhr.addEventListener('abort', () => {
@@ -211,7 +217,13 @@ export const premiumVideoService = {
           console.error(`   - Upload URL: ${thumbnailUploadUrl.substring(0, 100)}...`);
           console.error(`   - Thumbnail size: ${thumbnailFile.size} bytes`);
           console.error(`   - Content-Type: ${thumbnailFile.type}`);
-          reject(new Error('Network connection failed uploading thumbnail to Cloudflare R2'));
+          
+          // Check if it's a CORS issue
+          const corsMessage = thumbnailUploadUrl.includes('r2.cloudflarestorage.com')
+            ? ' (Check CORS settings in Cloudflare R2 Dashboard > Settings > CORS rules)'
+            : '';
+          
+          reject(new Error(`Network connection failed uploading thumbnail to Cloudflare R2${corsMessage}. Verify: 1) Endpoint format (no bucket name in URL), 2) CORS configured in R2, 3) Credentials valid`));
         });
 
         xhr.addEventListener('abort', () => {

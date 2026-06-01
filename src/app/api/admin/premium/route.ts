@@ -29,6 +29,22 @@ export async function GET(request: NextRequest) {
   try {
     await requireAdmin(request);
     const supabase = createServerClient();
+    
+    // Check if this is a search request
+    const url = new URL(request.url);
+    const searchQuery = url.searchParams.get('search');
+    
+    if (searchQuery) {
+      // Search users by email or UID
+      const { data: users, error } = await (supabase as any)
+        .from('users')
+        .select('id, full_name, email, premium_plan')
+        .or(`email.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`)
+        .limit(20);
+      
+      if (error) throw error;
+      return NextResponse.json({ users: users || [] });
+    }
 
     const [plans, discountCodes, stats, unresolvedAlerts] = await Promise.all([
       getPlans(),
@@ -325,6 +341,109 @@ export async function POST(request: NextRequest) {
           });
 
         return NextResponse.json({ success: true, subscriptionId: newSub.id, expiresAt });
+      }
+
+      case 'assign_subscription_bulk': {
+        // Bulk assign subscriptions to multiple users
+        const { userIds, planId, days } = body;
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0 || !planId || !days || days <= 0) {
+          return NextResponse.json({ error: 'userIds (array), planId and days (> 0) required' }, { status: 400 });
+        }
+        if (!['pro', 'premium', 'vip'].includes(planId)) {
+          return NextResponse.json({ error: 'planId must be pro, premium, or vip' }, { status: 400 });
+        }
+        const supabase = createServerClient();
+
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+        const results = { success: 0, failed: 0, errors: [] as string[] };
+
+        for (const userId of userIds) {
+          try {
+            // Verify target user exists
+            const { data: targetUser, error: userFindErr } = await (supabase as any)
+              .from('users')
+              .select('id, full_name, email')
+              .eq('id', userId)
+              .single();
+            if (userFindErr || !targetUser) {
+              results.failed++;
+              results.errors.push(`User ${userId}: not found`);
+              continue;
+            }
+
+            // Cancel any existing active subscription
+            await (supabase as any)
+              .from('premium_subscriptions')
+              .update({ status: 'cancelled', cancelled_at: now.toISOString() })
+              .eq('user_id', userId)
+              .eq('status', 'active');
+
+            // Create new subscription row (0 cost = admin gift)
+            const { data: newSub, error: insertErr } = await (supabase as any)
+              .from('premium_subscriptions')
+              .insert({
+                user_id: userId,
+                plan_id: planId,
+                duration: 'monthly',
+                status: 'active',
+                amount_paid: 0,
+                currency: 'SIDRA',
+                payment_method: 'admin_gift',
+                starts_at: now.toISOString(),
+                expires_at: expiresAt,
+              })
+              .select('id')
+              .single();
+
+            if (insertErr || !newSub) {
+              results.failed++;
+              results.errors.push(`User ${userId}: failed to create subscription`);
+              continue;
+            }
+
+            // Update user premium fields
+            const { error: userAssignErr } = await (supabase as any)
+              .from('users')
+              .update({
+                premium_plan: planId,
+                premium_expires_at: expiresAt,
+                premium_subscription_id: newSub.id,
+              })
+              .eq('id', userId);
+
+            if (userAssignErr) {
+              results.failed++;
+              results.errors.push(`User ${userId}: failed to update user fields`);
+              continue;
+            }
+
+            // Notify the user
+            const assignExpiryLabel = new Date(expiresAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+            await (supabase as any)
+              .from('notifications')
+              .insert({
+                user_id: userId,
+                type: 'subscription',
+                title: 'Abonnement offert',
+                message: `L'administration vous a offert un abonnement ${(planId as string).toUpperCase()} valable jusqu'au ${assignExpiryLabel}. Profitez-en !`,
+                icon: 'gift',
+                link: '/premium',
+              });
+
+            results.success++;
+          } catch (err: any) {
+            results.failed++;
+            results.errors.push(`User ${userId}: ${err.message}`);
+          }
+        }
+
+        const hasErrors = results.failed > 0;
+        return NextResponse.json({ 
+          success: true,
+          results,
+          message: `${results.success} abonnement${results.success > 1 ? 's' : ''} attribué${results.success > 1 ? 's' : ''}${hasErrors ? `, ${results.failed} erreur${results.failed > 1 ? 's' : ''}` : ''}`,
+        });
       }
 
       default:

@@ -6,7 +6,7 @@ import {
   Crown, DollarSign, Tag, ShieldAlert, TrendingUp,
   Plus, Trash2, Check, X, Loader2, Copy, AlertTriangle,
   Users, Calendar, Percent, Gift, Eye, EyeOff, RefreshCw,
-  Zap, Star, Pencil, UserPlus, Clock,
+  Zap, Star, Pencil, UserPlus, Clock, Search, CheckCircle2,
 } from 'lucide-react';
 
 interface Props { token: string; }
@@ -16,6 +16,7 @@ interface DiscountCode { id: string; code: string; discount_percent: number; max
 interface FraudAlert { id: string; user_id: string; alert_type: string; severity: string; details: any; resolved: boolean; created_at: string; users?: { full_name: string; email: string }; }
 interface Stats { totalActive: number; totalRevenue: number; byPlan: Record<string, { count: number; revenue: number }>; recentSubs: any[]; }
 interface Subscriber { id: string; user_id: string; plan_id: string; duration: string; status: string; amount_paid: number; starts_at: string; expires_at: string; cancelled_at: string | null; users: { full_name: string; email: string } | null; }
+interface UserForAssign { id: string; full_name: string | null; email: string; premium_plan: string | null; }
 
 const glass = 'bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl';
 
@@ -116,7 +117,7 @@ export function AdminPremiumManager({ token }: Props) {
           {tab === 'plans' && <PlansSection plans={plans} onSave={apiPost} saving={saving} />}
           {tab === 'codes' && <CodesSection codes={codes} onAction={apiPost} saving={saving} />}
           {tab === 'fraud' && <FraudSection alerts={alerts} onResolve={apiPost} saving={saving} />}
-          {tab === 'subscribers' && <SubscribersSection subscribers={subscribers} onAction={apiPost} saving={saving} />}
+          {tab === 'subscribers' && <SubscribersSection subscribers={subscribers} onAction={apiPost} saving={saving} token={token} />}
           {tab === 'stats' && <StatsSection stats={stats} />}
         </>
       )}
@@ -410,17 +411,20 @@ function FraudSection({ alerts, onResolve, saving }: { alerts: FraudAlert[]; onR
 }
 
 // ─── SUBSCRIBERS ────────────────────────────────
-function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Subscriber[]; onAction: (b: any) => void; saving: boolean }) {
+function SubscribersSection({ subscribers, onAction, saving, token }: { subscribers: Subscriber[]; onAction: (b: any) => void; saving: boolean; token: string }) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   // Modal state for edit (extend / change plan)
   const [editSub, setEditSub] = useState<Subscriber | null>(null);
   const [extendDays, setExtendDays] = useState('30');
   const [newPlan, setNewPlan] = useState('');
-  // Modal state for assign (gift subscription)
+  // Modal state for assign (gift subscription) - UPDATED FOR BULK
   const [showAssign, setShowAssign] = useState(false);
-  const [assignUserId, setAssignUserId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchedUsers, setSearchedUsers] = useState<UserForAssign[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [assignPlan, setAssignPlan] = useState('pro');
   const [assignDays, setAssignDays] = useState('30');
+  const [loadingSearch, setLoadingSearch] = useState(false);
 
   const handleCancel = (subId: string) => {
     onAction({ action: 'cancel_subscription', subscriptionId: subId });
@@ -439,11 +443,52 @@ function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Su
     setEditSub(null);
   };
 
-  const handleAssign = () => {
-    if (!assignUserId.trim() || !assignPlan || !assignDays) return;
-    onAction({ action: 'assign_subscription', userId: assignUserId.trim(), planId: assignPlan, days: Number(assignDays) });
+  // SEARCH USERS BY UID OR EMAIL
+  const handleSearchUsers = useCallback(async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length < 2) {
+      setSearchedUsers([]);
+      return;
+    }
+    setLoadingSearch(true);
+    try {
+      const res = await fetch(`/api/admin/premium?search=${encodeURIComponent(query)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setSearchedUsers(d.users || []);
+      }
+    } catch {}
+    setLoadingSearch(false);
+  }, [token]);
+
+  const handleToggleUser = (userId: string) => {
+    const newSelected = new Set(selectedUserIds);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUserIds(newSelected);
+  };
+
+  const handleAssignBulk = () => {
+    if (selectedUserIds.size === 0 || !assignPlan || !assignDays) return;
+    onAction({ action: 'assign_subscription_bulk', userIds: Array.from(selectedUserIds), planId: assignPlan, days: Number(assignDays) });
     setShowAssign(false);
-    setAssignUserId('');
+    setSearchQuery('');
+    setSearchedUsers([]);
+    setSelectedUserIds(new Set());
+    setAssignDays('30');
+    setAssignPlan('pro');
+  };
+
+  const resetAssignModal = () => {
+    setShowAssign(false);
+    setSearchQuery('');
+    setSearchedUsers([]);
+    setSelectedUserIds(new Set());
     setAssignDays('30');
     setAssignPlan('pro');
   };
@@ -482,25 +527,107 @@ function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Su
         </button>
       </div>
 
-      {/* Assign modal */}
+      {/* Assign modal - UPDATED FOR SEARCH & BULK */}
       <AnimatePresence>
         {showAssign && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className={`${glass} p-5 space-y-3 border-brand-500/30`}
+            className={`${glass} p-5 space-y-4 border-brand-500/30 max-h-[70vh] overflow-y-auto`}
           >
-            <h4 className="text-white font-semibold flex items-center gap-2 text-sm">
-              <Gift size={15} className="text-brand-400" /> Attribuer un abonnement gratuit
+            <h4 className="text-white font-semibold flex items-center gap-2 text-sm sticky top-0 bg-white/5 -m-5 p-5 mb-4">
+              <Gift size={15} className="text-brand-400" /> Attribuer un abonnement (Recherche & Sélection)
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-slate-400 mb-1 block">ID utilisateur</label>
+
+            {/* Search input */}
+            <div className="space-y-2 pb-4 border-b border-white/10">
+              <label className="text-xs text-slate-400">Rechercher par Email ou UID</label>
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500" />
                 <input
-                  value={assignUserId}
-                  onChange={e => setAssignUserId(e.target.value)}
-                  placeholder="UUID de l'utilisateur"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-brand-500/50 focus:outline-none font-mono"
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => handleSearchUsers(e.target.value)}
+                  placeholder="exemple@email.com ou 550e8400-e29b-41d4-a716-446655440000"
+                  className="w-full pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-brand-500/50 focus:outline-none"
                 />
               </div>
+              <p className="text-xs text-slate-500">Tapez au moins 2 caractères pour chercher</p>
+            </div>
+
+            {/* User list with checkboxes */}
+            {loadingSearch ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 size={16} className="animate-spin text-brand-400" />
+              </div>
+            ) : searchedUsers.length > 0 ? (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {searchedUsers.map(user => {
+                  const isPremium = user.premium_plan !== null;
+                  const isSelected = selectedUserIds.has(user.id);
+                  return (
+                    <div
+                      key={user.id}
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-brand-500/20 border-brand-500/50'
+                          : isPremium
+                          ? 'bg-gold-500/10 border-gold-500/20 hover:border-gold-500/40'
+                          : 'bg-white/5 border-white/10 hover:border-white/20'
+                      }`}
+                      onClick={() => handleToggleUser(user.id)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 flex-shrink-0">
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            isSelected
+                              ? 'bg-brand-500 border-brand-500'
+                              : 'border-slate-400'
+                          }`}>
+                            {isSelected && <Check size={12} className="text-white" />}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 justify-between">
+                            <div className="min-w-0">
+                              <p className="text-white font-medium text-sm truncate">
+                                {user.full_name || 'Sans nom'}
+                              </p>
+                              <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                              <p className="text-xs text-slate-600 font-mono mt-1 truncate">{user.id}</p>
+                            </div>
+                            {isPremium && (
+                              <div className="flex items-center gap-1 px-2 py-1 bg-gold-500/20 text-gold-400 rounded text-xs font-medium flex-shrink-0 ml-2">
+                                <Crown size={11} />
+                                {user.premium_plan}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : searchQuery.trim().length >= 2 ? (
+              <div className="py-8 text-center text-slate-500 text-sm">
+                Aucun utilisateur trouvé
+              </div>
+            ) : (
+              <div className="py-8 text-center text-slate-600 text-sm">
+                Utilisez la barre de recherche pour trouver des utilisateurs
+              </div>
+            )}
+
+            {/* Selection summary */}
+            {selectedUserIds.size > 0 && (
+              <div className="p-3 bg-brand-500/20 rounded-lg border border-brand-500/30">
+                <p className="text-brand-400 text-sm font-medium">
+                  {selectedUserIds.size} utilisateur{selectedUserIds.size > 1 ? 's' : ''} sélectionné{selectedUserIds.size > 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
+
+            {/* Plan and duration */}
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
               <div>
                 <label className="text-xs text-slate-400 mb-1 block">Plan</label>
                 <select
@@ -523,16 +650,21 @@ function SubscribersSection({ subscribers, onAction, saving }: { subscribers: Su
                 />
               </div>
             </div>
-            <div className="flex gap-2 pt-1">
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
               <button
-                disabled={saving || !assignUserId.trim()}
-                onClick={handleAssign}
-                className="flex items-center gap-1.5 px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-50 transition-all"
+                disabled={saving || selectedUserIds.size === 0}
+                onClick={handleAssignBulk}
+                className="flex items-center gap-1.5 px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-50 transition-all flex-1"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                Confirmer
+                Attribuer ({selectedUserIds.size})
               </button>
-              <button onClick={() => setShowAssign(false)} className="px-4 py-2 bg-white/5 text-slate-400 rounded-lg text-sm hover:bg-white/10">
+              <button
+                onClick={resetAssignModal}
+                className="px-4 py-2 bg-white/5 text-slate-400 rounded-lg text-sm hover:bg-white/10"
+              >
                 Annuler
               </button>
             </div>

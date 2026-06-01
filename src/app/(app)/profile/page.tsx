@@ -161,7 +161,13 @@ export default function ProfilePage() {
       
       console.log(`✅ Avatar uploaded successfully`);
       console.log(`   Serve URL: ${json.url}`);
-      setEditData(prev => ({ ...prev, profilePhoto: json.url }));
+      
+      // Add cache buster query param to force fresh avatar load
+      const urlWithCacheBuster = `${json.url}&t=${Date.now()}`;
+      setEditData(prev => ({ ...prev, profilePhoto: urlWithCacheBuster }));
+      
+      // Also force re-render of avatar image if it's being displayed
+      setUploadError('');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Échec du téléchargement';
       console.error(`❌ Avatar upload error:`, err);

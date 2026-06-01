@@ -18,6 +18,11 @@ const r2 = new S3Client({
 
 // GET /api/user/avatar-serve?uid={userId}
 // Generates a fresh presigned URL for the user's avatar and redirects to it
+// Heavily cached to avoid regenerating presigned URLs constantly
+
+// Simple in-memory cache to avoid regenerating presigned URLs (resets on server restart)
+const PRESIGNED_CACHE = new Map<string, { url: string; expiry: number }>();
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const uid = searchParams.get('uid');
@@ -28,26 +33,45 @@ export async function GET(req: NextRequest) {
   }
 
   const key = `avatars/${uid}`;
+  const now = Date.now();
+
+  // Check cache first
+  const cached = PRESIGNED_CACHE.get(uid);
+  if (cached && cached.expiry > now) {
+    console.log(`✅ Using cached presigned URL for ${uid} (expires in ${Math.round((cached.expiry - now) / 1000)}s)`);
+    return NextResponse.redirect(cached.url, {
+      status: 302,
+      headers: {
+        'Cache-Control': 'public, max-age=86400', // Browser caches for 24 hours
+      },
+    });
+  }
 
   try {
-    console.log(`📥 Serving avatar for user ${uid}:`);
+    console.log(`📥 Generating presigned URL for user ${uid}:`);
     console.log(`   Bucket: ${AVATAR_BUCKET}`);
     console.log(`   Endpoint: ${ENDPOINT}`);
     console.log(`   Key: ${key}`);
 
     const command = new GetObjectCommand({ Bucket: AVATAR_BUCKET, Key: key });
-    // Short-lived URL (1 hour) — browser will re-fetch via this proxy when needed
-    let signedUrl = await getSignedUrl(r2, command, { expiresIn: 3600 });
+    // Generate presigned URL valid for 24 hours
+    let signedUrl = await getSignedUrl(r2, command, { expiresIn: 86400 });
     
     // CRITICAL: Fix the presigned URL to ensure bucket is in path for Cloudflare R2
     signedUrl = fixPresignedUrl(signedUrl, AVATAR_BUCKET);
     console.log(`✅ Presigned URL generated: ${signedUrl.substring(0, 100)}...`);
 
+    // Cache for 23.5 hours (less than presigned URL expiry to refresh before expiry)
+    PRESIGNED_CACHE.set(uid, {
+      url: signedUrl,
+      expiry: now + (23.5 * 60 * 60 * 1000),
+    });
+
     return NextResponse.redirect(signedUrl, {
       status: 302,
       headers: {
-        // Tell browsers to cache the redirect for 55 minutes (slightly less than signed URL expiry)
-        'Cache-Control': 'public, max-age=3300',
+        // Tell browsers to cache the redirect for 24 hours
+        'Cache-Control': 'public, max-age=86400',
       },
     });
   } catch (err) {

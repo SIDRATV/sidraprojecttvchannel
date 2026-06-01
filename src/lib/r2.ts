@@ -7,11 +7,16 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID!;
-const ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID!;
-const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_SECRET_ACCESS_KEY!;
+const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID || '';
+const ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID || '';
+const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_SECRET_ACCESS_KEY || '';
 const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'sidratvstoragevideopremium';
 const ENDPOINT = process.env.CLOUDFLARE_R2_ENDPOINT || `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`;
+
+// Validate credentials
+if (!ACCOUNT_ID || !ACCESS_KEY_ID || !SECRET_ACCESS_KEY) {
+  console.warn('⚠️ Cloudflare R2 credentials not fully configured. Check env vars: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY');
+}
 
 export const r2Client = new S3Client({
   region: 'auto',
@@ -20,6 +25,7 @@ export const r2Client = new S3Client({
     accessKeyId: ACCESS_KEY_ID,
     secretAccessKey: SECRET_ACCESS_KEY,
   },
+  forcePathStyle: true, // CRITICAL for Cloudflare R2
 });
 
 export const R2_BUCKET = BUCKET_NAME;
@@ -38,15 +44,21 @@ export async function uploadToR2(
   body: Buffer | Uint8Array,
   contentType: string,
 ): Promise<{ key: string; size: number }> {
-  const command = new PutObjectCommand({
-    Bucket: R2_BUCKET,
-    Key: key,
-    Body: body,
-    ContentType: contentType,
-  });
+  try {
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    });
 
-  await r2Client.send(command);
-  return { key, size: body.length };
+    await r2Client.send(command);
+    return { key, size: body.length };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`R2 upload failed for key "${key}": ${message}`);
+    throw new Error(`Failed to upload to Cloudflare R2: ${message}`);
+  }
 }
 
 /**

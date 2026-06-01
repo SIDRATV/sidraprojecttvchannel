@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error('presign error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: `Failed to generate upload URLs: ${message}` }, { status: 500 });
   }
 }

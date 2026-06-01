@@ -106,10 +106,16 @@ export const premiumVideoService = {
 
       if (!presignRes.ok) {
         const err = await presignRes.json().catch(() => ({}));
-        return { success: false, error: (err as any).error || 'Failed to get upload URL' };
+        console.error('Presign error:', err);
+        return { success: false, error: (err as any).error || 'Failed to get upload URL from server' };
       }
 
       const { videoKey, thumbnailKey, videoUploadUrl, thumbnailUploadUrl } = await presignRes.json();
+
+      if (!videoUploadUrl || !thumbnailUploadUrl) {
+        console.error('Invalid presign response - missing upload URLs');
+        return { success: false, error: 'Server returned invalid upload URLs' };
+      }
 
       onProgress?.(5);
 
@@ -123,10 +129,24 @@ export const premiumVideoService = {
           }
         });
         xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`R2 video upload failed: ${xhr.status}`));
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            console.error(`R2 video upload error - Status: ${xhr.status}, Response: ${xhr.responseText}`);
+            reject(new Error(`R2 video upload failed: ${xhr.status} - ${xhr.responseText.substring(0, 100)}`));
+          }
         });
-        xhr.addEventListener('error', () => reject(new Error('Network error uploading video')));
+        xhr.addEventListener('error', () => {
+          console.error('Network error uploading video to R2');
+          reject(new Error('Network connection failed uploading to Cloudflare R2. Check your connection and credentials.'));
+        });
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload aborted'));
+        });
+        xhr.timeout = 300000; // 5 minutes timeout
+        xhr.ontimeout = () => {
+          reject(new Error('Upload timeout - connection took too long'));
+        };
         xhr.open('PUT', videoUploadUrl);
         xhr.setRequestHeader('Content-Type', videoFile.type);
         xhr.send(videoFile);
@@ -138,10 +158,24 @@ export const premiumVideoService = {
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`R2 thumbnail upload failed: ${xhr.status}`));
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            console.error(`R2 thumbnail upload error - Status: ${xhr.status}, Response: ${xhr.responseText}`);
+            reject(new Error(`R2 thumbnail upload failed: ${xhr.status}`));
+          }
         });
-        xhr.addEventListener('error', () => reject(new Error('Network error uploading thumbnail')));
+        xhr.addEventListener('error', () => {
+          console.error('Network error uploading thumbnail to R2');
+          reject(new Error('Network connection failed uploading thumbnail to Cloudflare R2'));
+        });
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Thumbnail upload aborted'));
+        });
+        xhr.timeout = 300000; // 5 minutes timeout
+        xhr.ontimeout = () => {
+          reject(new Error('Thumbnail upload timeout'));
+        };
         xhr.open('PUT', thumbnailUploadUrl);
         xhr.setRequestHeader('Content-Type', thumbnailFile.type);
         xhr.send(thumbnailFile);

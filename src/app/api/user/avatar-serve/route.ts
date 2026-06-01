@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { fixPresignedUrl } from '@/lib/r2';
 
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID!;
 const ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID!;
@@ -36,9 +37,11 @@ export async function GET(req: NextRequest) {
 
     const command = new GetObjectCommand({ Bucket: AVATAR_BUCKET, Key: key });
     // Short-lived URL (1 hour) — browser will re-fetch via this proxy when needed
-    const signedUrl = await getSignedUrl(r2, command, { expiresIn: 3600 });
-
-    console.log(`✅ Presigned URL generated successfully for ${uid}`);
+    let signedUrl = await getSignedUrl(r2, command, { expiresIn: 3600 });
+    
+    // CRITICAL: Fix the presigned URL to ensure bucket is in path for Cloudflare R2
+    signedUrl = fixPresignedUrl(signedUrl, AVATAR_BUCKET);
+    console.log(`✅ Presigned URL generated: ${signedUrl.substring(0, 100)}...`);
 
     return NextResponse.redirect(signedUrl, {
       status: 302,

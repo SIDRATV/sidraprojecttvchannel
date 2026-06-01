@@ -85,7 +85,9 @@ async function verifyAdminCookie(token: string): Promise<boolean> {
  * Content-Security-Policy tuned for a Next.js 15 streaming app:
  *  - YouTube embeds (frame-src)
  *  - Supabase Realtime (wss connect-src)
- *  - Cloudflare R2 (connect-src for uploads, media-src for video playback)
+ *  - Cloudflare R2 buckets:
+ *    - sidratvstoragevideopremium (videos): connect-src for uploads, media-src for playback
+ *    - avatar-user-url (avatars): connect-src for uploads, img-src for avatar display
  *  - Google Fonts (style-src / font-src)
  *  - unsafe-eval / unsafe-inline required by Next.js hydration & Tailwind
  */
@@ -94,7 +96,7 @@ const CSP = [
   "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://www.youtube-nocookie.com https://www.gstatic.com https://apis.google.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob: https:",
+  "img-src 'self' data: blob: https: https://*.r2.cloudflarestorage.com",
   "media-src 'self' blob: https: https://*.r2.cloudflarestorage.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.googleapis.com https://*.googleapis.com https://*.r2.cloudflarestorage.com",
   "frame-src https://www.youtube.com https://www.youtube-nocookie.com",

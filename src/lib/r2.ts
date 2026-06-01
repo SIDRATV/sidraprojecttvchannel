@@ -182,21 +182,21 @@ export async function listR2Objects(prefix: string, maxKeys = 100) {
  * Fix presigned URL to ensure proper format for path-style R2 access
  * AWS SDK may not always include bucket in path correctly
  */
-function fixPresignedUrl(url: string): string {
+export function fixPresignedUrl(url: string, bucket: string = R2_BUCKET): string {
   try {
     const urlObj = new URL(url);
     
     // Check if bucket is already in the path
-    if (urlObj.pathname.startsWith(`/${R2_BUCKET}/`)) {
+    if (urlObj.pathname.startsWith(`/${bucket}/`)) {
       // Already correct
       return url;
     }
     
     // If bucket is missing from path, add it
-    if (!urlObj.pathname.startsWith(`/${R2_BUCKET}`)) {
+    if (!urlObj.pathname.startsWith(`/${bucket}`)) {
       // Move all path content after bucket
       const existingPath = urlObj.pathname.startsWith('/') ? urlObj.pathname : `/${urlObj.pathname}`;
-      urlObj.pathname = `/${R2_BUCKET}${existingPath}`;
+      urlObj.pathname = `/${bucket}${existingPath}`;
     }
     
     const correctedUrl = urlObj.toString();

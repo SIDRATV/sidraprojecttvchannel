@@ -12,6 +12,7 @@ const r2 = new S3Client({
   region: 'auto',
   endpoint: ENDPOINT,
   credentials: { accessKeyId: ACCESS_KEY_ID, secretAccessKey: SECRET_ACCESS_KEY },
+  forcePathStyle: true,
 });
 
 // GET /api/user/avatar-serve?uid={userId}

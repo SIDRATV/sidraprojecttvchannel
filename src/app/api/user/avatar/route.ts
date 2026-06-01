@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowed.includes(file.type)) {
-      return NextResponse.json({ error: 'Type invalide. Utilisez JPG, PNG, WEBP ou GIF.' }, { status: 400 });
+      return NextResponse.json({ error: `Type invalide. Utilisez JPG, PNG, WEBP ou GIF. Reçu: ${file.type}` }, { status: 400 });
     }
 
     // Limit: 500 KB
@@ -52,12 +52,21 @@ export async function POST(req: NextRequest) {
     const key = `avatars/${user.id}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
+    console.log(`📤 Uploading avatar for user ${user.id}:`);
+    console.log(`   Bucket: ${AVATAR_BUCKET}`);
+    console.log(`   Endpoint: ${ENDPOINT}`);
+    console.log(`   Key: ${key}`);
+    console.log(`   Content-Type: ${file.type}`);
+    console.log(`   Size: ${buffer.length} bytes`);
+
     await r2.send(new PutObjectCommand({
       Bucket: AVATAR_BUCKET,
       Key: key,
       Body: buffer,
       ContentType: file.type,
     }));
+
+    console.log(`✅ Avatar uploaded successfully for user ${user.id}`);
 
     // Stable serve URL â€” served via our proxy endpoint (never expires)
     const serveUrl = `/api/user/avatar-serve?uid=${user.id}`;
@@ -69,6 +78,7 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id);
 
     if (dbError) {
+      console.log(`⚠️ Profiles table update failed, trying users table:`, dbError);
       await supabaseAdmin
         .from('users')
         .update({ avatar_url: serveUrl })
@@ -81,8 +91,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: serveUrl });
   } catch (err) {
-    console.error('Avatar upload error:', err);
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Avatar upload error:`, err);
+    console.error(`   Error message: ${message}`);
+    console.error(`   Bucket: ${AVATAR_BUCKET}`);
+    console.error(`   Endpoint: ${ENDPOINT}`);
+    return NextResponse.json({ error: `Upload failed: ${message}` }, { status: 500 });
   }
 }
 

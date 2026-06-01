@@ -128,24 +128,44 @@ export default function ProfilePage() {
     setUploadingPhoto(true);
     setUploadError('');
     try {
+      console.log(`📤 Starting avatar upload from profile page:`);
+      console.log(`   File: ${file.name}`);
+      console.log(`   Size: ${(file.size / 1024).toFixed(2)} KB`);
+      console.log(`   Type: ${file.type}`);
+
       // Client-side size check (500 KB)
       if (file.size > 500 * 1024) {
-        setUploadError('Fichier trop volumineux (max 500 Ko)');
+        const msg = `Fichier trop volumineux (max 500 Ko, vous avez envoyé ${(file.size / 1024).toFixed(2)} Ko)`;
+        setUploadError(msg);
         setUploadingPhoto(false);
         return;
       }
       const form = new FormData();
       form.append('file', file);
+      
+      console.log(`📡 Sending request to /api/user/avatar...`);
       const res = await fetch('/api/user/avatar', {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: form,
       });
+      
+      console.log(`📨 Response status: ${res.status}`);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Upload failed');
+      console.log(`📨 Response body:`, json);
+
+      if (!res.ok) {
+        const errorMsg = json.error || `Upload failed with status ${res.status}`;
+        throw new Error(errorMsg);
+      }
+      
+      console.log(`✅ Avatar uploaded successfully`);
+      console.log(`   Serve URL: ${json.url}`);
       setEditData(prev => ({ ...prev, profilePhoto: json.url }));
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Échec du téléchargement');
+      const errorMsg = err instanceof Error ? err.message : 'Échec du téléchargement';
+      console.error(`❌ Avatar upload error:`, err);
+      setUploadError(errorMsg);
     } finally {
       setUploadingPhoto(false);
     }

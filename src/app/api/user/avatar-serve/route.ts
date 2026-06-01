@@ -22,15 +22,23 @@ export async function GET(req: NextRequest) {
   const uid = searchParams.get('uid');
 
   if (!uid || !/^[0-9a-f-]{36}$/.test(uid)) {
+    console.warn(`❌ Invalid uid format: ${uid}`);
     return NextResponse.json({ error: 'Invalid uid' }, { status: 400 });
   }
 
   const key = `avatars/${uid}`;
 
   try {
+    console.log(`📥 Serving avatar for user ${uid}:`);
+    console.log(`   Bucket: ${AVATAR_BUCKET}`);
+    console.log(`   Endpoint: ${ENDPOINT}`);
+    console.log(`   Key: ${key}`);
+
     const command = new GetObjectCommand({ Bucket: AVATAR_BUCKET, Key: key });
     // Short-lived URL (1 hour) — browser will re-fetch via this proxy when needed
     const signedUrl = await getSignedUrl(r2, command, { expiresIn: 3600 });
+
+    console.log(`✅ Presigned URL generated successfully for ${uid}`);
 
     return NextResponse.redirect(signedUrl, {
       status: 302,
@@ -39,7 +47,10 @@ export async function GET(req: NextRequest) {
         'Cache-Control': 'public, max-age=3300',
       },
     });
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Avatar serve error for ${uid}:`, err);
+    console.error(`   Error message: ${message}`);
     // Return 404 if object doesn't exist
     return new NextResponse(null, { status: 404 });
   }

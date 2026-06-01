@@ -122,33 +122,66 @@ export const premiumVideoService = {
       // Step 2: Upload video directly to R2 with XHR (progress tracking)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+
+        // Log for debugging
+        console.log(`🎬 Starting video upload to R2...`);
+        console.log(`📍 Presigned URL domain: ${new URL(videoUploadUrl).host}`);
+
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable && onProgress) {
             // Map 5% → 88% during video upload
             onProgress(5 + Math.round((e.loaded / e.total) * 83));
           }
         });
+
         xhr.addEventListener('load', () => {
+          console.log(`📡 XHR load event: status=${xhr.status}`);
           if (xhr.status >= 200 && xhr.status < 300) {
+            console.log(`✅ Video uploaded successfully (status: ${xhr.status})`);
             resolve();
           } else {
-            console.error(`R2 video upload error - Status: ${xhr.status}, Response: ${xhr.responseText}`);
-            reject(new Error(`R2 video upload failed: ${xhr.status} - ${xhr.responseText.substring(0, 100)}`));
+            const responseText = xhr.responseText?.substring(0, 200) || '(empty)';
+            console.error(`❌ R2 video upload HTTP error - Status: ${xhr.status}`);
+            console.error(`📄 Response: ${responseText}`);
+            reject(new Error(`R2 video upload failed: HTTP ${xhr.status}`));
           }
         });
+
         xhr.addEventListener('error', () => {
-          console.error('Network error uploading video to R2');
-          reject(new Error('Network connection failed uploading to Cloudflare R2. Check your connection and credentials.'));
+          console.error(`❌ XHR error event fired`);
+          console.error(`   - Upload URL: ${videoUploadUrl.substring(0, 100)}...`);
+          console.error(`   - Video size: ${videoFile.size} bytes`);
+          console.error(`   - Content-Type: ${videoFile.type}`);
+          reject(new Error('Network connection failed uploading to Cloudflare R2. Check your credentials, endpoint, and CORS settings in R2.'));
         });
+
         xhr.addEventListener('abort', () => {
+          console.warn(`⚠️ Upload aborted by user`);
           reject(new Error('Upload aborted'));
         });
+
         xhr.timeout = 300000; // 5 minutes timeout
         xhr.ontimeout = () => {
+          console.error(`⏱️ Upload timeout after ${xhr.timeout}ms`);
           reject(new Error('Upload timeout - connection took too long'));
         };
+
+        // Set up XHR
         xhr.open('PUT', videoUploadUrl);
-        xhr.setRequestHeader('Content-Type', videoFile.type);
+
+        // CRITICAL: Content-Type must match the presigned URL signature
+        // Only set if the file type is recognized by browser
+        if (videoFile.type && videoFile.type.startsWith('video/')) {
+          xhr.setRequestHeader('Content-Type', videoFile.type);
+          console.log(`📤 Set Content-Type: ${videoFile.type}`);
+        } else {
+          // If no type detected, use default video/mp4
+          xhr.setRequestHeader('Content-Type', 'video/mp4');
+          console.warn(`⚠️ No video type detected, using default: video/mp4`);
+        }
+
+        // Send the file
+        console.log(`📨 Sending ${videoFile.size} bytes to R2...`);
         xhr.send(videoFile);
       });
 
@@ -157,27 +190,54 @@ export const premiumVideoService = {
       // Step 3: Upload thumbnail directly to R2
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+
+        console.log(`🖼️  Starting thumbnail upload to R2...`);
+
         xhr.addEventListener('load', () => {
+          console.log(`📡 Thumbnail XHR load event: status=${xhr.status}`);
           if (xhr.status >= 200 && xhr.status < 300) {
+            console.log(`✅ Thumbnail uploaded successfully (status: ${xhr.status})`);
             resolve();
           } else {
-            console.error(`R2 thumbnail upload error - Status: ${xhr.status}, Response: ${xhr.responseText}`);
-            reject(new Error(`R2 thumbnail upload failed: ${xhr.status}`));
+            const responseText = xhr.responseText?.substring(0, 200) || '(empty)';
+            console.error(`❌ R2 thumbnail upload HTTP error - Status: ${xhr.status}`);
+            console.error(`📄 Response: ${responseText}`);
+            reject(new Error(`R2 thumbnail upload failed: HTTP ${xhr.status}`));
           }
         });
+
         xhr.addEventListener('error', () => {
-          console.error('Network error uploading thumbnail to R2');
+          console.error(`❌ Thumbnail XHR error event fired`);
+          console.error(`   - Upload URL: ${thumbnailUploadUrl.substring(0, 100)}...`);
+          console.error(`   - Thumbnail size: ${thumbnailFile.size} bytes`);
+          console.error(`   - Content-Type: ${thumbnailFile.type}`);
           reject(new Error('Network connection failed uploading thumbnail to Cloudflare R2'));
         });
+
         xhr.addEventListener('abort', () => {
+          console.warn(`⚠️ Thumbnail upload aborted by user`);
           reject(new Error('Thumbnail upload aborted'));
         });
+
         xhr.timeout = 300000; // 5 minutes timeout
         xhr.ontimeout = () => {
+          console.error(`⏱️ Thumbnail upload timeout after ${xhr.timeout}ms`);
           reject(new Error('Thumbnail upload timeout'));
         };
+
         xhr.open('PUT', thumbnailUploadUrl);
-        xhr.setRequestHeader('Content-Type', thumbnailFile.type);
+
+        // CRITICAL: Content-Type must match the presigned URL signature
+        if (thumbnailFile.type && (thumbnailFile.type.startsWith('image/') || thumbnailFile.type === 'image/jpeg')) {
+          xhr.setRequestHeader('Content-Type', thumbnailFile.type);
+          console.log(`📤 Set Thumbnail Content-Type: ${thumbnailFile.type}`);
+        } else {
+          // If no type detected, use default image/jpeg
+          xhr.setRequestHeader('Content-Type', 'image/jpeg');
+          console.warn(`⚠️ No image type detected, using default: image/jpeg`);
+        }
+
+        console.log(`📨 Sending ${thumbnailFile.size} bytes thumbnail to R2...`);
         xhr.send(thumbnailFile);
       });
 

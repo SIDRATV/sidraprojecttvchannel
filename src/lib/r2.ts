@@ -11,11 +11,28 @@ const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID || '';
 const ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID || '';
 const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_SECRET_ACCESS_KEY || '';
 const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'sidratvstoragevideopremium';
-const ENDPOINT = process.env.CLOUDFLARE_R2_ENDPOINT || `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`;
 
-// Validate credentials
-if (!ACCOUNT_ID || !ACCESS_KEY_ID || !SECRET_ACCESS_KEY) {
-  console.warn('⚠️ Cloudflare R2 credentials not fully configured. Check env vars: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY');
+// Build endpoint properly - CRITICAL FOR R2
+let ENDPOINT = process.env.CLOUDFLARE_R2_ENDPOINT;
+if (!ENDPOINT) {
+  if (ACCOUNT_ID) {
+    // Standard R2 endpoint format
+    ENDPOINT = `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  } else {
+    console.warn('⚠️ CLOUDFLARE_ACCOUNT_ID is not set. Cannot build R2 endpoint.');
+    ENDPOINT = 'https://r2.cloudflarestorage.com';
+  }
+}
+
+// Validate credentials at module load time
+const CREDS_OK = !!(ACCOUNT_ID && ACCESS_KEY_ID && SECRET_ACCESS_KEY);
+if (!CREDS_OK) {
+  console.warn('❌ Cloudflare R2 credentials INCOMPLETE:');
+  if (!ACCOUNT_ID) console.warn('   - CLOUDFLARE_ACCOUNT_ID missing');
+  if (!ACCESS_KEY_ID) console.warn('   - CLOUDFLARE_ACCESS_KEY_ID missing');
+  if (!SECRET_ACCESS_KEY) console.warn('   - CLOUDFLARE_SECRET_ACCESS_KEY missing');
+  console.warn(`   Endpoint: ${ENDPOINT}`);
+  console.warn(`   Bucket: ${BUCKET_NAME}`);
 }
 
 export const r2Client = new S3Client({
@@ -25,7 +42,10 @@ export const r2Client = new S3Client({
     accessKeyId: ACCESS_KEY_ID,
     secretAccessKey: SECRET_ACCESS_KEY,
   },
-  forcePathStyle: true, // CRITICAL for Cloudflare R2
+  forcePathStyle: true,
+  // Additional R2-specific config
+  tls: true,
+  requestHandler: undefined,
 });
 
 export const R2_BUCKET = BUCKET_NAME;
@@ -35,6 +55,28 @@ export const R2_FOLDERS = {
   videos: 'videos',           // videos/{quality}/{filename}.mp4
   thumbnails: 'Sidra Miniature', // Sidra Miniature/{filename}.jpg
 } as const;
+
+/**
+ * Diagnostic function to test R2 connectivity and credentials
+ */
+export async function diagnosisR2(): Promise<{ ok: boolean; message: string }> {
+  if (!CREDS_OK) {
+    return { ok: false, message: `❌ Missing credentials. Account: ${!!ACCOUNT_ID}, AccessKey: ${!!ACCESS_KEY_ID}, Secret: ${!!SECRET_ACCESS_KEY}` };
+  }
+
+  try {
+    // Try to list objects to verify credentials work
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      MaxKeys: 1,
+    });
+    await r2Client.send(command);
+    return { ok: true, message: `✅ R2 connection OK. Endpoint: ${ENDPOINT}, Bucket: ${BUCKET_NAME}` };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `❌ R2 connection failed: ${message}` };
+  }
+}
 
 /**
  * Upload a file to R2
@@ -134,18 +176,37 @@ export async function listR2Objects(prefix: string, maxKeys = 100) {
 
 /**
  * Generate a presigned PUT URL for direct browser-to-R2 upload (avoids server body limit)
+ * CRITICAL: ContentType must match exactly between presign generation and PUT request
  */
 export async function getPresignedUploadUrl(
   key: string,
   contentType: string,
   expiresIn = 3600,
 ): Promise<string> {
-  const command = new PutObjectCommand({
-    Bucket: R2_BUCKET,
-    Key: key,
-    ContentType: contentType,
-  });
-  return getSignedUrl(r2Client, command, { expiresIn });
+  try {
+    if (!CREDS_OK) {
+      throw new Error('R2 credentials not configured. Check CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY');
+    }
+
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      ContentType: contentType,
+      // Add metadata to track uploads
+      Metadata: {
+        'uploaded-by': 'admin-console',
+        'upload-time': new Date().toISOString(),
+      },
+    });
+
+    const url = await getSignedUrl(r2Client, command, { expiresIn });
+    console.log(`✅ Presigned URL generated for key: ${key}, ContentType: ${contentType}, URL length: ${url.length}`);
+    return url;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Failed to generate presigned URL: ${message}`);
+    throw new Error(`Failed to generate presigned URL: ${message}`);
+  }
 }
 
 /**

@@ -4,6 +4,7 @@ import {
   getPresignedUploadUrl,
   buildVideoKey,
   buildThumbnailKey,
+  diagnosisR2,
 } from '@/lib/r2';
 import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 
@@ -38,6 +39,16 @@ export async function POST(request: NextRequest) {
       .single();
     if (!profile?.is_admin) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    // CRITICAL: Check R2 credentials before proceeding
+    const r2diagnosis = await diagnosisR2();
+    if (!r2diagnosis.ok) {
+      console.error(`❌ R2 Configuration Issue: ${r2diagnosis.message}`);
+      return NextResponse.json(
+        { error: `R2 configuration error: ${r2diagnosis.message}. Contact administrator.` },
+        { status: 500 },
+      );
     }
 
     // Parse request body (tiny JSON, not a file)

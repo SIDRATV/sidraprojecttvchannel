@@ -35,15 +35,26 @@ export async function GET(request: NextRequest) {
     const searchQuery = url.searchParams.get('search');
     
     if (searchQuery) {
-      // Search users by email or UID
-      const { data: users, error } = await (supabase as any)
+      // Search users by email or UID - fix for proper email search
+      const { data: emailUsers, error: emailErr } = await (supabase as any)
         .from('users')
         .select('id, full_name, email, premium_plan')
-        .or(`email.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`)
+        .ilike('email', `%${searchQuery}%`)
         .limit(20);
+
+      const { data: idUsers, error: idErr } = await (supabase as any)
+        .from('users')
+        .select('id, full_name, email, premium_plan')
+        .eq('id', searchQuery)
+        .limit(20);
+
+      if (emailErr && idErr) throw emailErr || idErr;
       
-      if (error) throw error;
-      return NextResponse.json({ users: users || [] });
+      // Combine results and remove duplicates
+      const allUsers = [...(emailUsers || []), ...(idUsers || [])];
+      const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values());
+      
+      return NextResponse.json({ users: uniqueUsers });
     }
 
     const [plans, discountCodes, stats, unresolvedAlerts] = await Promise.all([

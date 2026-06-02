@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase';
 import { abortMultipartUpload } from '@/lib/r2';
 
 export async function POST(request: NextRequest) {
   try {
     // Auth check
-    const supabase = await createClient();
+    const supabase = createServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();

@@ -222,11 +222,9 @@ export async function getPresignedUploadUrl(
       Bucket: R2_BUCKET,
       Key: key,
       ContentType: contentType,
-      // Add metadata to track uploads
-      Metadata: {
-        'uploaded-by': 'admin-console',
-        'upload-time': new Date().toISOString(),
-      },
+      // CRITICAL: Do NOT add Metadata here - it adds x-amz-meta-* params to presigned URL
+      // that the browser XHR cannot reproduce, invalidating the signature.
+      // For presigned URLs used by browsers, keep it minimal: only ContentType
     });
 
     let url = await getSignedUrl(r2Client, command, { expiresIn });

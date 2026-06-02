@@ -2,7 +2,27 @@ import type { PremiumVideoWithRelations } from '@/types/premium';
 
 const API_BASE = '/api/premium-videos';
 
+// Global abort controller for upload cancellation
+let uploadAbortController: AbortController | null = null;
+
 export const premiumVideoService = {
+  /**
+   * Cancel an ongoing upload
+   */
+  cancelUpload() {
+    if (uploadAbortController) {
+      uploadAbortController.abort();
+      console.log('📛 Upload cancelled by user');
+    }
+  },
+
+  /**
+   * Get abort signal for checking if upload was cancelled
+   */
+  getUploadAbortSignal(): AbortSignal | null {
+    return uploadAbortController?.signal || null;
+  },
+
   /**
    * Fetch all premium videos
    */
@@ -55,27 +75,175 @@ export const premiumVideoService = {
   },
 
   /**
+   * Upload a file to R2 with automatic retry on connection failure and adaptive timeout
+   * CRITICAL: Retries on connection loss, adaptive timeout resets on each progress event
+   */
+  async uploadToR2WithRetry(
+    presignedUrl: string,
+    file: File,
+    onProgress?: (percent: number, status?: string) => void,
+    progressOffset = 0,
+    progressRange = 100,
+    maxRetries = 5,
+  ): Promise<void> {
+    let lastUploadedBytes = 0;
+    const fileSizeMB = file.size / (1024 * 1024);
+
+    // Adaptive timeout: resets after each progress event
+    const baseTimeoutSeconds = Math.max(
+      300, // Minimum 5 minutes per chunk
+      Math.ceil(fileSizeMB * 120), // 2 minutes per MB of total file
+    );
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Check if upload was cancelled
+        if (uploadAbortController?.signal.aborted) {
+          throw new Error('Upload cancelled by user');
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          let timeoutHandle: NodeJS.Timeout | null = null;
+          let lastProgressTime = Date.now();
+          let lastProgressBytes = lastUploadedBytes;
+
+          console.log(
+            `📤 Upload attempt ${attempt + 1}/${maxRetries + 1} for ${file.name} (${fileSizeMB.toFixed(1)}MB)`,
+          );
+
+          // Reset timeout after each progress event (adaptive timeout)
+          const resetTimeout = () => {
+            if (timeoutHandle) clearTimeout(timeoutHandle);
+            lastProgressTime = Date.now();
+
+            timeoutHandle = setTimeout(() => {
+              console.error(`⏱️ No data received for ${baseTimeoutSeconds}s - aborting and retrying...`);
+              xhr.abort();
+            }, baseTimeoutSeconds * 1000);
+          };
+
+          // Progress event: data is flowing, reset timeout
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+              lastUploadedBytes = e.loaded;
+              const percentComplete = (e.loaded / e.total) * 100;
+
+              // Map to progress range (e.g., 5-88 for video)
+              const displayPercent = progressOffset + (percentComplete * progressRange) / 100;
+
+              console.log(
+                `📊 Progress: ${percentComplete.toFixed(1)}% (${(e.loaded / 1024 / 1024).toFixed(1)}MB / ${(e.total / 1024 / 1024).toFixed(1)}MB)`,
+              );
+
+              onProgress?.(displayPercent, `Uploading... ${percentComplete.toFixed(0)}%`);
+
+              // Reset timeout: data is still flowing
+              resetTimeout();
+            }
+          });
+
+          // Connection established and data received
+          xhr.addEventListener('load', () => {
+            if (timeoutHandle) clearTimeout(timeoutHandle);
+
+            if (xhr.status >= 200 && xhr.status < 300) {
+              console.log(`✅ Upload successful (HTTP ${xhr.status})`);
+              resolve();
+            } else {
+              console.error(`❌ R2 returned HTTP ${xhr.status}`);
+              reject(new Error(`HTTP ${xhr.status}`));
+            }
+          });
+
+          // Network error: retry instead of immediate failure
+          xhr.addEventListener('error', () => {
+            if (timeoutHandle) clearTimeout(timeoutHandle);
+
+            if (attempt < maxRetries) {
+              const waitSeconds = Math.pow(2, attempt); // Exponential backoff: 1s, 2s, 4s, 8s...
+              console.warn(
+                `⚠️ Network error (attempt ${attempt + 1}/${maxRetries + 1}) - retrying in ${waitSeconds}s...`,
+              );
+              onProgress?.(
+                progressOffset + (lastUploadedBytes / file.size) * progressRange,
+                `Connection lost... Retrying in ${waitSeconds}s (attempt ${attempt + 1}/${maxRetries + 1})`,
+              );
+              reject(new Error(`RETRY_${waitSeconds}`)); // Signal for retry
+            } else {
+              console.error(`❌ Network error - max retries exceeded`);
+              reject(new Error('Network connection failed after multiple retries'));
+            }
+          });
+
+          // Timeout: no data received for baseTimeoutSeconds
+          xhr.addEventListener('abort', () => {
+            if (timeoutHandle) clearTimeout(timeoutHandle);
+            reject(new Error('Upload aborted'));
+          });
+
+          // Set up request
+          xhr.open('PUT', presignedUrl);
+          if (file.type && file.type.startsWith('video/')) {
+            xhr.setRequestHeader('Content-Type', file.type);
+          } else if (file.type && file.type.startsWith('image/')) {
+            xhr.setRequestHeader('Content-Type', file.type);
+          } else {
+            xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+          }
+
+          // Start adaptive timeout
+          resetTimeout();
+
+          console.log(`📨 Sending ${file.size} bytes to R2 (timeout: ${baseTimeoutSeconds}s per chunk)...`);
+          xhr.send(file);
+        });
+
+        // Success - exit retry loop
+        onProgress?.(progressOffset + progressRange, 'Upload complete');
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+
+        // Check if it's a retry signal
+        if (message.startsWith('RETRY_')) {
+          const waitSeconds = parseInt(message.split('_')[1]) || 1;
+          await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000));
+          continue; // Retry
+        }
+
+        // Check if upload was cancelled
+        if (message === 'Upload cancelled by user') {
+          throw err;
+        }
+
+        // Last attempt failed
+        if (attempt === maxRetries) {
+          throw err;
+        }
+      }
+    }
+  },
+
+  /**
    * Upload a premium video (admin only).
-   * Uses a presigned URL so the browser uploads directly to R2,
-   * bypassing the Next.js server's body-size limit and Vercel's 4.5 MB limit.
+   * Uses presigned URLs with automatic retry and adaptive timeout.
    *
-   * Flow:
-   *   1. POST /api/admin/upload-video/presign  → get presigned PUT URLs + R2 keys
-   *   2. PUT {presignedUrl}                    → upload video directly to R2 (tracked)
-   *   3. PUT {thumbnailPresignedUrl}           → upload thumbnail directly to R2
-   *   4. POST /api/admin/upload-video/confirm  → save metadata to DB
+   * onProgress callback: (percent: number, status?: string) => void
+   *   - percent: 0-100, tracks overall progress
+   *   - status: optional status message (e.g., "Uploading... 45%", "Connection lost... Retrying in 2s")
    */
   async uploadVideo(
     formData: FormData,
     token: string,
-    onProgress?: (percent: number) => void,
+    onProgress?: (percent: number, status?: string) => void,
   ): Promise<{ success: boolean; video?: any; error?: string }> {
     try {
       const videoFile = formData.get('video') as File | null;
       const thumbnailFile = formData.get('thumbnail') as File | null;
       const title = (formData.get('title') as string) || 'Untitled Video';
       const description = (formData.get('description') as string) || '';
-      const categoryId = formData.get('category_id') as string | null;
+      const categoryId = (formData.get('category_id') as string) || null;
       const quality = (formData.get('quality') as string) || '720p';
       const minPlan = (formData.get('min_plan') as string) || 'pro';
 
@@ -83,9 +251,9 @@ export const premiumVideoService = {
         return { success: false, error: 'Video and thumbnail are required' };
       }
 
-      onProgress?.(2);
+      onProgress?.(2, 'Preparing upload...');
 
-      // Step 1: Get presigned PUT URLs from the server (tiny JSON request)
+      // Step 1: Get presigned PUT URLs from the server
       const presignRes = await fetch('/api/admin/upload-video/presign', {
         method: 'POST',
         headers: {
@@ -117,159 +285,51 @@ export const premiumVideoService = {
         return { success: false, error: 'Server returned invalid upload URLs' };
       }
 
-      onProgress?.(5);
+      onProgress?.(5, 'Starting video upload...');
 
-      // Step 2: Upload video directly to R2 with XHR (progress tracking)
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        let uploadedBytes = 0; // Track progress for error reporting
+      // Initialize abort controller for this upload
+      uploadAbortController = new AbortController();
 
-        // Log for debugging
-        console.log(`🎬 Starting video upload to R2...`);
-        console.log(`📍 Presigned URL domain: ${new URL(videoUploadUrl).host}`);
-
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable && onProgress) {
-            uploadedBytes = e.loaded; // Track for timeout error
-            // Map 5% → 88% during video upload
-            onProgress(5 + Math.round((e.loaded / e.total) * 83));
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          console.log(`📡 XHR load event: status=${xhr.status}`);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            console.log(`✅ Video uploaded successfully (status: ${xhr.status})`);
-            resolve();
-          } else {
-            const responseText = xhr.responseText?.substring(0, 200) || '(empty)';
-            console.error(`❌ R2 video upload HTTP error - Status: ${xhr.status}`);
-            console.error(`📄 Response: ${responseText}`);
-            reject(new Error(`R2 video upload failed: HTTP ${xhr.status}`));
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          console.error(`❌ XHR error event fired`);
-          console.error(`   - Upload URL: ${videoUploadUrl.substring(0, 100)}...`);
-          console.error(`   - Video size: ${(videoFile.size / 1024 / 1024 / 1024).toFixed(2)} GB`);
-          console.error(`   - Content-Type: ${videoFile.type}`);
-          console.error(`   - Timeout was set to: ${(xhr.timeout / 1000).toFixed(0)}s`);
-          
-          // Check if it's a CORS issue
-          const corsMessage = videoUploadUrl.includes('r2.cloudflarestorage.com')
-            ? ' (Check CORS settings in Cloudflare R2 Dashboard > Settings > CORS rules)'
-            : '';
-          
-          reject(new Error(`Network connection failed uploading to Cloudflare R2${corsMessage}. Verify: 1) Endpoint format (no bucket name in URL), 2) CORS configured in R2, 3) Credentials valid`));
-        });
-
-        xhr.addEventListener('abort', () => {
-          console.warn(`⚠️ Upload aborted by user`);
-          reject(new Error('Upload aborted'));
-        });
-
-        // Timeout depends on file size (estimated at 1 minute per 2MB over average connection)
-        // For 2GB: ~1024 minutes + 600s buffer ≈ 17.6 hours max
-        const fileSizeMB = videoFile.size / (1024 * 1024);
-        const estimatedTimeSeconds = Math.max(
-          3600, // Minimum 1 hour for reliability
-          Math.ceil(fileSizeMB * 60) + 600 // 1 minute per MB + 10min buffer (supports up to 2GB files)
+      // Step 2: Upload video with retry + adaptive timeout
+      try {
+        await this.uploadToR2WithRetry(
+          videoUploadUrl,
+          videoFile,
+          onProgress,
+          5, // Start at 5%
+          83, // Range: 5-88%
         );
-        xhr.timeout = Math.min(estimatedTimeSeconds * 1000, 3600000); // Cap at 1 hour for browser safety
-        console.log(`⏱️ Set XHR timeout to ${(xhr.timeout / 1000).toFixed(0)}s (${(xhr.timeout / 60000).toFixed(1)}min) for ${fileSizeMB.toFixed(1)}MB file`);
-        
-        xhr.ontimeout = () => {
-          console.error(`⏱️ Upload timeout after ${xhr.timeout}ms (${estimatedTimeSeconds}s)`);
-          console.error(`   File size: ${(videoFile.size / 1024 / 1024).toFixed(1)}MB`);
-          console.error(`   Uploaded so far: ${(uploadedBytes / 1024 / 1024).toFixed(1)}MB`);
-          reject(new Error(`Upload timeout - connection took too long. Try uploading a smaller video or from a faster connection.`));
-        };
-
-        // Set up XHR
-        xhr.open('PUT', videoUploadUrl);
-
-        // CRITICAL: Content-Type must match the presigned URL signature
-        // Only set if the file type is recognized by browser
-        if (videoFile.type && videoFile.type.startsWith('video/')) {
-          xhr.setRequestHeader('Content-Type', videoFile.type);
-          console.log(`📤 Set Content-Type: ${videoFile.type}`);
-        } else {
-          // If no type detected, use default video/mp4
-          xhr.setRequestHeader('Content-Type', 'video/mp4');
-          console.warn(`⚠️ No video type detected, using default: video/mp4`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message === 'Upload cancelled by user') {
+          return { success: false, error: 'Upload cancelled by user' };
         }
+        throw err;
+      }
 
-        // Send the file
-        console.log(`📨 Sending ${videoFile.size} bytes to R2...`);
-        xhr.send(videoFile);
-      });
+      onProgress?.(90, 'Uploading thumbnail...');
 
-      onProgress?.(90);
-
-      // Step 3: Upload thumbnail directly to R2
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        console.log(`🖼️  Starting thumbnail upload to R2...`);
-
-        xhr.addEventListener('load', () => {
-          console.log(`📡 Thumbnail XHR load event: status=${xhr.status}`);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            console.log(`✅ Thumbnail uploaded successfully (status: ${xhr.status})`);
-            resolve();
-          } else {
-            const responseText = xhr.responseText?.substring(0, 200) || '(empty)';
-            console.error(`❌ R2 thumbnail upload HTTP error - Status: ${xhr.status}`);
-            console.error(`📄 Response: ${responseText}`);
-            reject(new Error(`R2 thumbnail upload failed: HTTP ${xhr.status}`));
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          console.error(`❌ Thumbnail XHR error event fired`);
-          console.error(`   - Upload URL: ${thumbnailUploadUrl.substring(0, 100)}...`);
-          console.error(`   - Thumbnail size: ${thumbnailFile.size} bytes`);
-          console.error(`   - Content-Type: ${thumbnailFile.type}`);
-          
-          // Check if it's a CORS issue
-          const corsMessage = thumbnailUploadUrl.includes('r2.cloudflarestorage.com')
-            ? ' (Check CORS settings in Cloudflare R2 Dashboard > Settings > CORS rules)'
-            : '';
-          
-          reject(new Error(`Network connection failed uploading thumbnail to Cloudflare R2${corsMessage}. Verify: 1) Endpoint format (no bucket name in URL), 2) CORS configured in R2, 3) Credentials valid`));
-        });
-
-        xhr.addEventListener('abort', () => {
-          console.warn(`⚠️ Thumbnail upload aborted by user`);
-          reject(new Error('Thumbnail upload aborted'));
-        });
-
-        xhr.timeout = 300000; // 5 minutes timeout
-        xhr.ontimeout = () => {
-          console.error(`⏱️ Thumbnail upload timeout after ${xhr.timeout}ms`);
-          reject(new Error('Thumbnail upload timeout'));
-        };
-
-        xhr.open('PUT', thumbnailUploadUrl);
-
-        // CRITICAL: Content-Type must match the presigned URL signature
-        if (thumbnailFile.type && (thumbnailFile.type.startsWith('image/') || thumbnailFile.type === 'image/jpeg')) {
-          xhr.setRequestHeader('Content-Type', thumbnailFile.type);
-          console.log(`📤 Set Thumbnail Content-Type: ${thumbnailFile.type}`);
-        } else {
-          // If no type detected, use default image/jpeg
-          xhr.setRequestHeader('Content-Type', 'image/jpeg');
-          console.warn(`⚠️ No image type detected, using default: image/jpeg`);
+      // Step 3: Upload thumbnail with retry + adaptive timeout
+      try {
+        await this.uploadToR2WithRetry(
+          thumbnailUploadUrl,
+          thumbnailFile,
+          onProgress,
+          90, // Start at 90%
+          8, // Range: 90-98%
+          3, // Fewer retries for small thumbnail
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message === 'Upload cancelled by user') {
+          return { success: false, error: 'Upload cancelled by user' };
         }
+        throw err;
+      }
 
-        console.log(`📨 Sending ${thumbnailFile.size} bytes thumbnail to R2...`);
-        xhr.send(thumbnailFile);
-      });
+      onProgress?.(98, 'Saving metadata...');
 
-      onProgress?.(95);
-
-      // Step 4: Confirm — save metadata to DB (tiny JSON request)
+      // Step 4: Confirm — save metadata to DB
       const confirmRes = await fetch('/api/admin/upload-video/confirm', {
         method: 'POST',
         headers: {
@@ -295,11 +355,12 @@ export const premiumVideoService = {
         return { success: false, error: confirmData.error || 'Failed to save video metadata' };
       }
 
-      onProgress?.(100);
+      onProgress?.(100, 'Upload complete!');
       return { success: true, video: confirmData.video };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Upload failed';
-      return { success: false, error: message };
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('uploadVideo error:', message);
+      return { success: false, error: message || 'Unknown error during upload' };
     }
   },
 

@@ -43,6 +43,7 @@ export default function AdminUploadVideoPage() {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<string>(''); // NEW: display status messages
   const [uploadResult, setUploadResult] = useState<{ success: boolean; message: string } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -92,6 +93,7 @@ export default function AdminUploadVideoPage() {
 
     setUploading(true);
     setUploadProgress(0);
+    setUploadStatus('');
     setUploadResult(null);
 
     const formData = new FormData();
@@ -103,10 +105,14 @@ export default function AdminUploadVideoPage() {
     formData.append('min_plan', minPlan);
     if (categoryId) formData.append('category_id', categoryId);
 
+    // NEW: Pass callback that receives both percent and status message
     const result = await premiumVideoService.uploadVideo(
       formData,
       session.access_token,
-      setUploadProgress,
+      (percent: number, status?: string) => {
+        setUploadProgress(percent);
+        if (status) setUploadStatus(status);
+      },
     );
 
     if (result.success) {
@@ -125,6 +131,15 @@ export default function AdminUploadVideoPage() {
     }
 
     setUploading(false);
+    setUploadStatus('');
+  };
+
+  // NEW: Cancel upload
+  const handleCancelUpload = () => {
+    premiumVideoService.cancelUpload();
+    setUploading(false);
+    setUploadStatus('');
+    setUploadResult({ success: false, message: 'Upload cancelled by user' });
   };
 
   const handleDelete = async (id: string) => {
@@ -459,11 +474,33 @@ export default function AdminUploadVideoPage() {
                   animate={{ opacity: 1 }}
                   className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-6"
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <Loader2 size={20} className="text-brand-400 animate-spin" />
-                    <span className="text-sm font-medium text-slate-300">
-                      Uploading to Cloudflare R2... {uploadProgress}%
-                    </span>
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <Loader2 size={20} className="text-brand-400 animate-spin" />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium text-slate-300">
+                          Uploading to Cloudflare R2... {uploadProgress}%
+                        </span>
+                        {uploadStatus && (
+                          <span className={`text-xs font-medium ${
+                            uploadStatus.includes('Retrying') 
+                              ? 'text-yellow-400' 
+                              : uploadStatus.includes('Connection lost')
+                              ? 'text-yellow-500'
+                              : 'text-slate-400'
+                          }`}>
+                            {uploadStatus}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* NEW: Cancel Button */}
+                    <button
+                      onClick={handleCancelUpload}
+                      className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
                     <motion.div

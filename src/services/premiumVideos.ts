@@ -169,12 +169,12 @@ export const premiumVideoService = {
           reject(new Error('Upload aborted'));
         });
 
-        // Timeout depends on file size (estimated at 1MB per 5 seconds over average connection)
-        // For 2GB: ~10240 seconds + 120s buffer ≈ 2.8 hours max
+        // Timeout depends on file size (estimated at 1 minute per 2MB over average connection)
+        // For 2GB: ~1024 minutes + 600s buffer ≈ 17.6 hours max
         const fileSizeMB = videoFile.size / (1024 * 1024);
         const estimatedTimeSeconds = Math.max(
-          1800, // Minimum 30 minutes for reliability
-          Math.ceil(fileSizeMB * 5) + 120 // 5s per MB + 2min buffer (supports up to 2GB files)
+          3600, // Minimum 1 hour for reliability
+          Math.ceil(fileSizeMB * 60) + 600 // 1 minute per MB + 10min buffer (supports up to 2GB files)
         );
         xhr.timeout = Math.min(estimatedTimeSeconds * 1000, 3600000); // Cap at 1 hour for browser safety
         console.log(`⏱️ Set XHR timeout to ${(xhr.timeout / 1000).toFixed(0)}s (${(xhr.timeout / 60000).toFixed(1)}min) for ${fileSizeMB.toFixed(1)}MB file`);

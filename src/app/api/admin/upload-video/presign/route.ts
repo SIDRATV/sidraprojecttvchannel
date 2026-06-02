@@ -91,10 +91,11 @@ export async function POST(request: NextRequest) {
     const thumbnailKey = buildThumbnailKey(`${timestamp}_${baseName}.${thumbExt}`);
 
     // Generate presigned PUT URLs
-    // Expiry time depends on file size (estimate: 30 seconds per 10MB + 5min buffer)
+    // Expiry time depends on file size (estimate: 1 minute per 2MB + 10min buffer)
+    // Conservative estimate to handle slow connections
     const videoExpirySeconds = Math.max(
-      1800, // Minimum 30 minutes for reliability
-      Math.ceil((videoSize / (10 * 1024 * 1024)) * 30) + 300 // 30s per 10MB + 5min buffer
+      3600, // Minimum 1 hour for safety
+      Math.ceil((videoSize / (2 * 1024 * 1024)) * 60) + 600 // 1 minute per 2MB + 10min buffer
     );
     console.log(`📝 Presigned URL expiry: ${videoExpirySeconds}s (${(videoExpirySeconds / 60).toFixed(1)} min) for ${(videoSize / 1024 / 1024).toFixed(1)}MB video`);
 

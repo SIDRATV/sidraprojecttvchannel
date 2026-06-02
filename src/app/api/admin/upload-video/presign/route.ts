@@ -16,8 +16,8 @@ const ALLOWED_VIDEO_TYPES = [
 ];
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const MAX_VIDEO_SIZE = 500 * 1024 * 1024;   // 500 MB
-const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024;   // 2 GB
+const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024;     // 10 MB
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,10 +75,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Invalid image type: ${thumbnailContentType}` }, { status: 400 });
     }
     if (videoSize && videoSize > MAX_VIDEO_SIZE) {
-      return NextResponse.json({ error: `Video too large (max 500 MB)` }, { status: 400 });
+      return NextResponse.json({ error: `Video too large (${(videoSize / 1024 / 1024 / 1024).toFixed(2)}GB, max 2 GB)` }, { status: 400 });
     }
     if (thumbnailSize && thumbnailSize > MAX_THUMBNAIL_SIZE) {
-      return NextResponse.json({ error: `Thumbnail too large (max 10 MB)` }, { status: 400 });
+      return NextResponse.json({ error: `Thumbnail too large (${(thumbnailSize / 1024 / 1024).toFixed(1)}MB, max 10 MB)` }, { status: 400 });
     }
 
     // Build R2 keys
@@ -90,10 +90,17 @@ export async function POST(request: NextRequest) {
     const videoKey = buildVideoKey(`${timestamp}_${baseName}.${videoExt}`, quality);
     const thumbnailKey = buildThumbnailKey(`${timestamp}_${baseName}.${thumbExt}`);
 
-    // Generate presigned PUT URLs (15 minutes to complete the upload)
+    // Generate presigned PUT URLs
+    // Expiry time depends on file size (estimate: 30 seconds per 10MB + 5min buffer)
+    const videoExpirySeconds = Math.max(
+      1800, // Minimum 30 minutes for reliability
+      Math.ceil((videoSize / (10 * 1024 * 1024)) * 30) + 300 // 30s per 10MB + 5min buffer
+    );
+    console.log(`📝 Presigned URL expiry: ${videoExpirySeconds}s (${(videoExpirySeconds / 60).toFixed(1)} min) for ${(videoSize / 1024 / 1024).toFixed(1)}MB video`);
+
     const [videoUploadUrl, thumbnailUploadUrl] = await Promise.all([
-      getPresignedUploadUrl(videoKey, videoContentType, 900),
-      getPresignedUploadUrl(thumbnailKey, thumbnailContentType, 900),
+      getPresignedUploadUrl(videoKey, videoContentType, videoExpirySeconds),
+      getPresignedUploadUrl(thumbnailKey, thumbnailContentType, 1800), // 30 min for thumbnail
     ]);
 
     return NextResponse.json({

@@ -150,8 +150,9 @@ export const premiumVideoService = {
         xhr.addEventListener('error', () => {
           console.error(`❌ XHR error event fired`);
           console.error(`   - Upload URL: ${videoUploadUrl.substring(0, 100)}...`);
-          console.error(`   - Video size: ${videoFile.size} bytes`);
+          console.error(`   - Video size: ${(videoFile.size / 1024 / 1024 / 1024).toFixed(2)} GB`);
           console.error(`   - Content-Type: ${videoFile.type}`);
+          console.error(`   - Timeout was set to: ${(xhr.timeout / 1000).toFixed(0)}s`);
           
           // Check if it's a CORS issue
           const corsMessage = videoUploadUrl.includes('r2.cloudflarestorage.com')
@@ -166,10 +167,21 @@ export const premiumVideoService = {
           reject(new Error('Upload aborted'));
         });
 
-        xhr.timeout = 300000; // 5 minutes timeout
+        // Timeout depends on file size (estimated at 1MB per 5 seconds over average connection)
+        // For 2GB: ~10240 seconds + 120s buffer ≈ 2.8 hours max
+        const fileSizeMB = videoFile.size / (1024 * 1024);
+        const estimatedTimeSeconds = Math.max(
+          1800, // Minimum 30 minutes for reliability
+          Math.ceil(fileSizeMB * 5) + 120 // 5s per MB + 2min buffer (supports up to 2GB files)
+        );
+        xhr.timeout = Math.min(estimatedTimeSeconds * 1000, 3600000); // Cap at 1 hour for browser safety
+        console.log(`⏱️ Set XHR timeout to ${(xhr.timeout / 1000).toFixed(0)}s (${(xhr.timeout / 60000).toFixed(1)}min) for ${fileSizeMB.toFixed(1)}MB file`);
+        
         xhr.ontimeout = () => {
-          console.error(`⏱️ Upload timeout after ${xhr.timeout}ms`);
-          reject(new Error('Upload timeout - connection took too long'));
+          console.error(`⏱️ Upload timeout after ${xhr.timeout}ms (${estimatedTimeSeconds}s)`);
+          console.error(`   File size: ${(videoFile.size / 1024 / 1024).toFixed(1)}MB`);
+          console.error(`   Uploaded so far: ${(xhr.upload.loaded / 1024 / 1024 || 0).toFixed(1)}MB`);
+          reject(new Error(`Upload timeout - connection took too long. Try uploading a smaller video or from a faster connection.`));
         };
 
         // Set up XHR

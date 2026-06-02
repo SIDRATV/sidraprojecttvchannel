@@ -8,8 +8,8 @@ import {
 } from '@/lib/r2';
 
 // Max file sizes
-const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500 MB
-const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB
+const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024;   // 10 MB
 
 const ALLOWED_VIDEO_TYPES = [
   'video/mp4',
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
     if (videoFile.size > MAX_VIDEO_SIZE) {
       return NextResponse.json(
-        { error: `Video too large (${(videoFile.size / 1024 / 1024).toFixed(1)} MB). Max: 500 MB` },
+        { error: `Video too large (${(videoFile.size / 1024 / 1024 / 1024).toFixed(2)}GB). Max: 2 GB` },
         { status: 400 },
       );
     }

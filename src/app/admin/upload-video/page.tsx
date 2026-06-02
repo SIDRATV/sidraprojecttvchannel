@@ -272,7 +272,7 @@ export default function AdminUploadVideoPage() {
                             Click to select video
                           </p>
                           <p className="text-xs text-slate-500 mt-1">
-                            MP4, WebM, MOV, AVI — Max 500 MB
+                            MP4, WebM, MOV, AVI — Max 2 GB
                           </p>
                         </div>
                       </div>

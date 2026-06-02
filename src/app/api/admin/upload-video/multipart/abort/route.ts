@@ -14,10 +14,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is admin (has admin role or matches admin email)
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    // Check if user is admin
+    const { data: userData } = await supabase.from('users').select('is_admin').eq('id', user.id).single();
 
-    if (profile?.role !== 'admin') {
+    if (!userData?.is_admin) {
       return NextResponse.json({ error: 'Forbidden - admin only' }, { status: 403 });
     }
 

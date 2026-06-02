@@ -1,6 +1,7 @@
 import type { PremiumVideoWithRelations } from '@/types/premium';
 
 const API_BASE = '/api/premium-videos';
+const PART_SIZE = 5 * 1024 * 1024; // 5 MB parts
 
 // Global abort controller for upload cancellation
 let uploadAbortController: AbortController | null = null;
@@ -75,163 +76,95 @@ export const premiumVideoService = {
   },
 
   /**
-   * Upload a file to R2 with automatic retry on connection failure and adaptive timeout
-   * CRITICAL: Retries on connection loss, adaptive timeout resets on each progress event
+   * Upload a single part with retry capability
    */
-  async uploadToR2WithRetry(
+  async uploadPartWithRetry(
     presignedUrl: string,
-    file: File,
-    onProgress?: (percent: number, status?: string) => void,
-    progressOffset = 0,
-    progressRange = 100,
-    maxRetries = 5,
-  ): Promise<void> {
-    let lastUploadedBytes = 0;
-    const fileSizeMB = file.size / (1024 * 1024);
-
-    // Adaptive timeout: resets after each progress event
-    const baseTimeoutSeconds = Math.max(
-      300, // Minimum 5 minutes per chunk
-      Math.ceil(fileSizeMB * 120), // 2 minutes per MB of total file
-    );
+    partData: Blob,
+    partNumber: number,
+    maxRetries = 3,
+    onProgress?: (bytes: number, total: number) => void,
+  ): Promise<string> {
+    let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        // Check if upload was cancelled
         if (uploadAbortController?.signal.aborted) {
           throw new Error('Upload cancelled by user');
         }
 
-        await new Promise<void>((resolve, reject) => {
+        const eTag = await new Promise<string>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           let timeoutHandle: NodeJS.Timeout | null = null;
-          let lastProgressTime = Date.now();
-          let lastProgressBytes = lastUploadedBytes;
 
-          console.log(
-            `📤 Upload attempt ${attempt + 1}/${maxRetries + 1} for ${file.name} (${fileSizeMB.toFixed(1)}MB)`,
-          );
-
-          // Reset timeout after each progress event (adaptive timeout)
           const resetTimeout = () => {
             if (timeoutHandle) clearTimeout(timeoutHandle);
-            lastProgressTime = Date.now();
-
             timeoutHandle = setTimeout(() => {
-              console.error(`⏱️ No data received for ${baseTimeoutSeconds}s - aborting and retrying...`);
+              console.error(`⏱️ Part ${partNumber} timeout - aborting`);
               xhr.abort();
-            }, baseTimeoutSeconds * 1000);
+            }, 300000); // 5 minutes per part
           };
 
-          // Progress event: data is flowing, reset timeout
           xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
-              lastUploadedBytes = e.loaded;
-              const percentComplete = (e.loaded / e.total) * 100;
-
-              // Map to progress range (e.g., 5-88 for video)
-              const displayPercent = progressOffset + (percentComplete * progressRange) / 100;
-
-              console.log(
-                `📊 Progress: ${percentComplete.toFixed(1)}% (${(e.loaded / 1024 / 1024).toFixed(1)}MB / ${(e.total / 1024 / 1024).toFixed(1)}MB)`,
-              );
-
-              onProgress?.(displayPercent, `Uploading... ${percentComplete.toFixed(0)}%`);
-
-              // Reset timeout: data is still flowing
+              onProgress?.(e.loaded, e.total);
               resetTimeout();
             }
           });
 
-          // Connection established and data received
           xhr.addEventListener('load', () => {
             if (timeoutHandle) clearTimeout(timeoutHandle);
-
             if (xhr.status >= 200 && xhr.status < 300) {
-              console.log(`✅ Upload successful (HTTP ${xhr.status})`);
-              resolve();
+              const eTag = xhr.getResponseHeader('ETag');
+              if (!eTag) {
+                reject(new Error('No ETag returned from R2'));
+              } else {
+                console.log(`✅ Part ${partNumber} uploaded (ETag: ${eTag})`);
+                resolve(eTag);
+              }
             } else {
-              console.error(`❌ R2 returned HTTP ${xhr.status}`);
               reject(new Error(`HTTP ${xhr.status}`));
             }
           });
 
-          // Network error: retry instead of immediate failure
           xhr.addEventListener('error', () => {
             if (timeoutHandle) clearTimeout(timeoutHandle);
-
-            if (attempt < maxRetries) {
-              const waitSeconds = Math.pow(2, attempt); // Exponential backoff: 1s, 2s, 4s, 8s...
-              console.warn(
-                `⚠️ Network error (attempt ${attempt + 1}/${maxRetries + 1}) - retrying in ${waitSeconds}s...`,
-              );
-              onProgress?.(
-                progressOffset + (lastUploadedBytes / file.size) * progressRange,
-                `Connection lost... Retrying in ${waitSeconds}s (attempt ${attempt + 1}/${maxRetries + 1})`,
-              );
-              reject(new Error(`RETRY_${waitSeconds}`)); // Signal for retry
-            } else {
-              console.error(`❌ Network error - max retries exceeded`);
-              reject(new Error('Network connection failed after multiple retries'));
-            }
+            reject(new Error('Network error'));
           });
 
-          // Timeout: no data received for baseTimeoutSeconds
           xhr.addEventListener('abort', () => {
             if (timeoutHandle) clearTimeout(timeoutHandle);
             reject(new Error('Upload aborted'));
           });
 
-          // Set up request
           xhr.open('PUT', presignedUrl);
-          if (file.type && file.type.startsWith('video/')) {
-            xhr.setRequestHeader('Content-Type', file.type);
-          } else if (file.type && file.type.startsWith('image/')) {
-            xhr.setRequestHeader('Content-Type', file.type);
-          } else {
-            xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-          }
-
-          // Start adaptive timeout
+          xhr.setRequestHeader('Content-Type', partData.type || 'application/octet-stream');
           resetTimeout();
-
-          console.log(`📨 Sending ${file.size} bytes to R2 (timeout: ${baseTimeoutSeconds}s per chunk)...`);
-          xhr.send(file);
+          xhr.send(partData);
         });
 
-        // Success - exit retry loop
-        onProgress?.(progressOffset + progressRange, 'Upload complete');
-        return;
+        return eTag;
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        lastError = err instanceof Error ? err : new Error(String(err));
 
-        // Check if it's a retry signal
-        if (message.startsWith('RETRY_')) {
-          const waitSeconds = parseInt(message.split('_')[1]) || 1;
+        if (lastError.message === 'Upload cancelled by user') {
+          throw lastError;
+        }
+
+        if (attempt < maxRetries) {
+          const waitSeconds = Math.pow(2, attempt);
+          console.warn(`⚠️ Part ${partNumber} error (attempt ${attempt + 1}/${maxRetries + 1}) - retrying in ${waitSeconds}s...`);
           await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000));
-          continue; // Retry
-        }
-
-        // Check if upload was cancelled
-        if (message === 'Upload cancelled by user') {
-          throw err;
-        }
-
-        // Last attempt failed
-        if (attempt === maxRetries) {
-          throw err;
         }
       }
     }
+
+    throw lastError || new Error('Max retries exceeded');
   },
 
   /**
-   * Upload a premium video (admin only).
-   * Uses presigned URLs with automatic retry and adaptive timeout.
-   *
-   * onProgress callback: (percent: number, status?: string) => void
-   *   - percent: 0-100, tracks overall progress
-   *   - status: optional status message (e.g., "Uploading... 45%", "Connection lost... Retrying in 2s")
+   * Upload a premium video using native S3 multipart upload
+   * Resumes on connection failure from the last successful part
    */
   async uploadVideo(
     formData: FormData,
@@ -253,8 +186,11 @@ export const premiumVideoService = {
 
       onProgress?.(2, 'Preparing upload...');
 
-      // Step 1: Get presigned PUT URLs from the server
-      const presignRes = await fetch('/api/admin/upload-video/presign', {
+      // Initialize abort controller
+      uploadAbortController = new AbortController();
+
+      // Step 1: Initiate multipart uploads
+      const initRes = await fetch('/api/admin/upload-video/multipart/init', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -272,64 +208,166 @@ export const premiumVideoService = {
         }),
       });
 
-      if (!presignRes.ok) {
-        const err = await presignRes.json().catch(() => ({}));
-        console.error('Presign error:', err);
-        return { success: false, error: (err as any).error || 'Failed to get upload URL from server' };
+      if (!initRes.ok) {
+        const err = await initRes.json().catch(() => ({}));
+        return { success: false, error: (err as any).error || 'Failed to initiate upload' };
       }
 
-      const { videoKey, thumbnailKey, videoUploadUrl, thumbnailUploadUrl } = await presignRes.json();
-
-      if (!videoUploadUrl || !thumbnailUploadUrl) {
-        console.error('Invalid presign response - missing upload URLs');
-        return { success: false, error: 'Server returned invalid upload URLs' };
-      }
+      const { videoKey, thumbnailKey, videoUploadId, thumbnailUploadId, partSize } = await initRes.json();
 
       onProgress?.(5, 'Starting video upload...');
 
-      // Initialize abort controller for this upload
-      uploadAbortController = new AbortController();
+      // Step 2: Upload video in parts
+      const videoParts = Math.ceil(videoFile.size / partSize);
+      const videoETags: Array<{ PartNumber: number; ETag: string }> = [];
 
-      // Step 2: Upload video with retry + adaptive timeout
-      try {
-        await this.uploadToR2WithRetry(
-          videoUploadUrl,
-          videoFile,
-          onProgress,
-          5, // Start at 5%
-          83, // Range: 5-88%
-        );
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (message === 'Upload cancelled by user') {
+      for (let i = 0; i < videoParts; i++) {
+        if (uploadAbortController.signal.aborted) {
+          // User cancelled - abort multipart uploads
+          console.log('🛑 Upload cancelled by user, aborting multipart uploads...');
+          await this.abortMultipartUploads(videoKey, thumbnailKey, videoUploadId, thumbnailUploadId, token);
           return { success: false, error: 'Upload cancelled by user' };
         }
-        throw err;
+
+        const start = i * partSize;
+        const end = Math.min(start + partSize, videoFile.size);
+        const partData = videoFile.slice(start, end);
+
+        // Get presigned URL for this part
+        const partUrlRes = await fetch('/api/admin/upload-video/multipart/part', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            key: videoKey,
+            uploadId: videoUploadId,
+            partNumber: i + 1,
+            contentLength: partData.size,
+          }),
+        });
+
+        if (!partUrlRes.ok) {
+          console.error('Failed to get presigned part URL for video');
+          await this.abortMultipartUploads(videoKey, thumbnailKey, videoUploadId, thumbnailUploadId, token);
+          return { success: false, error: 'Failed to get presigned part URL' };
+        }
+
+        const { presignedUrl } = await partUrlRes.json();
+
+        // Upload this part
+        try {
+          const eTag = await this.uploadPartWithRetry(
+            presignedUrl,
+            partData,
+            i + 1,
+            3,
+            (bytes, total) => {
+              const partPercent = (i + bytes / total) / videoParts;
+              const overallPercent = 5 + partPercent * 83;
+              onProgress?.(overallPercent, `Uploading video... part ${i + 1}/${videoParts} (${((bytes / total) * 100).toFixed(0)}%)`);
+            },
+          );
+
+          videoETags.push({
+            PartNumber: i + 1,
+            ETag: eTag,
+          });
+        } catch (err) {
+          // Part upload failed
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`Failed to upload video part ${i + 1}: ${message}`);
+          await this.abortMultipartUploads(videoKey, thumbnailKey, videoUploadId, thumbnailUploadId, token);
+          return { success: false, error: `Failed to upload video part ${i + 1}: ${message}` };
+        }
       }
 
       onProgress?.(90, 'Uploading thumbnail...');
 
-      // Step 3: Upload thumbnail with retry + adaptive timeout
+      // Step 3: Upload thumbnail (single part)
+      const thumbPartUrlRes = await fetch('/api/admin/upload-video/multipart/part', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key: thumbnailKey,
+          uploadId: thumbnailUploadId,
+          partNumber: 1,
+          contentLength: thumbnailFile.size,
+        }),
+      });
+
+      if (!thumbPartUrlRes.ok) {
+        console.error('Failed to get presigned part URL for thumbnail');
+        await this.abortMultipartUploads(videoKey, thumbnailKey, videoUploadId, thumbnailUploadId, token);
+        return { success: false, error: 'Failed to get thumbnail upload URL' };
+      }
+
+      const { presignedUrl: thumbPresignedUrl } = await thumbPartUrlRes.json();
+
+      let thumbETag: string;
       try {
-        await this.uploadToR2WithRetry(
-          thumbnailUploadUrl,
+        thumbETag = await this.uploadPartWithRetry(
+          thumbPresignedUrl,
           thumbnailFile,
-          onProgress,
-          90, // Start at 90%
-          8, // Range: 90-98%
-          3, // Fewer retries for small thumbnail
+          1,
+          3,
+          (bytes, total) => {
+            const thumbPercent = bytes / total;
+            const overallPercent = 90 + thumbPercent * 8;
+            onProgress?.(overallPercent, `Uploading thumbnail... ${((bytes / total) * 100).toFixed(0)}%`);
+          },
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        if (message === 'Upload cancelled by user') {
-          return { success: false, error: 'Upload cancelled by user' };
-        }
-        throw err;
+        console.error(`Failed to upload thumbnail: ${message}`);
+        await this.abortMultipartUploads(videoKey, thumbnailKey, videoUploadId, thumbnailUploadId, token);
+        return { success: false, error: `Failed to upload thumbnail: ${message}` };
       }
 
-      onProgress?.(98, 'Saving metadata...');
+      onProgress?.(98, 'Completing upload...');
 
-      // Step 4: Confirm — save metadata to DB
+      // Step 4: Complete multipart uploads
+      const completeVideoRes = await fetch('/api/admin/upload-video/multipart/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key: videoKey,
+          uploadId: videoUploadId,
+          parts: videoETags,
+        }),
+      });
+
+      if (!completeVideoRes.ok) {
+        return { success: false, error: 'Failed to complete video upload' };
+      }
+
+      const completeThumbRes = await fetch('/api/admin/upload-video/multipart/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key: thumbnailKey,
+          uploadId: thumbnailUploadId,
+          parts: [{ PartNumber: 1, ETag: thumbETag }],
+        }),
+      });
+
+      if (!completeThumbRes.ok) {
+        return { success: false, error: 'Failed to complete thumbnail upload' };
+      }
+
+      onProgress?.(99, 'Saving metadata...');
+
+      // Step 5: Confirm — save metadata to DB
       const confirmRes = await fetch('/api/admin/upload-video/confirm', {
         method: 'POST',
         headers: {
@@ -386,6 +424,49 @@ export const premiumVideoService = {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Delete failed';
       return { success: false, error: message };
+    }
+  },
+
+  /**
+   * Abort both video and thumbnail multipart uploads on user cancel or error
+   */
+  async abortMultipartUploads(
+    videoKey: string,
+    thumbnailKey: string,
+    videoUploadId: string,
+    thumbnailUploadId: string,
+    token: string,
+  ): Promise<void> {
+    try {
+      // Abort video upload
+      await fetch('/api/admin/upload-video/multipart/abort', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key: videoKey,
+          uploadId: videoUploadId,
+        }),
+      }).catch((err) => console.warn('⚠️ Failed to abort video multipart upload:', err));
+
+      // Abort thumbnail upload
+      await fetch('/api/admin/upload-video/multipart/abort', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key: thumbnailKey,
+          uploadId: thumbnailUploadId,
+        }),
+      }).catch((err) => console.warn('⚠️ Failed to abort thumbnail multipart upload:', err));
+
+      console.log('✅ Multipart uploads aborted successfully');
+    } catch (err) {
+      console.warn('⚠️ Error during multipart abort cleanup:', err);
     }
   },
 };

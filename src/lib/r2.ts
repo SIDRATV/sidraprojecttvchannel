@@ -4,6 +4,10 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   ListObjectsV2Command,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -259,4 +263,122 @@ export function buildVideoKey(
 export function buildThumbnailKey(filename: string): string {
   const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
   return `${R2_FOLDERS.thumbnails}/${sanitized}`;
+}
+
+/**
+ * MULTIPART UPLOAD SUPPORT
+ * For large files that need to be resumed on connection failure
+ */
+
+/**
+ * Initiate a multipart upload and return the UploadId
+ */
+export async function initiateMultipartUpload(
+  key: string,
+  contentType: string,
+): Promise<string> {
+  try {
+    const command = new CreateMultipartUploadCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const response = await r2Client.send(command);
+    if (!response.UploadId) {
+      throw new Error('No UploadId returned from S3');
+    }
+
+    console.log(`✅ Multipart upload initiated for key: ${key}, UploadId: ${response.UploadId}`);
+    return response.UploadId;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Failed to initiate multipart upload: ${message}`);
+    throw new Error(`Failed to initiate multipart upload: ${message}`);
+  }
+}
+
+/**
+ * Generate a presigned URL for uploading a specific part
+ */
+export async function getPresignedPartUploadUrl(
+  key: string,
+  uploadId: string,
+  partNumber: number,
+  contentLength: number,
+  expiresIn = 3600,
+): Promise<string> {
+  try {
+    const command = new UploadPartCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      UploadId: uploadId,
+      PartNumber: partNumber,
+      ContentLength: contentLength,
+    });
+
+    let url = await getSignedUrl(r2Client, command, { expiresIn });
+    url = fixPresignedUrl(url);
+
+    console.log(`✅ Presigned part URL generated for part ${partNumber}, size: ${contentLength} bytes`);
+    return url;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Failed to generate presigned part URL: ${message}`);
+    throw new Error(`Failed to generate presigned part URL: ${message}`);
+  }
+}
+
+/**
+ * Complete a multipart upload with the list of ETags from each part
+ */
+export async function completeMultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: Array<{ PartNumber: number; ETag: string }>,
+): Promise<void> {
+  try {
+    const command = new CompleteMultipartUploadCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      UploadId: uploadId,
+      MultipartUpload: {
+        Parts: parts.map((p) => ({
+          PartNumber: p.PartNumber,
+          ETag: p.ETag,
+        })),
+      },
+    });
+
+    await r2Client.send(command);
+    console.log(`✅ Multipart upload completed for key: ${key} (${parts.length} parts)`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Failed to complete multipart upload: ${message}`);
+    throw new Error(`Failed to complete multipart upload: ${message}`);
+  }
+}
+
+/**
+ * Abort a multipart upload (clean up abandoned uploads)
+ * Called when user cancels or an error occurs before completion
+ */
+export async function abortMultipartUpload(
+  key: string,
+  uploadId: string,
+): Promise<void> {
+  try {
+    const command = new AbortMultipartUploadCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      UploadId: uploadId,
+    });
+
+    await r2Client.send(command);
+    console.log(`✅ Multipart upload aborted for key: ${key}, UploadId: ${uploadId}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`⚠️ Failed to abort multipart upload: ${message}`);
+    // Don't throw - abort failures are non-critical
+  }
 }

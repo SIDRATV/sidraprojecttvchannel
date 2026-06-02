@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
-import {
-  getPresignedUploadUrl,
-  buildVideoKey,
-  buildThumbnailKey,
-  diagnosisR2,
-} from '@/lib/r2';
 import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
+import { initiateMultipartUpload, buildVideoKey, buildThumbnailKey } from '@/lib/r2';
 
 const ALLOWED_VIDEO_TYPES = [
   'video/mp4',
@@ -16,8 +11,8 @@ const ALLOWED_VIDEO_TYPES = [
 ];
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024;   // 2 GB
-const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024;     // 10 MB
+const MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB
+const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,17 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    // CRITICAL: Check R2 credentials before proceeding
-    const r2diagnosis = await diagnosisR2();
-    if (!r2diagnosis.ok) {
-      console.error(`❌ R2 Configuration Issue: ${r2diagnosis.message}`);
-      return NextResponse.json(
-        { error: `R2 configuration error: ${r2diagnosis.message}. Contact administrator.` },
-        { status: 500 },
-      );
-    }
-
-    // Parse request body (tiny JSON, not a file)
+    // Parse request body
     const body = await request.json();
     const {
       title,
@@ -75,10 +60,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Invalid image type: ${thumbnailContentType}` }, { status: 400 });
     }
     if (videoSize && videoSize > MAX_VIDEO_SIZE) {
-      return NextResponse.json({ error: `Video too large (${(videoSize / 1024 / 1024 / 1024).toFixed(2)}GB, max 2 GB)` }, { status: 400 });
+      return NextResponse.json(
+        { error: `Video too large (${(videoSize / 1024 / 1024 / 1024).toFixed(2)}GB, max 2 GB)` },
+        { status: 400 },
+      );
     }
     if (thumbnailSize && thumbnailSize > MAX_THUMBNAIL_SIZE) {
-      return NextResponse.json({ error: `Thumbnail too large (${(thumbnailSize / 1024 / 1024).toFixed(1)}MB, max 10 MB)` }, { status: 400 });
+      return NextResponse.json(
+        { error: `Thumbnail too large (${(thumbnailSize / 1024 / 1024).toFixed(1)}MB, max 10 MB)` },
+        { status: 400 },
+      );
     }
 
     // Build R2 keys
@@ -90,31 +81,25 @@ export async function POST(request: NextRequest) {
     const videoKey = buildVideoKey(`${timestamp}_${baseName}.${videoExt}`, quality);
     const thumbnailKey = buildThumbnailKey(`${timestamp}_${baseName}.${thumbExt}`);
 
-    // Generate presigned PUT URLs
-    // Expiry time depends on file size (estimate: 1 minute per 2MB + 10min buffer)
-    // Conservative estimate to handle slow connections
-    const videoExpirySeconds = Math.max(
-      3600, // Minimum 1 hour for safety
-      Math.ceil((videoSize / (2 * 1024 * 1024)) * 60) + 600 // 1 minute per 2MB + 10min buffer
-    );
-    console.log(`📝 Using chunked upload for ${(videoSize / 1024 / 1024).toFixed(1)}MB video`);
-
-    // Only get presigned URL for thumbnail (video will use chunked upload)
-    const thumbnailUploadUrl = await getPresignedUploadUrl(
-      thumbnailKey,
-      thumbnailContentType,
-      1800, // 30 min for thumbnail
-    );
+    // Initiate multipart uploads for both video and thumbnail
+    const [videoUploadId, thumbnailUploadId] = await Promise.all([
+      initiateMultipartUpload(videoKey, videoContentType),
+      initiateMultipartUpload(thumbnailKey, thumbnailContentType),
+    ]);
 
     return NextResponse.json({
       videoKey,
       thumbnailKey,
-      thumbnailUploadUrl,
-      // videoUploadUrl removed - using chunked upload instead
+      videoUploadId,
+      thumbnailUploadId,
+      partSize: 5 * 1024 * 1024, // 5 MB per part
     });
   } catch (err) {
-    console.error('presign error:', err);
+    console.error('multipart init error:', err);
     const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: `Failed to generate upload URLs: ${message}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `Failed to initiate multipart upload: ${message}` },
+      { status: 500 },
+    );
   }
 }

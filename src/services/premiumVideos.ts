@@ -122,6 +122,7 @@ export const premiumVideoService = {
       // Step 2: Upload video directly to R2 with XHR (progress tracking)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        let uploadedBytes = 0; // Track progress for error reporting
 
         // Log for debugging
         console.log(`🎬 Starting video upload to R2...`);
@@ -129,6 +130,7 @@ export const premiumVideoService = {
 
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable && onProgress) {
+            uploadedBytes = e.loaded; // Track for timeout error
             // Map 5% → 88% during video upload
             onProgress(5 + Math.round((e.loaded / e.total) * 83));
           }
@@ -180,7 +182,7 @@ export const premiumVideoService = {
         xhr.ontimeout = () => {
           console.error(`⏱️ Upload timeout after ${xhr.timeout}ms (${estimatedTimeSeconds}s)`);
           console.error(`   File size: ${(videoFile.size / 1024 / 1024).toFixed(1)}MB`);
-          console.error(`   Uploaded so far: ${(xhr.upload.loaded / 1024 / 1024 || 0).toFixed(1)}MB`);
+          console.error(`   Uploaded so far: ${(uploadedBytes / 1024 / 1024).toFixed(1)}MB`);
           reject(new Error(`Upload timeout - connection took too long. Try uploading a smaller video or from a faster connection.`));
         };
 

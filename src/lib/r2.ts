@@ -8,6 +8,7 @@ import {
   UploadPartCommand,
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
+  ListMultipartUploadsCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -380,5 +381,33 @@ export async function abortMultipartUpload(
     const message = err instanceof Error ? err.message : String(err);
     console.warn(`⚠️ Failed to abort multipart upload: ${message}`);
     // Don't throw - abort failures are non-critical
+  }
+}
+
+/**
+ * List all incomplete multipart uploads in the bucket
+ * Returns: Array of { Key, UploadId, Initiated }
+ */
+export async function listIncompleteMultipartUploads() {
+  try {
+    const command = new ListMultipartUploadsCommand({
+      Bucket: R2_BUCKET,
+    });
+
+    const response = await r2Client.send(command);
+    const uploads = response.Uploads || [];
+
+    console.log(`📋 Found ${uploads.length} incomplete multipart uploads`);
+
+    return uploads.map((upload) => ({
+      key: upload.Key || '',
+      uploadId: upload.UploadId || '',
+      initiatedAt: upload.Initiated || new Date(),
+      initiated: upload.Initiated ? upload.Initiated.toISOString() : '',
+    }));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Failed to list multipart uploads: ${message}`);
+    throw new Error(`Failed to list multipart uploads: ${message}`);
   }
 }

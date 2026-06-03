@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { categoryService } from '@/services/categories';
 import { premiumVideoService } from '@/services/premiumVideos';
+import { IncompleteUploadsManager } from '@/components/IncompleteUploadsManager';
 import type { Category } from '@/types';
 import type { PremiumVideoWithRelations } from '@/types/premium';
 
@@ -545,9 +546,15 @@ export default function AdminUploadVideoPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
+              className="space-y-6"
             >
-              <div className="flex items-center justify-between">
+              {/* Incomplete Uploads Manager */}
+              <div className="bg-slate-800/20 border border-slate-700/30 rounded-xl p-6">
+                <IncompleteUploadsManager />
+              </div>
+
+              {/* Uploaded Videos Section */}
+              <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-white">
                   Uploaded Videos ({existingVideos.length})
                 </h2>

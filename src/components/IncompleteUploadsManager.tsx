@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Trash2, RotateCw, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface IncompleteUpload {
   key: string;
@@ -15,7 +14,6 @@ interface IncompleteUpload {
 
 export function IncompleteUploadsManager() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
   const [uploads, setUploads] = useState<IncompleteUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

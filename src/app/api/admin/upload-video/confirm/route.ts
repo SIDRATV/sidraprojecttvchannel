@@ -48,6 +48,16 @@ export async function POST(request: NextRequest) {
 
     const qualityKeyField = `video_key_${quality}` as 'video_key_480p' | 'video_key_720p' | 'video_key_1080p';
 
+    // Get the next sort_order value
+    const { data: lastVideo } = await (supabase as any)
+      .from('premium_videos')
+      .select('sort_order')
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .single();
+
+    const nextSortOrder = (lastVideo?.sort_order ?? -10) + 10;
+
     const insertData: Record<string, unknown> = {
       title,
       description: description || '',
@@ -59,6 +69,7 @@ export async function POST(request: NextRequest) {
       is_premium: true,
       min_plan: minPlan,
       uploaded_by: jwtPayload.sub,
+      sort_order: nextSortOrder,
     };
 
     const { data: video, error: insertError } = await (supabase as any)

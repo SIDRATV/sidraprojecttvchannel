@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mna8dtb3';
+const CACHE_VERSION = 'mpyfdvwv';
 const CACHE_NAME = `sidra-tv-v${CACHE_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

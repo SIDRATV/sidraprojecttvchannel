@@ -129,7 +129,9 @@ export const premiumVideoService = {
 
           xhr.addEventListener('error', () => {
             if (timeoutHandle) clearTimeout(timeoutHandle);
-            reject(new Error('Network error'));
+            const errorMsg = `Network error (status: ${xhr.status}, readyState: ${xhr.readyState})`;
+            console.error(`❌ XHR error for part ${partNumber}: ${errorMsg}`);
+            reject(new Error(errorMsg));
           });
 
           xhr.addEventListener('abort', () => {
@@ -153,8 +155,10 @@ export const premiumVideoService = {
 
         if (attempt < maxRetries) {
           const waitSeconds = Math.pow(2, attempt);
-          console.warn(`⚠️ Part ${partNumber} error (attempt ${attempt + 1}/${maxRetries + 1}) - retrying in ${waitSeconds}s...`);
+          console.warn(`⚠️ Part ${partNumber} error (attempt ${attempt + 1}/${maxRetries + 1}) - ${lastError.message} - retrying in ${waitSeconds}s...`);
           await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000));
+        } else {
+          console.error(`❌ Part ${partNumber} failed after ${maxRetries + 1} attempts: ${lastError.message}`);
         }
       }
     }
@@ -323,7 +327,10 @@ export const premiumVideoService = {
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        console.error(`Failed to upload thumbnail: ${message}`);
+        console.error(`❌ Failed to upload thumbnail: ${message}`);
+        console.error(`   Thumbnail key: ${thumbnailKey}`);
+        console.error(`   Upload ID: ${thumbnailUploadId}`);
+        console.error(`   Presigned URL: ${thumbPresignedUrl.substring(0, 100)}...`);
         await this.abortMultipartUploads(videoKey, thumbnailKey, videoUploadId, thumbnailUploadId, token);
         return { success: false, error: `Failed to upload thumbnail: ${message}` };
       }

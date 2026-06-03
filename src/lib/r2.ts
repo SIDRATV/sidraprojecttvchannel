@@ -58,7 +58,7 @@ export const R2_BUCKET = BUCKET_NAME;
 // Folder structure in the bucket
 export const R2_FOLDERS = {
   videos: 'videos',           // videos/{quality}/{filename}.mp4
-  thumbnails: 'Sidra Miniature', // Sidra Miniature/{filename}.jpg
+  thumbnails: 'thumbnails', // thumbnails/{filename}.jpg (no spaces for URL safety)
 } as const;
 
 /**
@@ -205,8 +205,14 @@ export function fixPresignedUrl(url: string, bucket: string = R2_BUCKET): string
     }
     
     const correctedUrl = urlObj.toString();
-    console.log(`🔧 Fixed presigned URL: ${url.substring(0, 80)}... → ${correctedUrl.substring(0, 80)}...`);
-    return correctedUrl;
+    // Ensure the URL is properly encoded for browser XHR
+    // Replace spaces with %20 if any remain
+    const properlyEncodedUrl = correctedUrl.replace(/ /g, '%20');
+    
+    if (url !== properlyEncodedUrl) {
+      console.log(`🔧 Fixed presigned URL: ${url.substring(0, 80)}... → ${properlyEncodedUrl.substring(0, 80)}...`);
+    }
+    return properlyEncodedUrl;
   } catch (err) {
     console.warn(`⚠️ Could not fix presigned URL format: ${err}`);
     return url; // Return original if fix fails

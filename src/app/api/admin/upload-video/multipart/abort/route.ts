@@ -1,21 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase';
+import { verifyJwt, extractBearerToken } from '@/lib/verifyJwt';
 import { abortMultipartUpload } from '@/lib/r2';
+import { createServerClient } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    // Auth check
-    const supabase = createServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    // 1. Auth check — admin only
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is admin
-    const { data: userData } = await supabase.from('users').select('is_admin').eq('id', user.id).single();
+    const token = extractBearerToken(authHeader);
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const verified = await verifyJwt(token);
+    if (!verified) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = createServerClient();
+    const { data: userData } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', verified.sub)
+      .single();
 
     if (!userData?.is_admin) {
       return NextResponse.json({ error: 'Forbidden - admin only' }, { status: 403 });

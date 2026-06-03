@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Trash2, RotateCw, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface IncompleteUpload {
   key: string;
@@ -14,6 +15,7 @@ interface IncompleteUpload {
 
 export function IncompleteUploadsManager() {
   const router = useRouter();
+  const supabase = createClientComponentClient();
   const [uploads, setUploads] = useState<IncompleteUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,20 @@ export function IncompleteUploadsManager() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/admin/upload-video/multipart/list');
+      // Get session token
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch('/api/admin/upload-video/multipart/list', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -54,10 +69,20 @@ export function IncompleteUploadsManager() {
     try {
       setAborting((prev) => new Set([...prev, uploadId]));
 
+      // Get session token
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('No active session');
+      }
+
       const response = await fetch('/api/admin/upload-video/multipart/abort', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ key, uploadId }),
       });

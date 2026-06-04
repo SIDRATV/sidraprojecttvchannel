@@ -544,15 +544,30 @@ export default function ProfilePage() {
                   </motion.button>
                 </>
               ) : (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center space-x-2 px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors font-semibold"
-                >
-                  <Edit2 size={18} />
-                  <span>Modifier le profil</span>
-                </motion.button>
+                <>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center space-x-2 px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors font-semibold"
+                  >
+                    <Edit2 size={18} />
+                    <span>Modifier le profil</span>
+                  </motion.button>
+                  
+                  {/* Admin Panel Button - Only for admins */}
+                  {user?.is_admin && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => router.push('/admin')}
+                      className="flex items-center space-x-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold"
+                    >
+                      <Shield size={18} />
+                      <span>Panneau Admin</span>
+                    </motion.button>
+                  )}
+                </>
               )}
             </div>
           </div>

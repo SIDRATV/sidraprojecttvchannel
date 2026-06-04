@@ -36,8 +36,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate presigned URL expiry based on part size (1 hour minimum)
-    const expiresIn = Math.max(3600, Math.ceil((contentLength / (1024 * 1024)) * 60));
+    // Calculate presigned URL expiry based on part size
+    // For thumbnails: larger window to account for long video uploads
+    // For large parts: 2 minutes per MB (sufficient buffer for all network speeds)
+    const expiresIn = Math.max(
+      7200, // 2 hour minimum (covers most scenarios)
+      Math.ceil((contentLength / (1024 * 1024)) * 120) // 2 min per MB
+    );
 
     const presignedUrl = await getPresignedPartUploadUrl(key, uploadId, partNumber, contentLength, expiresIn);
 

@@ -97,12 +97,15 @@ export const premiumVideoService = {
           const xhr = new XMLHttpRequest();
           let timeoutHandle: NodeJS.Timeout | null = null;
 
+          // Use longer timeout for part 1 (often thumbnail after long video upload)
+          const timeoutMs = partNumber === 1 ? 600000 : 300000; // 10 min for thumbnail, 5 min for video parts
+
           const resetTimeout = () => {
             if (timeoutHandle) clearTimeout(timeoutHandle);
             timeoutHandle = setTimeout(() => {
-              console.error(`⏱️ Part ${partNumber} timeout - aborting`);
+              console.error(`⏱️ Part ${partNumber} timeout (${timeoutMs}ms) - aborting`);
               xhr.abort();
-            }, 300000); // 5 minutes per part
+            }, timeoutMs);
           };
 
           xhr.upload.addEventListener('progress', (e) => {
@@ -131,6 +134,9 @@ export const premiumVideoService = {
             if (timeoutHandle) clearTimeout(timeoutHandle);
             const errorMsg = `Network error (status: ${xhr.status}, readyState: ${xhr.readyState})`;
             console.error(`❌ XHR error for part ${partNumber}: ${errorMsg}`);
+            console.error(`   URL: ${presignedUrl.substring(0, 100)}...`);
+            console.error(`   Part size: ${partData.size} bytes`);
+            console.error(`   Content-Type: ${partData.type}`);
             reject(new Error(errorMsg));
           });
 
@@ -318,7 +324,7 @@ export const premiumVideoService = {
           thumbPresignedUrl,
           thumbnailFile,
           1,
-          3,
+          5, // 5 retries for thumbnail (more than video parts due to after-upload timing)
           (bytes, total) => {
             const thumbPercent = bytes / total;
             const overallPercent = 90 + thumbPercent * 8;

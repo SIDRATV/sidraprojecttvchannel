@@ -1,0 +1,44 @@
+.particles-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0.1));
+  border-radius: 50%;
+  left: var(--left);
+  top: -10px;
+  animation: fall linear infinite;
+  animation-duration: var(--duration);
+  animation-delay: var(--delay);
+  opacity: 0.5;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(100vh) translateX(calc(sin(var(--delay)) * 50px));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle {
+    animation: none;
+    display: none;
+  }
+}

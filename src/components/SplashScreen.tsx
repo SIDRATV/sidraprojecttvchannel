@@ -21,7 +21,10 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
 
   return (
     <motion.div
-      className="fixed inset-0 w-screen h-screen bg-black flex flex-col items-center justify-center z-[9999]"
+      className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center z-[9999]"
+      style={{
+        background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, rgba(217, 119, 6, 0.08) 30%, rgba(15, 23, 42, 0.95) 100%)',
+      }}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 1, delay: 3 }}
@@ -147,10 +150,13 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
 
       {/* Fade out overlay */}
       <motion.div
-        className="absolute inset-0 bg-black pointer-events-none"
+        className="absolute inset-0 pointer-events-none"
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 0, 1] }}
         transition={{ duration: 1, times: [0, 0.75, 1], delay: 3 }}
+        style={{
+          background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, rgba(217, 119, 6, 0.08) 30%, rgba(15, 23, 42, 0.95) 100%)',
+        }}
       />
     </motion.div>
   );

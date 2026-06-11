@@ -7,6 +7,7 @@ import { AuthProvider } from '@/providers/AuthProvider';
 import { MiniPlayerProvider } from '@/providers/MiniPlayerProvider';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { MiniPlayer } from '@/components/MiniPlayer';
+import { RootLayoutClient } from '@/components/RootLayoutClient';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -112,17 +113,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${inter.className} bg-white dark:bg-gray-950 text-gray-950 dark:text-white transition-colors duration-300`}>
-        <ThemeProvider>
-          <MiniPlayerProvider>
-            <AuthProvider>
-              <QueryProvider>
-                <PWAInstallPrompt />
-                {children}
-                <MiniPlayer />
-              </QueryProvider>
-            </AuthProvider>
-          </MiniPlayerProvider>
-        </ThemeProvider>
+        <RootLayoutClient>
+          {children}
+        </RootLayoutClient>
       </body>
     </html>
   );

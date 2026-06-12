@@ -5,46 +5,78 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import './splash-screen.css';
 
+interface SplashSettings {
+  enabled: boolean;
+  duration: number;
+  title: string;
+  slogan: string;
+  backgroundColor: string;
+  textColor: string;
+  showParticles: boolean;
+  showFooter: boolean;
+  footerText: string;
+}
+
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
+  const [settings, setSettings] = useState<SplashSettings | null>(null);
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/admin/splash-screen');
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch splash settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    if (!settings) return;
+
     const timer = setTimeout(() => {
       setIsVisible(false);
       onComplete();
-    }, 4000);
+    }, settings.duration * 1000);
 
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, [settings, onComplete]);
 
-  if (!isVisible) return null;
+  if (!isVisible || !settings || !settings.enabled) return null;
 
   return (
     <motion.div
       className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center z-[9999]"
       style={{
-        background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, rgba(217, 119, 6, 0.08) 30%, rgba(15, 23, 42, 0.95) 100%)',
+        background: settings.backgroundColor,
       }}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 1, delay: 3 }}
+      transition={{ duration: 1, delay: settings.duration - 1 }}
     >
       {/* Animated particles background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="particles-container">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                '--duration': `${8 + Math.random() * 8}s`,
-                '--delay': `${Math.random() * 2}s`,
-                '--left': `${Math.random() * 100}%`,
-              } as React.CSSProperties}
-            />
-          ))}
+      {settings.showParticles && (
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="particles-container">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="particle"
+                style={{
+                  '--duration': `${8 + Math.random() * 8}s`,
+                  '--delay': `${Math.random() * 2}s`,
+                  '--left': `${Math.random() * 100}%`,
+                } as React.CSSProperties}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Light sweep effect */}
       <motion.div
@@ -94,8 +126,11 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="text-center"
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wider mb-4">
-            SIDRA PROJECTS TV CHANNEL
+          <h1
+            className="text-4xl md:text-5xl font-bold tracking-wider mb-4"
+            style={{ color: settings.textColor }}
+          >
+            {settings.title}
           </h1>
 
           {/* Slogan */}
@@ -110,52 +145,55 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           >
-            L'information à la source
+            {settings.slogan}
           </motion.p>
         </motion.div>
       </motion.div>
 
       {/* Bottom section */}
-      <motion.div
-        className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-4 pb-12 z-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.6 }}
-      >
-        {/* Loading dots */}
-        <div className="flex gap-2">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 rounded-full bg-emerald-400"
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{
-                duration: 1.4,
-                repeat: Infinity,
-                delay: i * 0.2,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Footer text */}
-        <motion.p
-          className="text-sm text-white/50 font-light tracking-wider"
-          animate={{ opacity: [0.4, 0.6, 0.4] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      {settings.showFooter && (
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-4 pb-12 z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
         >
-          Powered by SidraChain
-        </motion.p>
-      </motion.div>
+          {/* Loading dots */}
+          <div className="flex gap-2">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="w-2 h-2 rounded-full bg-emerald-400"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{
+                  duration: 1.4,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Footer text */}
+          <motion.p
+            className="text-sm font-light tracking-wider"
+            style={{ color: `${settings.textColor}80` }}
+            animate={{ opacity: [0.4, 0.6, 0.4] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            {settings.footerText}
+          </motion.p>
+        </motion.div>
+      )}
 
       {/* Fade out overlay */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 0, 1] }}
-        transition={{ duration: 1, times: [0, 0.75, 1], delay: 3 }}
+        transition={{ duration: 1, times: [0, 0.75, 1], delay: settings.duration - 1 }}
         style={{
-          background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, rgba(217, 119, 6, 0.08) 30%, rgba(15, 23, 42, 0.95) 100%)',
+          background: settings.backgroundColor,
         }}
       />
     </motion.div>

@@ -83,9 +83,10 @@ import AdminAdsManager from '@/components/admin/AdminAdsManager';
 import AdminEmailManager from '@/components/admin/AdminEmailManager';
 import { AdminReferralManager } from '@/components/admin/AdminReferralManager';
 import { AdminCommentsManager } from '@/components/admin/AdminCommentsManager';
+import { AdminSplashScreenManager } from '@/components/admin/AdminSplashScreenManager';
 import type { Category } from '@/types';
 
-type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'advertisements' | 'email' | 'maintenance' | 'podcast' | 'live' | 'referral' | 'comments';
+type Tab = 'overview' | 'users' | 'content' | 'categories' | 'analytics' | 'admins' | 'finances' | 'security' | 'premium' | 'surveys' | 'voting' | 'news' | 'partnerships' | 'advertisements' | 'email' | 'maintenance' | 'podcast' | 'live' | 'referral' | 'comments' | 'splash';
 
 const COLORS = ['#0F7A5C', '#19C37D', '#D4AF37', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -137,6 +138,7 @@ export function AdminDashboard() {
     { id: 'email', label: 'Emails', icon: Mail },
     { id: 'podcast', label: 'Podcasts', icon: Mic2 },
     { id: 'live', label: 'Lives', icon: Radio },
+    { id: 'splash', label: 'Écran Splash', icon: Wrench },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'referral', label: 'Parrainage', icon: Gift },
     { id: 'comments', label: 'Commentaires', icon: MessageSquare },
@@ -168,6 +170,7 @@ export function AdminDashboard() {
             const isVotingTab = id === 'voting';
             const isNewsTab = id === 'news';
             const isMaintenanceTab = id === 'maintenance';
+            const isSplashTab = id === 'splash';
             const accent = isDanger
               ? isActive ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-slate-400 hover:bg-red-500/10 hover:text-red-300'
               : isFinance
@@ -180,6 +183,8 @@ export function AdminDashboard() {
               ? isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-300'
               : isNewsTab
               ? isActive ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-slate-400 hover:bg-orange-500/10 hover:text-orange-300'
+              : isSplashTab
+              ? isActive ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 hover:bg-cyan-500/10 hover:text-cyan-300'
               : isMaintenanceTab
               ? isActive ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-slate-400 hover:bg-amber-500/10 hover:text-amber-300'
               : isActive
@@ -317,6 +322,7 @@ export function AdminDashboard() {
             {activeTab === 'email' && <EmailTab />}
             {activeTab === 'podcast' && <PodcastTab />}
             {activeTab === 'live' && <LiveTab />}
+            {activeTab === 'splash' && <SplashTab />}
             {activeTab === 'maintenance' && <MaintenanceTab />}
             {activeTab === 'referral' && <ReferralTab />}
             {activeTab === 'comments' && <CommentsTab />}
@@ -2101,6 +2107,21 @@ function CommentsTab() {
         <p className="text-sm text-slate-400 mt-1">Gérez les commentaires des vidéos premium et les mots interdits.</p>
       </div>
       <AdminCommentsManager token={session.access_token} />
+    </div>
+  );
+}
+
+// ==================== SPLASH SCREEN TAB ====================
+function SplashTab() {
+  const { session } = useAuth();
+  if (!session?.access_token) return <div className="text-slate-400 text-center py-8">Session requise</div>;
+  return (
+    <div className="p-6 space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-white">Paramètres de l'écran splash</h2>
+        <p className="text-sm text-slate-400 mt-1">Personnalisez l'écran de démarrage de l'application.</p>
+      </div>
+      <AdminSplashScreenManager />
     </div>
   );
 }

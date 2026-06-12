@@ -673,8 +673,9 @@ function ContentTab() {
               left: `${dropdownPos.left}px`,
               width: `${dropdownPos.width}px`,
               transform: 'translateY(-100%) translateY(-8px)',
+              zIndex: 999999,
             }}
-            className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto z-[9999]"
+            className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto"
           >
                 {searchLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-slate-400">

@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { getSignedThumbnailUrl } from '@/lib/r2';
 
 export async function GET(request: Request) {
   try {
@@ -24,18 +23,17 @@ export async function GET(request: Request) {
       supabase.from('categories').select('id, name, icon').ilike('name', pattern).limit(5),
     ]);
 
-    // Process premium videos to convert thumbnail_key to signed URLs
+    // Process premium videos to convert thumbnail_key to URLs
+    const publicDomain = process.env.CLOUDFLARE_R2_PUBLIC_URL;
     let premiumVideos: any[] = [];
     if (premiumRes.status === 'fulfilled' && premiumRes.value.data) {
-      premiumVideos = await Promise.all(
-        premiumRes.value.data.map(async (v: any) => ({
-          id: v.id,
-          title: v.title,
-          type: 'premium_video' as const,
-          thumbnail: v.thumbnail_key ? await getSignedThumbnailUrl(v.thumbnail_key) : null,
-          href: `/premium-videos/${v.id}`,
-        }))
-      );
+      premiumVideos = (premiumRes.value.data ?? []).map((v: any) => ({
+        id: v.id,
+        title: v.title,
+        type: 'premium_video' as const,
+        thumbnail: v.thumbnail_key ? (publicDomain ? `${publicDomain}/${v.thumbnail_key}` : null) : null,
+        href: `/premium-videos/${v.id}`,
+      }));
     }
 
     return Response.json({

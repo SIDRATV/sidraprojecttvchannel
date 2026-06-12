@@ -120,6 +120,11 @@ async function adminPost(url: string, token: string, body: object): Promise<{ ok
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [showGlobalSearchDropdown, setShowGlobalSearchDropdown] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { results: searchResults, loading: searchLoading } = useGlobalSearch(globalSearchQuery);
 
   const tabs = [
     { id: 'overview', label: 'Aperçu', icon: Grid3x3 },
@@ -145,9 +150,211 @@ export function AdminDashboard() {
     { id: 'comments', label: 'Commentaires', icon: MessageSquare },
   ] as const;
 
+  const handleSearchFocus = () => {
+    if (searchInputRef.current) {
+      const rect = searchInputRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+      globalSearchQuery.length >= 2 && setShowGlobalSearchDropdown(true);
+    }
+  };
+
+  useEffect(() => {
+    if (globalSearchQuery.length >= 2 && searchInputRef.current) {
+      const rect = searchInputRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [globalSearchQuery]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Sidebar — Desktop */}
+      {/* Global Search Dropdown - Outside everything */}
+      <AnimatePresence>
+        {showGlobalSearchDropdown && globalSearchQuery.length >= 2 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            style={{
+              position: 'fixed',
+              top: `${dropdownPos.top}px`,
+              left: `${dropdownPos.left}px`,
+              width: `${dropdownPos.width}px`,
+              transform: 'translateY(-100%) translateY(-8px)',
+              zIndex: 999999,
+            }}
+            className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto"
+          >
+            {searchLoading ? (
+              <div className="p-4 flex items-center justify-center gap-2 text-slate-400">
+                <Loader2 size={16} className="animate-spin" />
+                Recherche en cours...
+              </div>
+            ) : (
+              <>
+                {/* Videos */}
+                {searchResults.videos.length > 0 && (
+                  <div className="border-b border-slate-700/50">
+                    <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-slate-400 uppercase">
+                      Vidéos ({searchResults.videos.length})
+                    </div>
+                    {searchResults.videos.map((video) => (
+                      <Link
+                        key={`video-${video.id}`}
+                        href={video.href}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                      >
+                        {video.thumbnail ? (
+                          <img src={video.thumbnail} alt={video.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                            <Film size={12} className="text-slate-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white font-medium line-clamp-1">{video.title}</p>
+                          <p className="text-xs text-slate-400">Vidéo</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Premium Videos */}
+                {searchResults.premiumVideos.length > 0 && (
+                  <div className="border-b border-slate-700/50">
+                    <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-gold-400 uppercase">
+                      Vidéos Premium ({searchResults.premiumVideos.length})
+                    </div>
+                    {searchResults.premiumVideos.map((video) => (
+                      <Link
+                        key={`premium-${video.id}`}
+                        href={video.href}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                      >
+                        {video.thumbnail ? (
+                          <img src={video.thumbnail} alt={video.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                            <Crown size={12} className="text-gold-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white font-medium line-clamp-1">{video.title}</p>
+                          <p className="text-xs text-gold-400">Premium</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Live Streams */}
+                {searchResults.liveStreams.length > 0 && (
+                  <div className="border-b border-slate-700/50">
+                    <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-red-400 uppercase">
+                      Lives ({searchResults.liveStreams.length})
+                    </div>
+                    {searchResults.liveStreams.map((live) => (
+                      <Link
+                        key={`live-${live.id}`}
+                        href={live.href}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                      >
+                        {live.thumbnail ? (
+                          <img src={live.thumbnail} alt={live.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                            <Radio size={12} className="text-red-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white font-medium line-clamp-1">{live.title}</p>
+                          <p className="text-xs text-red-400">{live.subtitle}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Podcasts */}
+                {searchResults.podcasts.length > 0 && (
+                  <div className="border-b border-slate-700/50">
+                    <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-purple-400 uppercase">
+                      Podcasts ({searchResults.podcasts.length})
+                    </div>
+                    {searchResults.podcasts.map((podcast) => (
+                      <Link
+                        key={`podcast-${podcast.id}`}
+                        href={podcast.href}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                      >
+                        {podcast.thumbnail ? (
+                          <img src={podcast.thumbnail} alt={podcast.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                            <Mic2 size={12} className="text-purple-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white font-medium line-clamp-1">{podcast.title}</p>
+                          <p className="text-xs text-slate-400">{podcast.subtitle}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                
+                {/* News */}
+                {searchResults.news.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-orange-400 uppercase">
+                      Actualités ({searchResults.news.length})
+                    </div>
+                    {searchResults.news.map((news) => (
+                      <Link
+                        key={`news-${news.id}`}
+                        href={news.href}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                      >
+                        {news.thumbnail ? (
+                          <img src={news.thumbnail} alt={news.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                            <Bell size={12} className="text-orange-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white font-medium line-clamp-1">{news.title}</p>
+                          <p className="text-xs text-slate-400">{news.subtitle}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                
+                {/* No results */}
+                {searchResults.videos.length === 0 &&
+                  searchResults.premiumVideos.length === 0 &&
+                  searchResults.liveStreams.length === 0 &&
+                  searchResults.podcasts.length === 0 &&
+                  searchResults.news.length === 0 && (
+                    <div className="p-8 text-center text-slate-400">
+                      <Film size={32} className="mx-auto mb-3 opacity-50" />
+                      <p className="text-sm">Aucun résultat pour "{globalSearchQuery}"</p>
+                    </div>
+                  )}
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:bg-slate-900/60 lg:border-r lg:border-slate-800 lg:backdrop-blur-xl lg:z-40 lg:flex lg:flex-col">
         <div className="p-8 border-b border-slate-800/50">
           <div className="flex items-center gap-4">
@@ -307,7 +514,15 @@ export function AdminDashboard() {
             transition={{ duration: 0.3 }}
           >
             {activeTab === 'overview' && <OverviewTab />}
-            {activeTab === 'content' && <ContentTab />}
+            {activeTab === 'content' && (
+              <ContentTab 
+                searchQuery={globalSearchQuery} 
+                setSearchQuery={setGlobalSearchQuery}
+                setShowDropdown={setShowGlobalSearchDropdown}
+                searchInputRef={searchInputRef}
+                handleSearchFocus={handleSearchFocus}
+              />
+            )}
             {activeTab === 'premium' && <PremiumTab />}
             {activeTab === 'users' && <UsersTab />}
             {activeTab === 'categories' && <CategoriesTab />}
@@ -479,12 +694,22 @@ function OverviewTab() {
 }
 
 // ==================== CONTENT TAB ====================
-function ContentTab() {
+function ContentTab({
+  searchQuery,
+  setSearchQuery,
+  setShowDropdown,
+  searchInputRef,
+  handleSearchFocus,
+}: {
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  setShowDropdown: (show: boolean) => void;
+  searchInputRef: React.RefObject<HTMLInputElement>;
+  handleSearchFocus: () => void;
+}) {
   const { session } = useAuth();
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -494,36 +719,6 @@ function ContentTab() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
-  
-  // Use global search hook
-  const { results: searchResults, loading: searchLoading } = useGlobalSearch(searchQuery);
-  
-  // Calculate dropdown position
-  const handleSearchFocus = () => {
-    if (searchInputRef.current) {
-      const rect = searchInputRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-      searchQuery.length >= 2 && setShowSearchDropdown(true);
-    }
-  };
-  
-  // Update position when query changes
-  useEffect(() => {
-    if (searchQuery.length >= 2 && searchInputRef.current) {
-      const rect = searchInputRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  }, [searchQuery]);
 
   const loadVideos = useCallback(async () => {
     const res = await fetch('/api/premium-videos?limit=100');
@@ -565,13 +760,8 @@ function ContentTab() {
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  const filtered = searchQuery
-    ? sorted.filter(
-        (v) =>
-          v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (v.description || '').toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : sorted;
+  // Display all videos (filtering is now done at global search level)
+  const videosToDisplay = sorted;
 
   const handleDrop = async (targetId: string) => {
     const fromId = dragIdRef.current;
@@ -641,12 +831,12 @@ function ContentTab() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setShowSearchDropdown(e.target.value.length >= 2);
+                setShowDropdown(e.target.value.length >= 2);
               }}
               onFocus={() => {
                 handleSearchFocus();
               }}
-              onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-brand-500/50 transition-all"
             />
           </div>
@@ -659,207 +849,24 @@ function ContentTab() {
           Nouvelle Vidéo Premium
         </Link>
       </div>
-      
-      {/* Global Search Dropdown */}
-      <AnimatePresence>
-        {showSearchDropdown && searchQuery.length >= 2 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            style={{
-              position: 'fixed',
-              top: `${dropdownPos.top}px`,
-              left: `${dropdownPos.left}px`,
-              width: `${dropdownPos.width}px`,
-              transform: 'translateY(-100%) translateY(-8px)',
-              zIndex: 999999,
-            }}
-            className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto"
-          >
-                {searchLoading ? (
-                  <div className="p-4 flex items-center justify-center gap-2 text-slate-400">
-                    <Loader2 size={16} className="animate-spin" />
-                    Recherche en cours...
-                  </div>
-                ) : (
-                  <>
-                    {/* Videos */}
-                    {searchResults.videos.length > 0 && (
-                      <div className="border-b border-slate-700/50">
-                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-slate-400 uppercase">
-                          Vidéos ({searchResults.videos.length})
-                        </div>
-                        {searchResults.videos.map((video) => (
-                          <Link
-                            key={`video-${video.id}`}
-                            href={video.href}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
-                          >
-                            {video.thumbnail ? (
-                              <img src={video.thumbnail} alt={video.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
-                            ) : (
-                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
-                                <Film size={12} className="text-slate-500" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-white font-medium line-clamp-1">{video.title}</p>
-                              <p className="text-xs text-slate-400">Vidéo</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Premium Videos */}
-                    {searchResults.premiumVideos.length > 0 && (
-                      <div className="border-b border-slate-700/50">
-                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-gold-400 uppercase">
-                          Vidéos Premium ({searchResults.premiumVideos.length})
-                        </div>
-                        {searchResults.premiumVideos.map((video) => (
-                          <Link
-                            key={`premium-${video.id}`}
-                            href={video.href}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
-                          >
-                            {video.thumbnail ? (
-                              <img src={video.thumbnail} alt={video.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
-                            ) : (
-                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
-                                <Crown size={12} className="text-gold-500" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-white font-medium line-clamp-1">{video.title}</p>
-                              <p className="text-xs text-gold-400">Premium</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Live Streams */}
-                    {searchResults.liveStreams.length > 0 && (
-                      <div className="border-b border-slate-700/50">
-                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-red-400 uppercase">
-                          Lives ({searchResults.liveStreams.length})
-                        </div>
-                        {searchResults.liveStreams.map((live) => (
-                          <Link
-                            key={`live-${live.id}`}
-                            href={live.href}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
-                          >
-                            {live.thumbnail ? (
-                              <img src={live.thumbnail} alt={live.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
-                            ) : (
-                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
-                                <Radio size={12} className="text-red-500" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-white font-medium line-clamp-1">{live.title}</p>
-                              <p className="text-xs text-red-400">{live.subtitle}</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Podcasts */}
-                    {searchResults.podcasts.length > 0 && (
-                      <div className="border-b border-slate-700/50">
-                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-purple-400 uppercase">
-                          Podcasts ({searchResults.podcasts.length})
-                        </div>
-                        {searchResults.podcasts.map((podcast) => (
-                          <Link
-                            key={`podcast-${podcast.id}`}
-                            href={podcast.href}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
-                          >
-                            {podcast.thumbnail ? (
-                              <img src={podcast.thumbnail} alt={podcast.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
-                            ) : (
-                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
-                                <Mic2 size={12} className="text-purple-500" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-white font-medium line-clamp-1">{podcast.title}</p>
-                              <p className="text-xs text-slate-400">{podcast.subtitle}</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* News */}
-                    {searchResults.news.length > 0 && (
-                      <div>
-                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-orange-400 uppercase">
-                          Actualités ({searchResults.news.length})
-                        </div>
-                        {searchResults.news.map((news) => (
-                          <Link
-                            key={`news-${news.id}`}
-                            href={news.href}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
-                          >
-                            {news.thumbnail ? (
-                              <img src={news.thumbnail} alt={news.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
-                            ) : (
-                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
-                                <Bell size={12} className="text-orange-500" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-white font-medium line-clamp-1">{news.title}</p>
-                              <p className="text-xs text-slate-400">{news.subtitle}</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* No results */}
-                    {searchResults.videos.length === 0 &&
-                      searchResults.premiumVideos.length === 0 &&
-                      searchResults.liveStreams.length === 0 &&
-                      searchResults.podcasts.length === 0 &&
-                      searchResults.news.length === 0 && (
-                        <div className="p-8 text-center text-slate-400">
-                          <Film size={32} className="mx-auto mb-3 opacity-50" />
-                          <p className="text-sm">Aucun résultat pour "{searchQuery}"</p>
-                        </div>
-                      )}
-                  </>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
 
       <Card className="overflow-hidden border border-slate-700/50 bg-slate-800/30">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 size={32} className="animate-spin text-brand-400" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : videosToDisplay.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <Film size={48} className="text-slate-600" />
             <p className="text-slate-400 font-medium">
-              {searchQuery ? 'Aucun résultat' : 'Aucune vidéo premium uploadée'}
+              Aucune vidéo premium uploadée
             </p>
-            {!searchQuery && (
-              <Link
-                href="/admin/upload-video"
-                className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-white rounded-lg text-sm font-medium transition-all"
-              >
-                Uploader la première vidéo
-              </Link>
-            )}
+            <Link
+              href="/admin/upload-video"
+              className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-white rounded-lg text-sm font-medium transition-all"
+            >
+              Uploader la première vidéo
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -867,7 +874,7 @@ function ContentTab() {
               <thead className="bg-slate-700/30 border-b border-slate-700/50">
                 <tr>
                   <th className="px-4 py-4 text-center font-semibold text-slate-300 w-20">
-                    {searchQuery ? 'N°' : <span className="flex items-center justify-center gap-1"><GripVertical size={14} />Ordre</span>}
+                    <span className="flex items-center justify-center gap-1"><GripVertical size={14} />Ordre</span>
                   </th>
                   <th className="px-6 py-4 text-left font-semibold text-slate-300">Titre</th>
                   <th className="px-6 py-4 text-left font-semibold text-slate-300">Plan</th>
@@ -878,10 +885,10 @@ function ContentTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
-                {filtered.map((video, idx) => (
+                {videosToDisplay.map((video, idx) => (
                   <tr
                     key={video.id}
-                    draggable={!searchQuery}
+                    draggable={true}
                     onDragStart={() => { dragIdRef.current = video.id; setDraggingId(video.id); }}
                     onDragOver={(e) => { e.preventDefault(); setDragOverId(video.id); }}
                     onDragLeave={() => setDragOverId((prev) => prev === video.id ? null : prev)}
@@ -900,9 +907,7 @@ function ContentTab() {
                     {/* Drag handle */}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1.5 justify-center">
-                        {!searchQuery && (
-                          <GripVertical size={16} className="text-slate-400 flex-shrink-0" />
-                        )}
+                        <GripVertical size={16} className="text-slate-400 flex-shrink-0" />
                         <span className="text-xs font-mono text-slate-500 tabular-nums">{idx + 1}</span>
                       </div>
                     </td>

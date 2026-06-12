@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Hero } from '@/components/Hero';
@@ -19,6 +19,7 @@ const sectionFade = {
 export default function HomePage() {
   const { user, initialized, isPasswordRecovery } = useAuth();
   const router = useRouter();
+  const [canShowPublic, setCanShowPublic] = useState(false);
 
   // Redirect authenticated users straight to the app
   // But NOT during password recovery flow (user has a session but needs to reset)
@@ -28,8 +29,18 @@ export default function HomePage() {
     }
   }, [initialized, user, isPasswordRecovery, router]);
 
-  // Blank while auth is resolving — prevents flash of public page for logged-in users
-  if (!initialized) return null;
+  // Wait 10 seconds before showing public page to non-connected users
+  useEffect(() => {
+    if (initialized && !user && !isPasswordRecovery) {
+      const timer = setTimeout(() => {
+        setCanShowPublic(true);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [initialized, user, isPasswordRecovery]);
+
+  // Don't show anything while auth is resolving or during the 10s wait
+  if (!initialized || !canShowPublic) return null;
 
   return (
     <div className="bg-white dark:bg-gray-950 transition-colors" suppressHydrationWarning>

@@ -11,34 +11,39 @@ import { SplashScreen } from '@/components/SplashScreen';
 
 export function RootLayoutClient({ children }: { children: React.ReactNode }) {
   const [showSplash, setShowSplash] = useState(true);
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     // Check if splash has already been shown in this session
     const splashShown = sessionStorage.getItem('splash-shown');
     if (splashShown) {
       setShowSplash(false);
+      setShowContent(true);
     }
   }, []);
 
   const handleSplashComplete = () => {
     sessionStorage.setItem('splash-shown', 'true');
     setShowSplash(false);
+    setShowContent(true);
   };
 
   return (
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-      <ThemeProvider>
-        <MiniPlayerProvider>
-          <AuthProvider>
-            <QueryProvider>
-              <PWAInstallPrompt />
-              {children}
-              <MiniPlayer />
-            </QueryProvider>
-          </AuthProvider>
-        </MiniPlayerProvider>
-      </ThemeProvider>
+      {showContent && (
+        <ThemeProvider>
+          <MiniPlayerProvider>
+            <AuthProvider>
+              <QueryProvider>
+                <PWAInstallPrompt />
+                {children}
+                <MiniPlayer />
+              </QueryProvider>
+            </AuthProvider>
+          </MiniPlayerProvider>
+        </ThemeProvider>
+      )}
     </>
   );
 }

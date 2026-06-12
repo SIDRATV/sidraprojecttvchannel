@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3,
@@ -175,23 +176,23 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Global Search Dropdown - Outside everything */}
+      {/* Global Search Dropdown via Portal - render outside DOM flow */}
       <AnimatePresence>
-        {showGlobalSearchDropdown && globalSearchQuery.length >= 2 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            style={{
-              position: 'fixed',
-              top: `${dropdownPos.top}px`,
-              left: `${dropdownPos.left}px`,
-              width: `${dropdownPos.width}px`,
-              transform: 'translateY(-100%) translateY(-8px)',
-              zIndex: 999999,
-            }}
-            className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto"
-          >
+        {showGlobalSearchDropdown && globalSearchQuery.length >= 2 && typeof window !== 'undefined' && createPortal(
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          style={{
+            position: 'fixed',
+            top: `${dropdownPos.top}px`,
+            left: `${dropdownPos.left}px`,
+            width: `${dropdownPos.width}px`,
+            transform: 'translateY(-100%) translateY(-8px)',
+            zIndex: 999999,
+          }}
+          className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto"
+        >
             {searchLoading ? (
               <div className="p-4 flex items-center justify-center gap-2 text-slate-400">
                 <Loader2 size={16} className="animate-spin" />
@@ -352,9 +353,10 @@ export function AdminDashboard() {
                   )}
               </>
             )}
-          </motion.div>
-        )}
+            </motion.div>
+        , document.body)}
       </AnimatePresence>
+      
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:bg-slate-900/60 lg:border-r lg:border-slate-800 lg:backdrop-blur-xl lg:z-40 lg:flex lg:flex-col">
         <div className="p-8 border-b border-slate-800/50">
           <div className="flex items-center gap-4">

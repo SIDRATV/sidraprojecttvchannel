@@ -9,7 +9,10 @@ interface SplashSettings {
   duration: number;
   title: string;
   slogan: string;
+  backgroundType: 'solid' | 'gradient' | 'image';
   backgroundColor: string;
+  backgroundGradient: string;
+  backgroundImage: string;
   textColor: string;
   showParticles: boolean;
   showFooter: boolean;
@@ -21,12 +24,24 @@ const DEFAULT_SETTINGS: SplashSettings = {
   duration: 4,
   title: 'SIDRA PROJECTS TV CHANNEL',
   slogan: "L'information à la source",
-  backgroundColor: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, rgba(217, 119, 6, 0.08) 30%, rgba(15, 23, 42, 0.95) 100%)',
+  backgroundType: 'gradient',
+  backgroundColor: '#000000',
+  backgroundGradient: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, rgba(217, 119, 6, 0.08) 30%, rgba(15, 23, 42, 0.95) 100%)',
+  backgroundImage: '',
   textColor: '#ffffff',
   showParticles: true,
   showFooter: true,
   footerText: 'Powered by SidraChain',
 };
+
+const GRADIENT_PRESETS = [
+  { name: 'Sidra (Défaut)', value: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, rgba(217, 119, 6, 0.08) 30%, rgba(15, 23, 42, 0.95) 100%)' },
+  { name: 'Noir pur', value: 'linear-gradient(180deg, #000000 0%, #000000 100%)' },
+  { name: 'Vert foncé', value: 'radial-gradient(circle at center, #0f4c3a 0%, #051e17 100%)' },
+  { name: 'Or élégant', value: 'radial-gradient(circle at center, #2d1f0f 0%, #0a0604 100%)' },
+  { name: 'Bleu nuit', value: 'radial-gradient(circle at center, #1a3a52 0%, #0a1929 100%)' },
+  { name: 'Violet profond', value: 'radial-gradient(circle at center, #2d1b4e 0%, #0f0a1e 100%)' },
+];
 
 export function AdminSplashScreenManager() {
   const { user, session } = useAuth();
@@ -157,18 +172,110 @@ export function AdminSplashScreenManager() {
             />
           </div>
 
-          {/* Background */}
+          {/* Background Type */}
           <div>
-            <label className="block text-white font-medium mb-2">Background Gradient</label>
-            <textarea
-              value={settings.backgroundColor}
-              onChange={(e) => setSettings({ ...settings, backgroundColor: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-green-500 font-mono text-sm"
-            />
+            <label className="block text-white font-medium mb-2">Type de fond</label>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <button
+                onClick={() => setSettings({ ...settings, backgroundType: 'solid' })}
+                className={`px-4 py-2 rounded-lg transition ${
+                  settings.backgroundType === 'solid'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                Couleur unie
+              </button>
+              <button
+                onClick={() => setSettings({ ...settings, backgroundType: 'gradient' })}
+                className={`px-4 py-2 rounded-lg transition ${
+                  settings.backgroundType === 'gradient'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                Dégradé
+              </button>
+              <button
+                onClick={() => setSettings({ ...settings, backgroundType: 'image' })}
+                className={`px-4 py-2 rounded-lg transition ${
+                  settings.backgroundType === 'image'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                Image
+              </button>
+            </div>
+
+            {/* Solid Color */}
+            {settings.backgroundType === 'solid' && (
+              <div className="flex gap-3">
+                <input
+                  type="color"
+                  value={settings.backgroundColor}
+                  onChange={(e) => setSettings({ ...settings, backgroundColor: e.target.value })}
+                  className="w-16 h-10 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.backgroundColor}
+                  onChange={(e) => setSettings({ ...settings, backgroundColor: e.target.value })}
+                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-green-500"
+                />
+              </div>
+            )}
+
+            {/* Gradient Presets */}
+            {settings.backgroundType === 'gradient' && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Choisir un dégradé</label>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {GRADIENT_PRESETS.map((preset) => (
+                    <button
+                      key={preset.name}
+                      onClick={() => setSettings({ ...settings, backgroundGradient: preset.value })}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition border ${
+                        settings.backgroundGradient === preset.value
+                          ? 'border-green-500 text-white'
+                          : 'border-gray-700 text-gray-300 hover:border-gray-600'
+                      }`}
+                      style={{ background: preset.value }}
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Image URL */}
+            {settings.backgroundType === 'image' && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">URL de l'image</label>
+                <input
+                  type="text"
+                  value={settings.backgroundImage}
+                  onChange={(e) => setSettings({ ...settings, backgroundImage: e.target.value })}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-green-500"
+                />
+              </div>
+            )}
+
+            {/* Preview */}
             <div
-              className="mt-2 h-16 rounded-lg border border-gray-700"
-              style={{ background: settings.backgroundColor }}
+              className="mt-3 h-20 rounded-lg border border-gray-700"
+              style={{
+                background:
+                  settings.backgroundType === 'solid'
+                    ? settings.backgroundColor
+                    : settings.backgroundType === 'gradient'
+                    ? settings.backgroundGradient
+                    : settings.backgroundImage
+                    ? `url(${settings.backgroundImage}) center/cover`
+                    : '#000',
+              }}
             />
           </div>
 

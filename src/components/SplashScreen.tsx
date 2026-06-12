@@ -10,7 +10,10 @@ interface SplashSettings {
   duration: number;
   title: string;
   slogan: string;
+  backgroundType: 'solid' | 'gradient' | 'image';
   backgroundColor: string;
+  backgroundGradient: string;
+  backgroundImage: string;
   textColor: string;
   showParticles: boolean;
   showFooter: boolean;
@@ -49,11 +52,20 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
 
   if (!isVisible || !settings || !settings.enabled) return null;
 
+  const getBackground = () => {
+    if (settings.backgroundType === 'solid') return settings.backgroundColor;
+    if (settings.backgroundType === 'gradient') return settings.backgroundGradient;
+    if (settings.backgroundType === 'image' && settings.backgroundImage) {
+      return `url(${settings.backgroundImage}) center/cover no-repeat`;
+    }
+    return settings.backgroundGradient || '#000000';
+  };
+
   return (
     <motion.div
       className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center z-[9999]"
       style={{
-        background: settings.backgroundColor,
+        background: getBackground(),
       }}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -193,7 +205,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         animate={{ opacity: [0, 0, 1] }}
         transition={{ duration: 1, times: [0, 0.75, 1], delay: settings.duration - 1 }}
         style={{
-          background: settings.backgroundColor,
+          background: getBackground(),
         }}
       />
     </motion.div>

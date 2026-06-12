@@ -110,7 +110,7 @@ export function GlobalSearchOverlay({ query, results, loading, onClose }: Global
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.15 }}
-          className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-[300] overflow-hidden max-h-[70vh] overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-[9999] overflow-hidden max-h-[70vh] overflow-y-auto"
         >
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-gray-400">

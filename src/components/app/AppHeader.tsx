@@ -589,9 +589,9 @@ export function AppHeader({ onSearch, showSearch = false }: AppHeaderProps) {
 
     {/* Search Bar - Bottom Section */}
     {showSearch && (
-      <div className="sticky top-0 z-49 border-t border-gray-200 dark:border-gray-800 px-4 lg:px-8 py-3 bg-gray-50 dark:bg-gray-800/50 transition-colors">
+      <div className="sticky top-0 z-50 border-t border-gray-200 dark:border-gray-800 px-4 lg:px-8 py-3 bg-gray-50 dark:bg-gray-800/50 transition-colors">
         <form onSubmit={handleSearch} className="max-w-7xl mx-auto">
-          <div ref={searchContainerRef} className="relative">
+          <div ref={searchContainerRef} className="relative overflow-visible">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
             <input
               type="text"

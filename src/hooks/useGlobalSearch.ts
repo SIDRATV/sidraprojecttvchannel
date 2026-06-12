@@ -58,12 +58,12 @@ export function useGlobalSearch(query: string) {
       const [videosRes, premiumRes, liveRes, podcastRes, newsRes, partnersRes, adsRes, votingRes, categoriesRes] = await Promise.allSettled([
         supabase
           .from('videos')
-          .select('id, title, thumbnail_url, youtube_url')
+          .select('id, title, thumbnail_url, video_url')
           .ilike('title', pattern)
           .limit(5),
         db
           .from('premium_videos')
-          .select('id, title, thumbnail_url')
+          .select('id, title, thumbnail_key')
           .ilike('title', pattern)
           .limit(5),
         db
@@ -121,7 +121,7 @@ export function useGlobalSearch(query: string) {
                 id: v.id,
                 title: v.title,
                 type: 'premium_video' as const,
-                thumbnail: v.thumbnail_url,
+                thumbnail: v.thumbnail_key ? `https://pub-52ed6e00ff2844df9f62f88c86704f3e.r2.cloudflarestorage.com/${v.thumbnail_key}` : null,
                 href: `/premium-videos/${v.id}`,
               }))
             : [],

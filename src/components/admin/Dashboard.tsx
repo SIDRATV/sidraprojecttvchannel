@@ -69,6 +69,7 @@ import {
   Cell,
 } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { categoryService } from '@/services/categories';
 import { GasFeeManager } from '@/components/admin/GasFeeManager';
 import { AdminPremiumManager } from '@/components/admin/AdminPremiumManager';
@@ -483,6 +484,7 @@ function ContentTab() {
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -492,6 +494,9 @@ function ContentTab() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  
+  // Use global search hook
+  const { results: searchResults, loading: searchLoading } = useGlobalSearch(searchQuery);
 
   const loadVideos = useCallback(async () => {
     const res = await fetch('/api/premium-videos?limit=100');
@@ -599,15 +604,193 @@ function ContentTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-md z-20">
           <Search size={18} className="absolute left-3 top-3 text-slate-400" />
           <input
             type="text"
-            placeholder="Rechercher une vidéo..."
+            placeholder="Rechercher sur la plateforme..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSearchDropdown(e.target.value.length >= 2);
+            }}
+            onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
+            onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-brand-500/50 transition-all"
           />
+          
+          {/* Global Search Dropdown */}
+          <AnimatePresence>
+            {showSearchDropdown && searchQuery.length >= 2 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto z-50"
+              >
+                {searchLoading ? (
+                  <div className="p-4 flex items-center justify-center gap-2 text-slate-400">
+                    <Loader2 size={16} className="animate-spin" />
+                    Recherche en cours...
+                  </div>
+                ) : (
+                  <>
+                    {/* Videos */}
+                    {searchResults.videos.length > 0 && (
+                      <div className="border-b border-slate-700/50">
+                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-slate-400 uppercase">
+                          Vidéos ({searchResults.videos.length})
+                        </div>
+                        {searchResults.videos.map((video) => (
+                          <Link
+                            key={`video-${video.id}`}
+                            href={video.href}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                          >
+                            {video.thumbnail ? (
+                              <img src={video.thumbnail} alt={video.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                                <Film size={12} className="text-slate-500" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-white font-medium line-clamp-1">{video.title}</p>
+                              <p className="text-xs text-slate-400">Vidéo</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Premium Videos */}
+                    {searchResults.premiumVideos.length > 0 && (
+                      <div className="border-b border-slate-700/50">
+                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-gold-400 uppercase">
+                          Vidéos Premium ({searchResults.premiumVideos.length})
+                        </div>
+                        {searchResults.premiumVideos.map((video) => (
+                          <Link
+                            key={`premium-${video.id}`}
+                            href={video.href}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                          >
+                            {video.thumbnail ? (
+                              <img src={video.thumbnail} alt={video.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                                <Crown size={12} className="text-gold-500" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-white font-medium line-clamp-1">{video.title}</p>
+                              <p className="text-xs text-gold-400">Premium</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Live Streams */}
+                    {searchResults.liveStreams.length > 0 && (
+                      <div className="border-b border-slate-700/50">
+                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-red-400 uppercase">
+                          Lives ({searchResults.liveStreams.length})
+                        </div>
+                        {searchResults.liveStreams.map((live) => (
+                          <Link
+                            key={`live-${live.id}`}
+                            href={live.href}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                          >
+                            {live.thumbnail ? (
+                              <img src={live.thumbnail} alt={live.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                                <Radio size={12} className="text-red-500" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-white font-medium line-clamp-1">{live.title}</p>
+                              <p className="text-xs text-red-400">{live.subtitle}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Podcasts */}
+                    {searchResults.podcasts.length > 0 && (
+                      <div className="border-b border-slate-700/50">
+                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-purple-400 uppercase">
+                          Podcasts ({searchResults.podcasts.length})
+                        </div>
+                        {searchResults.podcasts.map((podcast) => (
+                          <Link
+                            key={`podcast-${podcast.id}`}
+                            href={podcast.href}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                          >
+                            {podcast.thumbnail ? (
+                              <img src={podcast.thumbnail} alt={podcast.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                                <Mic2 size={12} className="text-purple-500" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-white font-medium line-clamp-1">{podcast.title}</p>
+                              <p className="text-xs text-slate-400">{podcast.subtitle}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* News */}
+                    {searchResults.news.length > 0 && (
+                      <div>
+                        <div className="px-4 py-2 bg-slate-700/50 text-xs font-semibold text-orange-400 uppercase">
+                          Actualités ({searchResults.news.length})
+                        </div>
+                        {searchResults.news.map((news) => (
+                          <Link
+                            key={`news-${news.id}`}
+                            href={news.href}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors border-b border-slate-700/30 last:border-b-0"
+                          >
+                            {news.thumbnail ? (
+                              <img src={news.thumbnail} alt={news.title} className="w-12 h-8 rounded object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="w-12 h-8 rounded bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                                <Bell size={12} className="text-orange-500" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-white font-medium line-clamp-1">{news.title}</p>
+                              <p className="text-xs text-slate-400">{news.subtitle}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* No results */}
+                    {searchResults.videos.length === 0 &&
+                      searchResults.premiumVideos.length === 0 &&
+                      searchResults.liveStreams.length === 0 &&
+                      searchResults.podcasts.length === 0 &&
+                      searchResults.news.length === 0 && (
+                        <div className="p-8 text-center text-slate-400">
+                          <Film size={32} className="mx-auto mb-3 opacity-50" />
+                          <p className="text-sm">Aucun résultat pour "{searchQuery}"</p>
+                        </div>
+                      )}
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         <Link
           href="/admin/upload-video"

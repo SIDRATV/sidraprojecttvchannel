@@ -155,8 +155,8 @@ export function AdminDashboard() {
     if (searchInputRef.current) {
       const rect = searchInputRef.current.getBoundingClientRect();
       setDropdownPos({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: rect.top,
+        left: rect.left,
         width: rect.width,
       });
       globalSearchQuery.length >= 2 && setShowGlobalSearchDropdown(true);
@@ -167,8 +167,8 @@ export function AdminDashboard() {
     if (globalSearchQuery.length >= 2 && searchInputRef.current) {
       const rect = searchInputRef.current.getBoundingClientRect();
       setDropdownPos({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: rect.top,
+        left: rect.left,
         width: rect.width,
       });
     }
@@ -180,15 +180,14 @@ export function AdminDashboard() {
       <AnimatePresence>
         {showGlobalSearchDropdown && globalSearchQuery.length >= 2 && typeof window !== 'undefined' && createPortal(
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
+          exit={{ opacity: 0, y: -10 }}
           style={{
             position: 'fixed',
-            top: `${dropdownPos.top}px`,
+            bottom: `${window.innerHeight - dropdownPos.top + 8}px`,
             left: `${dropdownPos.left}px`,
             width: `${dropdownPos.width}px`,
-            transform: 'translateY(-100%) translateY(-8px)',
             zIndex: 999999,
           }}
           className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto"

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 export interface GlobalSearchResult {
   id: string;
   title: string;
-  type: 'video' | 'premium_video' | 'live' | 'podcast' | 'news';
+  type: 'video' | 'premium_video' | 'live' | 'podcast' | 'news' | 'partner' | 'advertisement' | 'voting_project' | 'category';
   thumbnail?: string | null;
   href: string;
   subtitle?: string;
@@ -18,6 +18,10 @@ export interface GlobalSearchResults {
   liveStreams: GlobalSearchResult[];
   podcasts: GlobalSearchResult[];
   news: GlobalSearchResult[];
+  partners: GlobalSearchResult[];
+  advertisements: GlobalSearchResult[];
+  votingProjects: GlobalSearchResult[];
+  categories: GlobalSearchResult[];
 }
 
 const EMPTY: GlobalSearchResults = {
@@ -26,6 +30,10 @@ const EMPTY: GlobalSearchResults = {
   liveStreams: [],
   podcasts: [],
   news: [],
+  partners: [],
+  advertisements: [],
+  votingProjects: [],
+  categories: [],
 };
 
 export function useGlobalSearch(query: string) {
@@ -35,7 +43,7 @@ export function useGlobalSearch(query: string) {
   useEffect(() => {
     const trimmed = query.trim();
 
-    if (trimmed.length < 2) {
+    if (trimmed.length < 1) {
       setResults(EMPTY);
       setLoading(false);
       return;
@@ -47,7 +55,7 @@ export function useGlobalSearch(query: string) {
       const pattern = `%${trimmed}%`;
 
       const db = supabase as any;
-      const [videosRes, premiumRes, liveRes, podcastRes, newsRes] = await Promise.allSettled([
+      const [videosRes, premiumRes, liveRes, podcastRes, newsRes, partnersRes, adsRes, votingRes, categoriesRes] = await Promise.allSettled([
         supabase
           .from('videos')
           .select('id, title, thumbnail_url, youtube_url')
@@ -72,6 +80,26 @@ export function useGlobalSearch(query: string) {
           .from('news_articles')
           .select('id, title, image_url, category')
           .ilike('title', pattern)
+          .limit(5),
+        db
+          .from('partners')
+          .select('id, name, logo_url, type')
+          .ilike('name', pattern)
+          .limit(5),
+        db
+          .from('advertisements')
+          .select('id, title, image_url, target_url')
+          .ilike('title', pattern)
+          .limit(5),
+        db
+          .from('voting_projects')
+          .select('id, title, image_url, description')
+          .ilike('title', pattern)
+          .limit(5),
+        db
+          .from('categories')
+          .select('id, name, icon')
+          .ilike('name', pattern)
           .limit(5),
       ]);
 
@@ -131,6 +159,54 @@ export function useGlobalSearch(query: string) {
                 thumbnail: v.image_url,
                 href: `/explore`,
                 subtitle: v.category,
+              }))
+            : [],
+
+        partners:
+          partnersRes.status === 'fulfilled'
+            ? (partnersRes.value.data ?? []).map((p: any) => ({
+                id: p.id,
+                title: p.name,
+                type: 'partner' as const,
+                thumbnail: p.logo_url,
+                href: `/partners/${p.id}`,
+                subtitle: p.type,
+              }))
+            : [],
+
+        advertisements:
+          adsRes.status === 'fulfilled'
+            ? (adsRes.value.data ?? []).map((a: any) => ({
+                id: a.id,
+                title: a.title,
+                type: 'advertisement' as const,
+                thumbnail: a.image_url,
+                href: a.target_url || `/explore`,
+                subtitle: 'Publicité',
+              }))
+            : [],
+
+        votingProjects:
+          votingRes.status === 'fulfilled'
+            ? (votingRes.value.data ?? []).map((p: any) => ({
+                id: p.id,
+                title: p.title,
+                type: 'voting_project' as const,
+                thumbnail: p.image_url,
+                href: `/voting/${p.id}`,
+                subtitle: 'Projet de vote',
+              }))
+            : [],
+
+        categories:
+          categoriesRes.status === 'fulfilled'
+            ? (categoriesRes.value.data ?? []).map((c: any) => ({
+                id: c.id,
+                title: c.name,
+                type: 'category' as const,
+                thumbnail: c.icon,
+                href: `/explore?category=${c.id}`,
+                subtitle: 'Catégorie',
               }))
             : [],
       });

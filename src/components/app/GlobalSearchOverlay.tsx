@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, Crown, Radio, Mic2, Newspaper, Loader2, SearchX } from 'lucide-react';
+import { Video, Crown, Radio, Mic2, Newspaper, Loader2, SearchX, Building2, Megaphone, BoxesIcon, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { GlobalSearchResults, GlobalSearchResult } from '@/hooks/useGlobalSearch';
@@ -19,6 +19,10 @@ const TYPE_META: Record<GlobalSearchResult['type'], { label: string; icon: React
   live: { label: 'Live', icon: Radio, color: 'text-red-500' },
   podcast: { label: 'Podcast', icon: Mic2, color: 'text-purple-500' },
   news: { label: 'Actualité', icon: Newspaper, color: 'text-green-500' },
+  partner: { label: 'Partenaire', icon: Building2, color: 'text-orange-500' },
+  advertisement: { label: 'Publicité', icon: Megaphone, color: 'text-pink-500' },
+  voting_project: { label: 'Projet de vote', icon: BoxesIcon, color: 'text-cyan-500' },
+  category: { label: 'Catégorie', icon: FolderOpen, color: 'text-indigo-500' },
 };
 
 function ResultItem({ item, onClose }: { item: GlobalSearchResult; onClose: () => void }) {
@@ -97,9 +101,13 @@ export function GlobalSearchOverlay({ query, results, loading, onClose }: Global
     results.premiumVideos.length > 0 ||
     results.liveStreams.length > 0 ||
     results.podcasts.length > 0 ||
-    results.news.length > 0;
+    results.news.length > 0 ||
+    results.partners.length > 0 ||
+    results.advertisements.length > 0 ||
+    results.votingProjects.length > 0 ||
+    results.categories.length > 0;
 
-  const show = trimmed.length >= 2;
+  const show = trimmed.length >= 1;
 
   return (
     <AnimatePresence>
@@ -124,6 +132,10 @@ export function GlobalSearchOverlay({ query, results, loading, onClose }: Global
               <Section title="Lives" items={results.liveStreams} onClose={onClose} />
               <Section title="Podcasts" items={results.podcasts} onClose={onClose} />
               <Section title="Actualités" items={results.news} onClose={onClose} />
+              <Section title="Partenaires" items={results.partners} onClose={onClose} />
+              <Section title="Publicités" items={results.advertisements} onClose={onClose} />
+              <Section title="Projets de vote" items={results.votingProjects} onClose={onClose} />
+              <Section title="Catégories" items={results.categories} onClose={onClose} />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 py-8 text-gray-400">

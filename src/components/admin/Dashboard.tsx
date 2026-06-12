@@ -626,7 +626,7 @@ function ContentTab() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto z-50"
+                className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto z-[100]"
               >
                 {searchLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-slate-400">

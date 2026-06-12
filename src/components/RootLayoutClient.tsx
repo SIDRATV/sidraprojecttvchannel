@@ -14,7 +14,6 @@ export function RootLayoutClient({ children }: { children: React.ReactNode }) {
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
-    // Check if splash has already been shown in this session
     const splashShown = sessionStorage.getItem('splash-shown');
     if (splashShown) {
       setShowSplash(false);
@@ -31,7 +30,7 @@ export function RootLayoutClient({ children }: { children: React.ReactNode }) {
   return (
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-      {showContent && (
+      <div className={showSplash ? 'hidden' : ''}>
         <ThemeProvider>
           <MiniPlayerProvider>
             <AuthProvider>
@@ -43,7 +42,7 @@ export function RootLayoutClient({ children }: { children: React.ReactNode }) {
             </AuthProvider>
           </MiniPlayerProvider>
         </ThemeProvider>
-      )}
+      </div>
     </>
   );
 }

@@ -494,9 +494,36 @@ function ContentTab() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
   
   // Use global search hook
   const { results: searchResults, loading: searchLoading } = useGlobalSearch(searchQuery);
+  
+  // Calculate dropdown position
+  const handleSearchFocus = () => {
+    if (searchInputRef.current) {
+      const rect = searchInputRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+      searchQuery.length >= 2 && setShowSearchDropdown(true);
+    }
+  };
+  
+  // Update position when query changes
+  useEffect(() => {
+    if (searchQuery.length >= 2 && searchInputRef.current) {
+      const rect = searchInputRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [searchQuery]);
 
   const loadVideos = useCallback(async () => {
     const res = await fetch('/api/premium-videos?limit=100');
@@ -604,30 +631,50 @@ function ContentTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="relative flex-1 max-w-md z-20">
-          <Search size={18} className="absolute left-3 top-3 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Rechercher sur la plateforme..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowSearchDropdown(e.target.value.length >= 2);
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-3 text-slate-400 z-10" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Rechercher sur la plateforme..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchDropdown(e.target.value.length >= 2);
+              }}
+              onFocus={() => {
+                handleSearchFocus();
+              }}
+              onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-brand-500/50 transition-all"
+            />
+          </div>
+        </div>
+        <Link
+          href="/admin/upload-video"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gold-500 to-gold-400 hover:from-gold-400 hover:to-gold-300 text-white rounded-lg font-medium text-sm w-full md:w-fit shadow-lg shadow-gold-500/20 transition-all"
+        >
+          <Plus size={18} />
+          Nouvelle Vidéo Premium
+        </Link>
+      </div>
+      
+      {/* Global Search Dropdown */}
+      <AnimatePresence>
+        {showSearchDropdown && searchQuery.length >= 2 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{
+              position: 'fixed',
+              top: `${dropdownPos.top}px`,
+              left: `${dropdownPos.left}px`,
+              width: `${dropdownPos.width}px`,
             }}
-            onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
-            onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-brand-500/50 transition-all"
-          />
-          
-          {/* Global Search Dropdown */}
-          <AnimatePresence>
-            {showSearchDropdown && searchQuery.length >= 2 && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto z-[100]"
-              >
+            className="mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto z-[9999]"
+          >
                 {searchLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-slate-400">
                     <Loader2 size={16} className="animate-spin" />
@@ -791,15 +838,6 @@ function ContentTab() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-        <Link
-          href="/admin/upload-video"
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gold-500 to-gold-400 hover:from-gold-400 hover:to-gold-300 text-white rounded-lg font-medium text-sm w-full md:w-fit shadow-lg shadow-gold-500/20 transition-all"
-        >
-          <Plus size={18} />
-          Nouvelle Vidéo Premium
-        </Link>
-      </div>
 
       <Card className="overflow-hidden border border-slate-700/50 bg-slate-800/30">
         {loading ? (

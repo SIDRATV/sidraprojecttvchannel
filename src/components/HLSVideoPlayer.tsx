@@ -69,11 +69,11 @@ export function HLSVideoPlayer({
             hls.loadSource(url);
             hls.attachMedia(video);
 
-            hls.on('hlsManifestParsed', () => {
+            hls.on('hlsManifestParsed' as any, () => {
               if (isMounted) setIsLoading(false);
             });
 
-            hls.on('hlsError', (event: any) => {
+            hls.on('hlsError' as any, (event: any) => {
               if (isMounted) {
                 const message = event?.response?.code ? `Erreur HLS: ${event.response.code}` : 'Erreur de chargement du flux';
                 setError(message);

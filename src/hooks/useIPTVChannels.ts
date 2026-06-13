@@ -47,7 +47,7 @@ export function useIPTVChannels(
       // Check cache (5 minutes)
       if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
         setChannels(cached.data);
-        const uniqueCategories = Array.from(new Set(cached.data.map(ch => ch.category)));
+        const uniqueCategories = Array.from(new Set(cached.data.map(ch => ch.category))) as string[];
         setCategories(uniqueCategories);
         setLoading(false);
         return;
@@ -71,7 +71,7 @@ export function useIPTVChannels(
       }
 
       setChannels(data.channels || []);
-      const uniqueCategories = Array.from(new Set((data.channels || []).map((ch: any) => ch.category)));
+      const uniqueCategories = Array.from(new Set((data.channels || []).map((ch: any) => ch.category))) as string[];
       setCategories(uniqueCategories);
       
       // Cache results

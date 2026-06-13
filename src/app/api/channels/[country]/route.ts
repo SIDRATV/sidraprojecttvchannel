@@ -55,14 +55,15 @@ async function getCachedChannels(country: string): Promise<any[]> {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { country: string } }
+  { params }: { params: Promise<{ country: string }> }
 ) {
   try {
+    const { country } = await params;
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const search = searchParams.get('search');
     const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 500);
-    const countryCode = params.country.toUpperCase();
+    const countryCode = country.toUpperCase();
 
     // Récupérer les chaînes du pays
     let channels = await getCachedChannels(countryCode);
@@ -115,14 +116,15 @@ export async function GET(
 // POST pour vider le cache si nécessaire (admin)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { country: string } }
+  { params }: { params: Promise<{ country: string }> }
 ) {
   try {
+    const { country } = await params;
     // Vérifier si c'est une demande de clear cache
     const { action } = await request.json().catch(() => ({}));
 
     if (action === 'clear-cache') {
-      const countryCode = params.country.toUpperCase();
+      const countryCode = country.toUpperCase();
       const cacheKey = `channels_${countryCode}`;
       m3uCache.delete(cacheKey);
       return NextResponse.json({

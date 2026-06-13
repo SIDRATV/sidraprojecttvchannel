@@ -11,9 +11,8 @@ export async function GET(request: Request) {
 
     const pattern = `%${query}%`;
 
-    const [videosRes, premiumRes, liveRes, podcastRes, newsRes, partnersRes, adsRes, votingRes, categoriesRes] = await Promise.allSettled([
+    const [videosRes, liveRes, podcastRes, newsRes, partnersRes, adsRes, votingRes, categoriesRes] = await Promise.allSettled([
       supabase.from('videos').select('id, title, thumbnail_url, video_url').ilike('title', pattern).limit(5),
-      supabase.from('premium_videos').select('id, title, thumbnail_key').ilike('title', pattern).limit(5),
       supabase.from('live_streams').select('id, title, image, is_live').ilike('title', pattern).limit(5),
       supabase.from('podcasts').select('id, title, image, creator').ilike('title', pattern).limit(5),
       supabase.from('news_articles').select('id, title, image_url, category').ilike('title', pattern).limit(5),
@@ -23,18 +22,8 @@ export async function GET(request: Request) {
       supabase.from('categories').select('id, name, icon').ilike('name', pattern).limit(5),
     ]);
 
-    // Process premium videos to convert thumbnail_key to URLs
-    const publicDomain = process.env.CLOUDFLARE_R2_PUBLIC_URL;
+    // TODO: premium_videos table not in Supabase schema yet. Will be added after table migration is applied.
     let premiumVideos: any[] = [];
-    if (premiumRes.status === 'fulfilled' && premiumRes.value.data) {
-      premiumVideos = (premiumRes.value.data ?? []).map((v: any) => ({
-        id: v.id,
-        title: v.title,
-        type: 'premium_video' as const,
-        thumbnail: v.thumbnail_key ? (publicDomain ? `${publicDomain}/${v.thumbnail_key}` : null) : null,
-        href: `/premium-videos/${v.id}`,
-      }));
-    }
 
     return Response.json({
       results: {

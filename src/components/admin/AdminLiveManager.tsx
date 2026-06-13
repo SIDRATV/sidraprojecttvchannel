@@ -8,6 +8,8 @@ import {
   CheckCircle, XCircle, Wifi, WifiOff, GripVertical,
 } from 'lucide-react';
 import { Card } from '@/components/ui';
+import { IPTVChannelSelector } from '@/components/admin/IPTVChannelSelector';
+import type { IPTVChannel } from '@/hooks/useIPTVChannels';
 
 interface LiveStream {
   id: string;
@@ -355,6 +357,25 @@ export function AdminLiveManager({ token }: Props) {
                     <option value="other">Autre (iframe embed)</option>
                   </select>
                 </div>
+              </div>
+
+              {/* IPTV Channel Importer */}
+              <div className="mb-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <IPTVChannelSelector
+                  onSelect={(channel: IPTVChannel) => {
+                    setCreateForm(f => ({
+                      ...f,
+                      title: channel.name,
+                      stream_url: channel.url,
+                      stream_type: 'obs',
+                      category: channel.category,
+                    }));
+                  }}
+                  loading={createLoading}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <div className="md:col-span-2">
                   <label className="block text-xs text-slate-400 mb-1 flex items-center gap-1">
                     <Link2 size={12} />

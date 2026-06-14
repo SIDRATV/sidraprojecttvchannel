@@ -218,7 +218,7 @@ export default function LivePage() {
             onClick={() => setShowIPTV(!showIPTV)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
               showIPTV
-                ? 'bg-orange-500 text-white shadow-md'
+                ? 'bg-gray-900 text-white shadow-md border border-gray-700'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
@@ -249,14 +249,14 @@ export default function LivePage() {
         {/* ═══════════════════════════════════════════ IPTV COUNTRY SELECTOR ═══════════════════════════════════════════ */}
         {showIPTV && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative">
-            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl border border-orange-200 dark:border-orange-800/50">
-              <Globe size={20} className="text-orange-600 dark:text-orange-400" />
+            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-900 to-gray-800 dark:from-black dark:to-gray-950 rounded-xl border border-gray-700 dark:border-gray-800">
+              <Globe size={20} className="text-gray-400 dark:text-gray-500" />
               <div className="flex-1">
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">Sélectionner un pays</label>
                 <select
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="w-full p-2 bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   {COUNTRIES.map((code) => (
                     <option key={code} value={code}>{code}</option>
@@ -364,14 +364,14 @@ export default function LivePage() {
                 className="group cursor-pointer bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow"
                 onClick={() => setActiveIPTVChannel(channel)}
               >
-                <div className="relative overflow-hidden aspect-video bg-gradient-to-br from-orange-200 to-orange-300 dark:from-orange-900/40 dark:to-orange-800/40 flex items-center justify-center">
+                <div className="relative overflow-hidden aspect-video bg-gradient-to-br from-gray-900 to-black dark:from-black dark:to-gray-950 flex items-center justify-center">
                   {channel.logo ? (
                     <img src={channel.logo} alt={channel.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
-                    <ImageIcon size={48} className="text-orange-600 dark:text-orange-400 opacity-50" />
+                    <ImageIcon size={48} className="text-gray-600 dark:text-gray-500 opacity-50" />
                   )}
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                    <div className="w-12 h-12 bg-gray-900 border border-white/20 rounded-full flex items-center justify-center shadow-lg">
                       <Play size={20} className="text-white ml-1" />
                     </div>
                   </div>
@@ -383,7 +383,7 @@ export default function LivePage() {
                     <span className="font-medium">{channel.country}</span>
                   </div>
                   {channel.category && (
-                    <span className="text-[11px] bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded-full inline-block">{channel.category}</span>
+                    <span className="text-[11px] bg-gray-800 dark:bg-gray-900 text-gray-300 dark:text-gray-200 px-2 py-0.5 rounded-full inline-block border border-gray-700">{channel.category}</span>
                   )}
                 </div>
               </motion.div>
@@ -535,7 +535,7 @@ export default function LivePage() {
                   )}
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="bg-orange-600 px-3 py-1 rounded-full font-semibold">{activeIPTVChannel.country}</span>
+                    <span className="bg-gray-900 px-3 py-1 rounded-full font-semibold border border-gray-700">{activeIPTVChannel.country}</span>
                   {activeIPTVChannel.category && (
                     <span className="bg-amber-700 px-3 py-1 rounded-full font-semibold">{activeIPTVChannel.category}</span>
                   )}

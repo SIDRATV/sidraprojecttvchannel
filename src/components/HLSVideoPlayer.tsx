@@ -501,7 +501,7 @@ export function HLSVideoPlayer({
           )}
 
           {/* Controls Bottom - Always Visible */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/60 to-transparent pt-8 pb-3 px-3"
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/60 to-transparent pt-8 pb-3 px-3">
           {/* Progress bar */}
           <div className="mb-2 flex items-center gap-2">
             <div className="flex-1 h-1 bg-gray-600 rounded-full overflow-hidden cursor-pointer group/progress hover:h-1.5">

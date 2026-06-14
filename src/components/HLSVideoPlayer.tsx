@@ -97,8 +97,6 @@ export function HLSVideoPlayer({
               abrBandWidthFactor: 0.95,
               // Never use lowest quality
               maxLoadingDelay: 4,
-              maxBackBufferLength: 90,
-              maxBufferingAttempts: 4,
             });
 
             hls.loadSource(url);

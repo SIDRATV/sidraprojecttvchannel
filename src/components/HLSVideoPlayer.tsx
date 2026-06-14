@@ -1,7 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Maximize, Minimize, Volume2, VolumeX, Play, Pause } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Maximize, Minimize, Volume2, VolumeX, Play, Pause, Settings, AlertCircle, Zap } from 'lucide-react';
+import {
+  DiagnosticResult,
+  createDiagnostic,
+  logDiagnostic,
+} from '@/utils/hlsDiagnostic';
+
+interface HLSLevel {
+  name: string;
+  height: number;
+  bitrate: number;
+  index: number;
+}
 
 interface HLSVideoPlayerProps {
   url: string;
@@ -25,6 +37,7 @@ export function HLSVideoPlayer({
   className = '',
 }: HLSVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<any>(null);
   const [isPlaying, setIsPlaying] = useState(autoplay);
   const [isMuted, setIsMuted] = useState(muted);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -32,6 +45,12 @@ export function HLSVideoPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const [availableLevels, setAvailableLevels] = useState<HLSLevel[]>([]);
+  const [currentLevel, setCurrentLevel] = useState<number>(-1);
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [isAutoQuality, setIsAutoQuality] = useState(true);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -39,22 +58,27 @@ export function HLSVideoPlayer({
 
     let isMounted = true;
 
-    // Check if browser supports HLS natively
     const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') === 'maybe';
 
     if (canPlayHLS || url.endsWith('.m3u8')) {
-      // Native HLS support (Safari) or use hls.js
       if (!url.startsWith('http') && !url.startsWith('blob')) {
-        setError('URL invalide');
+        const errMsg = 'URL invalide';
+        setError(errMsg);
+        const diag = createDiagnostic(
+          { error: null, response: null },
+          url
+        );
+        setDiagnostic(diag);
+        logDiagnostic(diag);
         return;
       }
 
-      // For non-Safari browsers, try to load hls.js dynamically
       if (canPlayHLS) {
+        // Safari native HLS support
         video.src = url;
         setIsLoading(false);
       } else {
-        // Dynamically import hls.js
+        // Use hls.js for other browsers
         import('hls.js')
           .then((HLS) => {
             if (!isMounted) return;
@@ -64,20 +88,106 @@ export function HLSVideoPlayer({
               enableWorker: true,
               lowLatencyMode: true,
               backBufferLength: 90,
+              // ABR Configuration
+              abrEwmaFastLive: 5000,
+              abrEwmaSlowLive: 9000,
+              abrEwmaFastVoD: 4000,
+              abrEwmaSlowVoD: 15000,
+              abrMaxWithRealBitrate: true,
+              abrBandwidthFactor: 0.95,
+              abrBandwidthSafetyFactor: 0.9,
+              // Never use lowest quality
+              maxLoadingDelay: 4,
+              maxBackBufferLength: 90,
+              maxBufferingAttempts: 4,
             });
 
             hls.loadSource(url);
             hls.attachMedia(video);
+            hlsRef.current = hls;
 
+            // Parse and set available levels
             hls.on('hlsManifestParsed' as any, () => {
-              if (isMounted) setIsLoading(false);
+              if (isMounted) {
+                const levels = hls.levels.map((level: any, index: number) => ({
+                  name: level.height ? `${level.height}p` : `Level ${index}`,
+                  height: level.height || 0,
+                  bitrate: level.bitrate || 0,
+                  index: index,
+                }));
+                setAvailableLevels(levels);
+                setCurrentLevel(hls.currentLevel);
+                setIsAutoQuality(hls.autoLevelEnabled);
+                setIsLoading(false);
+              }
+            });
+
+            // Update current level when it changes
+            hls.on('hlsLevelSwitching' as any, (event: any) => {
+              if (isMounted) {
+                setCurrentLevel(hls.currentLevel);
+              }
+            });
+
+            // Handle auto level changes
+            hls.on('hlsLevelUpdating' as any, (event: any) => {
+              if (isMounted && hls.autoLevelEnabled) {
+                setIsAutoQuality(true);
+              }
             });
 
             hls.on('hlsError' as any, (event: any) => {
               if (isMounted) {
-                const message = event?.response?.code ? `Erreur HLS: ${event.response.code}` : 'Erreur de chargement du flux';
-                setError(message);
-                onError?.(new Error(message));
+                const diag = createDiagnostic(event, url);
+                setDiagnostic(diag);
+                setError(diag.message);
+                setShowDiagnostic(true);
+
+                // Log to console
+                logDiagnostic(diag);
+
+                // Callback
+                onError?.(new Error(diag.message));
+
+                // Log additional HLS.js error details
+                if (event?.error) {
+                  console.error('[HLS.js Error Details]:', {
+                    type: event.error.type,
+                    details: event.error.details,
+                    fatal: event.error.fatal,
+                    message: event.error.message,
+                    rawEvent: event,
+                  });
+                }
+              }
+            });
+
+            // Additional error logging
+            hls.on('hlsFatal' as any, (event: any) => {
+              if (isMounted) {
+                const diag = createDiagnostic(event, url);
+                setDiagnostic(diag);
+                setError(diag.message);
+                setShowDiagnostic(true);
+
+                logDiagnostic(diag);
+                onError?.(new Error(diag.message));
+
+                console.error('[HLS.js Fatal Error]:', {
+                  type: event?.error?.type,
+                  details: event?.error?.details,
+                  message: event?.error?.message,
+                });
+              }
+            });
+
+            // Segment loading error
+            hls.on('hlsFragError' as any, (event: any) => {
+              if (isMounted) {
+                console.warn('[HLS Fragment Load Error]:', {
+                  frag: event?.frag,
+                  error: event?.error,
+                });
               }
             });
 
@@ -87,14 +197,12 @@ export function HLSVideoPlayer({
           })
           .catch((err) => {
             if (isMounted) {
-              // Fallback: try native video loading (for .m3u8 on compatible browsers)
               video.src = url;
               setIsLoading(false);
             }
           });
       }
     } else {
-      // Not an M3U8 file, try native loading
       video.src = url;
       setIsLoading(false);
     }
@@ -104,10 +212,29 @@ export function HLSVideoPlayer({
     const handleLoadedMetadata = () => setDuration(video.duration);
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
-    const handleError = () => {
-      const err = 'Impossible de charger le flux vidéo';
-      setError(err);
-      onError?.(new Error(err));
+    const handleError = (evt: Event) => {
+      console.error('[Video Element Error]:', {
+        error: videoRef.current?.error,
+        code: videoRef.current?.error?.code,
+        message: videoRef.current?.error?.message,
+      });
+
+      const diag = createDiagnostic(
+        {
+          error: {
+            type: 'mediaError',
+            details: `Code ${videoRef.current?.error?.code}`,
+          },
+          response: null,
+        },
+        url
+      );
+      setDiagnostic(diag);
+      setError(diag.message);
+      setShowDiagnostic(true);
+
+      logDiagnostic(diag);
+      onError?.(new Error(diag.message));
     };
 
     video.addEventListener('play', handlePlay);
@@ -153,6 +280,34 @@ export function HLSVideoPlayer({
     }
   };
 
+  const selectQuality = useCallback((levelIndex: number) => {
+    if (hlsRef.current) {
+      hlsRef.current.currentLevel = levelIndex;
+      setIsAutoQuality(false);
+      setCurrentLevel(levelIndex);
+      setShowQualityMenu(false);
+    }
+  }, []);
+
+  const toggleAutoQuality = useCallback(() => {
+    if (hlsRef.current) {
+      hlsRef.current.autoLevelEnabled = !isAutoQuality;
+      setIsAutoQuality(!isAutoQuality);
+      if (!isAutoQuality) {
+        // When auto is enabled, set to highest available level first
+        setCurrentLevel(hlsRef.current.levels.length - 1);
+      }
+    }
+  }, [isAutoQuality]);
+
+  const getCurrentQualityName = (): string => {
+    if (isAutoQuality) return 'Auto';
+    if (currentLevel >= 0 && availableLevels.length > 0) {
+      return availableLevels[currentLevel]?.name || 'Auto';
+    }
+    return 'Auto';
+  };
+
   const formatTime = (seconds: number) => {
     if (!isFinite(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -180,18 +335,63 @@ export function HLSVideoPlayer({
         </div>
       )}
 
-      {/* Error Message */}
+      {/* Error Message with Diagnostic */}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-          <div className="text-center">
-            <p className="text-red-400 font-semibold">{error}</p>
-            <p className="text-gray-300 text-sm mt-2">Vérifiez l'URL du flux</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="text-center max-w-md px-4">
+            <AlertCircle size={48} className="text-red-400 mx-auto mb-4" />
+            <p className="text-red-300 font-semibold text-lg mb-2">{error}</p>
+            <p className="text-gray-300 text-sm mb-4">{diagnostic?.details}</p>
+
+            <button
+              onClick={() => setShowDiagnostic(!showDiagnostic)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 text-blue-300 rounded-lg transition-colors text-sm font-medium mb-3 w-full justify-center"
+            >
+              <Zap size={16} />
+              {showDiagnostic ? 'Masquer' : 'Voir'} le diagnostic
+            </button>
+
+            {showDiagnostic && diagnostic && (
+              <div className="bg-gray-900/90 border border-gray-700 rounded-lg p-4 text-left text-xs space-y-2 max-h-64 overflow-y-auto">
+                <div>
+                  <p className="text-gray-400">Code d'erreur:</p>
+                  <p className="text-yellow-300 font-mono font-bold">{diagnostic.errorCode}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Type:</p>
+                  <p className="text-gray-200">{diagnostic.errorType}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Sévérité:</p>
+                  <p className={`font-semibold ${
+                    diagnostic.severity === 'fatal' ? 'text-red-400' : 
+                    diagnostic.severity === 'warning' ? 'text-yellow-400' : 'text-blue-400'
+                  }`}>
+                    {diagnostic.severity.toUpperCase()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Suggestions:</p>
+                  <p className="text-gray-300 whitespace-pre-wrap">{diagnostic.suggestion}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">URL:</p>
+                  <p className="text-gray-300 break-all font-mono text-xs">{diagnostic.url}</p>
+                </div>
+                {diagnostic.statusCode && (
+                  <div>
+                    <p className="text-gray-400">Code HTTP:</p>
+                    <p className="text-gray-200 font-mono">{diagnostic.statusCode}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Controls */}
-      {controls && (
+      {controls && !error && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/50 to-transparent pt-12 pb-3 px-3 opacity-0 group-hover:opacity-100 transition-opacity">
           {/* Progress bar */}
           <div className="mb-2 flex items-center gap-2">
@@ -232,17 +432,67 @@ export function HLSVideoPlayer({
                 )}
               </button>
             </div>
-            <button
-              onClick={toggleFullscreen}
-              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-              title="Plein écran"
-            >
-              {isFullscreen ? (
-                <Minimize size={16} className="text-white" />
-              ) : (
-                <Maximize size={16} className="text-white" />
+            <div className="flex items-center gap-2">
+              {/* Quality Selector */}
+              {availableLevels.length > 1 && (
+                <div className="relative group/quality">
+                  <button
+                    onClick={() => setShowQualityMenu(!showQualityMenu)}
+                    className="p-1.5 hover:bg-white/20 rounded-lg transition-colors flex items-center gap-1.5"
+                    title="Qualité vidéo"
+                  >
+                    <Settings size={16} className="text-white" />
+                    <span className="text-white text-xs font-semibold bg-red-500 px-2 py-0.5 rounded">
+                      {getCurrentQualityName()}
+                    </span>
+                  </button>
+
+                  {/* Quality Menu */}
+                  {showQualityMenu && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-black/95 border border-white/20 rounded-lg overflow-hidden shadow-lg z-50 backdrop-blur">
+                      {/* Auto Quality Option */}
+                      <button
+                        onClick={toggleAutoQuality}
+                        className={`w-full px-3 py-2 text-xs font-medium text-left hover:bg-white/10 transition-colors ${
+                          isAutoQuality ? 'bg-red-500/30 text-red-300' : 'text-gray-300'
+                        }`}
+                      >
+                        🔄 Auto {isAutoQuality ? '✓' : ''}
+                      </button>
+
+                      {/* Quality Options */}
+                      {availableLevels
+                        .sort((a, b) => b.height - a.height)
+                        .map((level) => (
+                          <button
+                            key={level.index}
+                            onClick={() => selectQuality(level.index)}
+                            className={`w-full px-3 py-2 text-xs font-medium text-left hover:bg-white/10 transition-colors ${
+                              !isAutoQuality && currentLevel === level.index
+                                ? 'bg-red-500/30 text-red-300'
+                                : 'text-gray-300'
+                            }`}
+                          >
+                            {level.name} {!isAutoQuality && currentLevel === level.index ? '✓' : ''}
+                            {level.bitrate > 0 && <span className="text-gray-500 ml-1">({(level.bitrate / 1000).toFixed(0)}k)</span>}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
               )}
-            </button>
+              <button
+                onClick={toggleFullscreen}
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                title="Plein écran"
+              >
+                {isFullscreen ? (
+                  <Minimize size={16} className="text-white" />
+                ) : (
+                  <Maximize size={16} className="text-white" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -95,7 +95,6 @@ export function HLSVideoPlayer({
               abrEwmaSlowVoD: 15000,
               abrMaxWithRealBitrate: true,
               abrBandWidthFactor: 0.95,
-              abrBandWidthSafetyFactor: 0.9,
               // Never use lowest quality
               maxLoadingDelay: 4,
               maxBackBufferLength: 90,

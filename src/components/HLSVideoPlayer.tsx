@@ -51,6 +51,8 @@ export function HLSVideoPlayer({
   const [currentLevel, setCurrentLevel] = useState<number>(-1);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [isAutoQuality, setIsAutoQuality] = useState(true);
+  const [currentUrl, setCurrentUrl] = useState(url);
+  const [corsRetried, setCorsRetried] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -112,6 +114,13 @@ export function HLSVideoPlayer({
                   bitrate: level.bitrate || 0,
                   index: index,
                 }));
+                
+                console.log('[HLS Levels Detected]:', {
+                  count: levels.length,
+                  levels: levels.map(l => ({ name: l.name, bitrate: l.bitrate })),
+                  currentLevel: hls.currentLevel,
+                });
+                
                 setAvailableLevels(levels);
                 setCurrentLevel(hls.currentLevel);
                 setIsAutoQuality(hls.autoLevelEnabled);
@@ -136,6 +145,20 @@ export function HLSVideoPlayer({
             hls.on('hlsError' as any, (event: any) => {
               if (isMounted) {
                 const diag = createDiagnostic(event, url);
+                const isCors = event?.error?.details?.includes('CORS') || 
+                              event?.error?.message?.includes('CORS') ||
+                              event?.error?.type === 'networkError';
+
+                // Retry with proxy if CORS error and haven't tried yet
+                if (isCors && !corsRetried) {
+                  console.warn('[CORS Error] Retrying with proxy...', event?.error?.message);
+                  setCorsRetried(true);
+                  const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(url)}`;
+                  setCurrentUrl(proxiedUrl);
+                  hls.loadSource(proxiedUrl);
+                  return;
+                }
+
                 setDiagnostic(diag);
                 setError(diag.message);
                 setShowDiagnostic(true);
@@ -371,6 +394,12 @@ export function HLSVideoPlayer({
                   <p className="text-gray-400">Suggestions:</p>
                   <p className="text-gray-300 whitespace-pre-wrap">{diagnostic.suggestion}</p>
                 </div>
+                {corsRetried && (
+                  <div className="bg-blue-900/30 border border-blue-700 rounded p-2 mt-2">
+                    <p className="text-blue-300 font-semibold mb-1">✓ Contournement CORS activé</p>
+                    <p className="text-blue-200 text-xs">La requête est proxifiée pour contourner les restrictions CORS du serveur.</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-gray-400">URL:</p>
                   <p className="text-gray-300 break-all font-mono text-xs">{diagnostic.url}</p>
@@ -389,7 +418,90 @@ export function HLSVideoPlayer({
 
       {/* Controls */}
       {controls && !error && (
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/50 to-transparent pt-12 pb-3 px-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <>
+          {/* Quality Badge - Always Visible Top Right */}
+          {isLoading === false && (
+            <div className="absolute top-3 right-3 z-40">
+              <div className="relative group/quality">
+                <button
+                  onClick={() => setShowQualityMenu(!showQualityMenu)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-black/60 hover:bg-black/80 border border-white/30 hover:border-white/50 rounded-lg transition-all"
+                  title="Cliquer pour changer la qualité vidéo"
+                >
+                  <Settings size={14} className="text-white" />
+                  <span className="text-white text-xs font-bold">
+                    {getCurrentQualityName()}
+                  </span>
+                  {availableLevels.length > 1 && (
+                    <span className="text-white text-xs opacity-60">▼</span>
+                  )}
+                </button>
+
+                {/* Quality Menu */}
+                {showQualityMenu && (
+                  <div className="absolute top-full right-0 mt-2 bg-black/95 border border-white/30 rounded-lg overflow-hidden shadow-xl z-50 backdrop-blur min-w-[180px]">
+                    {/* Info Message */}
+                    {availableLevels.length > 1 && currentLevel >= 0 && availableLevels[currentLevel]?.height >= 720 && (
+                      <div className="px-3 py-2 bg-yellow-900/30 border-b border-yellow-700/50 text-[11px] text-yellow-200">
+                        💡 Connexion faible? Choisissez 480p ou 360p
+                      </div>
+                    )}
+
+                    {/* Auto Quality Option */}
+                    <button
+                      onClick={toggleAutoQuality}
+                      className={`w-full px-3 py-2 text-xs font-medium text-left hover:bg-white/10 transition-colors ${
+                        isAutoQuality ? 'bg-red-500/30 text-red-300 border-l-2 border-red-500' : 'text-gray-300'
+                      }`}
+                    >
+                      <span className="font-bold">🔄 Auto</span>
+                      {isAutoQuality && ' ✓'}
+                      <div className="text-[10px] text-gray-400 mt-0.5">Ajuste selon connexion</div>
+                    </button>
+
+                    {/* Quality Options */}
+                    {availableLevels.length > 0 ? (
+                      availableLevels
+                        .sort((a, b) => b.height - a.height)
+                        .map((level) => {
+                          let label = '';
+                          if (level.height >= 2160) label = '4K - Très haute qualité';
+                          else if (level.height >= 1080) label = 'Full HD - Haute qualité';
+                          else if (level.height >= 720) label = 'HD - Bonne qualité';
+                          else if (level.height >= 480) label = 'SD - Qualité réd.';
+                          else label = 'Très réduite - Faible débit';
+
+                          return (
+                            <button
+                              key={level.index}
+                              onClick={() => selectQuality(level.index)}
+                              className={`w-full px-3 py-2 text-xs text-left hover:bg-white/10 transition-colors ${
+                                !isAutoQuality && currentLevel === level.index
+                                  ? 'bg-red-500/30 text-red-300 border-l-2 border-red-500'
+                                  : 'text-gray-300'
+                              }`}
+                            >
+                              <div className="font-medium">{level.name} {!isAutoQuality && currentLevel === level.index ? '✓' : ''}</div>
+                              <div className="text-[10px] text-gray-400">
+                                {label} • {level.bitrate > 0 ? `${(level.bitrate / 1000).toFixed(0)}kbps` : 'Variable'}
+                              </div>
+                            </button>
+                          );
+                        })
+                    ) : (
+                      <div className="px-3 py-3 text-xs text-gray-400 text-center">
+                        📊 Qualités multi-variantes<br/>
+                        <span className="text-[10px]">Gérées par le serveur</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Controls Bottom - Always Visible */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/60 to-transparent pt-8 pb-3 px-3"
           {/* Progress bar */}
           <div className="mb-2 flex items-center gap-2">
             <div className="flex-1 h-1 bg-gray-600 rounded-full overflow-hidden cursor-pointer group/progress hover:h-1.5">
@@ -430,54 +542,6 @@ export function HLSVideoPlayer({
               </button>
             </div>
             <div className="flex items-center gap-2">
-              {/* Quality Selector */}
-              {availableLevels.length > 1 && (
-                <div className="relative group/quality">
-                  <button
-                    onClick={() => setShowQualityMenu(!showQualityMenu)}
-                    className="p-1.5 hover:bg-white/20 rounded-lg transition-colors flex items-center gap-1.5"
-                    title="Qualité vidéo"
-                  >
-                    <Settings size={16} className="text-white" />
-                    <span className="text-white text-xs font-semibold bg-red-500 px-2 py-0.5 rounded">
-                      {getCurrentQualityName()}
-                    </span>
-                  </button>
-
-                  {/* Quality Menu */}
-                  {showQualityMenu && (
-                    <div className="absolute bottom-full right-0 mb-2 bg-black/95 border border-white/20 rounded-lg overflow-hidden shadow-lg z-50 backdrop-blur">
-                      {/* Auto Quality Option */}
-                      <button
-                        onClick={toggleAutoQuality}
-                        className={`w-full px-3 py-2 text-xs font-medium text-left hover:bg-white/10 transition-colors ${
-                          isAutoQuality ? 'bg-red-500/30 text-red-300' : 'text-gray-300'
-                        }`}
-                      >
-                        🔄 Auto {isAutoQuality ? '✓' : ''}
-                      </button>
-
-                      {/* Quality Options */}
-                      {availableLevels
-                        .sort((a, b) => b.height - a.height)
-                        .map((level) => (
-                          <button
-                            key={level.index}
-                            onClick={() => selectQuality(level.index)}
-                            className={`w-full px-3 py-2 text-xs font-medium text-left hover:bg-white/10 transition-colors ${
-                              !isAutoQuality && currentLevel === level.index
-                                ? 'bg-red-500/30 text-red-300'
-                                : 'text-gray-300'
-                            }`}
-                          >
-                            {level.name} {!isAutoQuality && currentLevel === level.index ? '✓' : ''}
-                            {level.bitrate > 0 && <span className="text-gray-500 ml-1">({(level.bitrate / 1000).toFixed(0)}k)</span>}
-                          </button>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              )}
               <button
                 onClick={toggleFullscreen}
                 className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
@@ -492,6 +556,7 @@ export function HLSVideoPlayer({
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   );
